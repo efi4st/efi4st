@@ -1,4 +1,4 @@
-# fa4st
-firmware analysis 4 security testing
+# efi4st
+embedded firmware inspection for security testing
 
 Automatic Firmware Analysis of Embedded Linux Devices as Preparation for Security Testing / Fuzzing
