@@ -1,0 +1,20 @@
+/* Move down content because we have a fixed navbar that is 3.5rem tall */
+body {
+  padding-top: 3.5rem;
+}
+
+.banner {
+  background-image: url("/static/secdoor.jpg");
+  background-size: cover;
+}
+
+.glow {
+  color: #222222;
+  text-shadow: 0 0 0.2em rgb(255, 255, 255), 0 0 0.2em white, 0 0 0.2em white;
+}
+
+h1
+{
+    color: #222222;
+    text-shadow: 0 0 0.2em rgb(255, 255, 255), 0 0 0.2em white, 0 0 0.2em white;
+}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>efi4st</title>
+    <script src="/static/jquery-3.2.1.slim.min.js"></script>
+    <script src="/static/jquery.min.js"></script>
+    <script src="/static/bootstrap.min.js"></script>
+    <script src="/static/popper.min.js"></script>
+    <!-- Custom styles for this template -->
+    <link rel="icon" href="/images/favicon.png" type="image/png">
+    <link href="/static/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/jumbotron.css" rel="stylesheet">
+    <link href="/static/font-awesome.min.css" rel="stylesheet">
+  </head>
+  <body>
+      <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+          <a class="navbar-brand" href="/">efi4st</a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+    
+          <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item active">
+                <a class="nav-link" href="/projects">Projekte </a>
+              </li>
+            </ul>
+
+          </div>
+        </nav>
+      <main role="main">
+
+          <div id="content">
+              {% block content %}{% endblock %}
+          </div>
+
+    </main>
+
+  </br>
+    <footer class="container">
+      <p>&copy; Michael Kraus HM München Master Informatik 2019</p>
+    </footer>
+
+    </body>
+    </html>
