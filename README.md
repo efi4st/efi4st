@@ -15,3 +15,9 @@ Database:
 - Download MariaDB 
 # Silent windows msi install
 - msiexec /i mariadb-10.3.15-winx64.msi SERVICENAME=MySQL PORT=3307 /qn 
+
+
+Links:
+- https://blog.attify.com/getting-started-with-firmware-emulation/
+- http://firmware.re/
+- http://check.siemens.com/

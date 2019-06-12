@@ -25,6 +25,5 @@ func ToolRun(ctx iris.Context) {
 
 	fmt.Println(string(out))
 
-
 	ctx.Redirect("/")
 }
