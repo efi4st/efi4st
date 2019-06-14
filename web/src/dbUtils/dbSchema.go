@@ -8,7 +8,7 @@
 package dbUtils
 
 var projectSchema = `
-CREATE OR REPLACE TABLE project (
+CREATE OR REPLACE TABLE projects (
 	project_id INT NOT NULL AUTO_INCREMENT,
 	name VARCHAR(150) NOT NULL,
 	PRIMARY KEY (project_id)

@@ -54,7 +54,7 @@ func irisMain()() {
 	app.Get("/", routes.Index)
 
 	// GET: http://localhost:3000/modules/run/xxx/xxx
-	app.Get("/modules/run/{moduleName:string}{project:string}/", routes.ModuleRun)
+	app.Get("/modules/run/{moduleName:string}/{project:string}/", routes.ModuleRun)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(addr)

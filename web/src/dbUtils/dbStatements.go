@@ -6,3 +6,5 @@
  **/
 
 package dbUtils
+
+var SELECT_projects = `SELECT * FROM projects`

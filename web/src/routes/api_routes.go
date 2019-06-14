@@ -10,8 +10,12 @@ package routes
 import (
 
 	"github.com/kataras/iris"
+	"../dbprovider"
 )
 
 func Index(ctx iris.Context) {
+	projects := dbprovider.GetDBManager().GetProjects()
+
+	ctx.ViewData("projectList", projects)
 	ctx.View("index.html")
 }

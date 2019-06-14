@@ -5,6 +5,10 @@ type Project struct {
 	name string `db:"name"`
 }
 
+func NewProject(project_id int, name string) *Project {
+	return &Project{project_id, name}
+}
+
 func (p *Project) Project_id() int {
 	return p.project_id
 }
