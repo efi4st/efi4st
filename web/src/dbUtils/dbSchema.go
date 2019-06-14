@@ -5,7 +5,7 @@
  * (C)
  **/
 
-package utils
+package dbUtils
 
 var projectSchema = `
 CREATE OR REPLACE TABLE project (

@@ -5,7 +5,7 @@
  * (C)
  **/
 
-package utils
+package dbprovider
 
 import (
 	"../classes"

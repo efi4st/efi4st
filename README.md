@@ -28,3 +28,6 @@ Links:
 - https://github.com/fkie-cad/FACT_core
 
 - https://stackoverflow.com/questions/41257847/how-to-create-singleton-db-class-in-golang
+
+- https://www.owasp.org/index.php/IoT_Firmware_Analysis
+- https://www.pentestpartners.com/security-blog/how-to-do-firmware-analysis-tools-tips-and-tricks/

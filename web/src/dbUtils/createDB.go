@@ -5,7 +5,7 @@
  * (C)
  **/
 
-package utils
+package dbUtils
 
 import "github.com/jmoiron/sqlx"
 

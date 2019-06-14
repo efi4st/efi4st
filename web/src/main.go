@@ -3,7 +3,7 @@ package main
 import (
 	_ "github.com/go-sql-driver/mysql"
 	"./routes"
-	"./utils"
+	"./dbUtils"
 	"log"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
@@ -27,7 +27,7 @@ func dbInit()() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	utils.CreateDB(db)
+	dbUtils.CreateDB(db)
 
 	db.Close()
 }
