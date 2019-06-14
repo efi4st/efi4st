@@ -29,11 +29,6 @@ func ModuleRun(ctx iris.Context) {
 		log.Fatal(err)
 	}
 
-
-
-
-
-
 	path := filepath.FromSlash(dir +"../../modules/python/")
 	fmt.Println("Starting "+ moduleName +" on project "+ project+":")
 

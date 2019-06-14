@@ -19,3 +19,7 @@ func Index(ctx iris.Context) {
 	ctx.ViewData("projectList", projects)
 	ctx.View("index.html")
 }
+
+func Documentation(ctx iris.Context) {
+	ctx.View("documentation.html")
+}

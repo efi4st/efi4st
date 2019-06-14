@@ -52,12 +52,14 @@ func (mgr *manager) GetProjects() (projects []classes.Project) {
 	}
 	rows, err := stmt.Query()
 
-	var ( newId int
-		  newName string )
+	var ( 	dbId int
+		  	dbName string
+			dbUploads int
+			dbDate string	)
 
 	for rows.Next() {
-		err := rows.Scan(&newId, &newName)
-		var project = classes.NewProject(newId, newName)
+		err := rows.Scan(&dbId, &dbName, &dbUploads, &dbDate)
+		var project = classes.NewProject(dbId, dbName, dbUploads, dbDate)
 		projects=append(projects, *project)
 		if err != nil {
 			log.Fatal(err)

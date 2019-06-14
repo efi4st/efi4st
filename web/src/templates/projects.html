@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+        <div class="container">
+          <h1 class="display-3" >efi4st</h1>
+          <p class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for safety testing / fuzzing.</p>
+          <p><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="row">
+          <p><a class="btn btn-primary btn-lg" href="/projects/createProject" role="button">New Project &raquo;</a></p>
+        </div>
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-8">
+            <h2>Projects:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Uploads</th>
+                <th>Date</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for project in projectList %}
+              <tr>
+                <td><a href="/projects/show/{{ project.project_id }}">{{ project.name }}</a></td>
+                <td>{{ project.uploads }}</td>
+                <td>{{ project.date }}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+
+
+      </div> <!-- /container -->
+      
+{% endblock %}

@@ -23,7 +23,6 @@ func (f *Firmware) SetFirmware_id(firmware_id int) {
 	f.firmware_id = firmware_id
 }
 
-
 func (f *Firmware) SizeInBytes() int {
 	return f.sizeInBytes
 }
