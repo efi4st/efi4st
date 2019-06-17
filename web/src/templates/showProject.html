@@ -3,23 +3,56 @@
 {% block content %}
 <!-- Main jumbotron for a primary marketing message or call to action -->
 <div class="jumbotron banner">
-        <div class="container">
-          <h1 class="display-3" >efi4st</h1>
-          <p class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for safety testing / fuzzing.</p>
-          <p><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+        <h4 class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for security testing / fuzzing.</h4>
+        <p><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error != "" %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
         </div>
+        {% endif %}
       </div>
 
       <div class="container">
 
         <div class="row">
           <div class="col-md-3">
+            <ul class="list-group">
+              <li class="list-group-item">Name: {{project.name}}</li>
+              <li class="list-group-item">Uploads: {{project.uploads}}</li>
+              <li class="list-group-item">Start: {{project.date}}</li>
+            </ul>
           </div>
-          <div class="col-md-3">
-          </div>
-          <div class="col-md-6">
-            <h2>Projects:</h2>
 
+          <div class="col-md-9">
+            <h2>Firmware Uploads:</h2>
+              <table class="table">
+                <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for firmware in projectFirmwares %}
+                <tr>
+                  <td><a href="/firmwares/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
+                  <td>{{ firmware.date }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+              </table>
           </div>
         </div>
 
@@ -29,19 +62,21 @@
           <div class="col-md-6">
           </div>
           <div class="col-md-6">
-            <h2>Projects:</h2>
+            <h2>Results:</h2>
             <table class="table">
               <thead>
               <tr>
                 <th>Name</th>
                 <th>Date</th>
+                <th>Link</th>
               </tr>
               </thead>
               <tbody>
-              {% for firmware in projectFirmwares %}
+              {% for result in projectResults %}
               <tr>
-                <td><a href="/firmwares/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
-                <td>{{ firmware.date }}</td>
+                <td><a href="/results/show/{{ result.result_id }}">{{ result.name }}</a></td>
+                <td>{{ result.date }}</td>
+                <td><a href="/results/remove/{{ result.result_id }}">{{ result.name }}</a></td>
               </tr>
               {% endfor %}
               </tbody>

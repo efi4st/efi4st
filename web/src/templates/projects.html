@@ -3,12 +3,26 @@
 {% block content %}
 <!-- Main jumbotron for a primary marketing message or call to action -->
 <div class="jumbotron banner">
-        <div class="container">
-          <h1 class="display-3" >efi4st</h1>
-          <p class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for safety testing / fuzzing.</p>
-          <p><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
-        </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+        <h4 class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for security testing / fuzzing.</h4>
+        <p><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
       </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+        <div class="container">
+          {% if error != "" %}
+            <div class="alert alert-warning" role="alert">
+              {{error}}
+            </div>
+          {% endif %}
+        </div>
 
       <div class="container">
         <div class="row">
@@ -26,6 +40,7 @@
                 <th>Name</th>
                 <th>Uploads</th>
                 <th>Date</th>
+                <th><i class="fa fa-trash-o"></i></th>
               </tr>
               </thead>
               <tbody>
@@ -34,6 +49,7 @@
                 <td><a href="/projects/show/{{ project.project_id }}">{{ project.name }}</a></td>
                 <td>{{ project.uploads }}</td>
                 <td>{{ project.date }}</td>
+                <td><a href="/projects/remove/{{project.project_id}}" class="button"><i class="fa fa-close"></i></a></td>
               </tr>
               {% endfor %}
               </tbody>

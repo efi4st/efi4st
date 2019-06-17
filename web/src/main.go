@@ -62,11 +62,17 @@ func irisMain()() {
 	// GET: http://localhost:8144/projects
 	app.Get("/projects", routes.Projects)
 
-	// POST: http://localhost:8144/projects/createProject
-	app.Post("/projets/createProject", routes.CreateProject)
-
 	// GET: http://localhost:8144/projects/createProject
-	app.Get("/projets/createProject", routes.AddProject)
+	app.Get("/projects/createProject", routes.CreateProject)
+
+	// POST: http://localhost:8144/projects/createProject
+	app.Post("/projects/addProject", routes.AddProject)
+
+	// GET: http://localhost:8144/projects/show/1
+	app.Get("/projects/show/{id:string}", routes.ShowProject)
+
+	// GET: http://localhost:8144/projects/remove/1
+	app.Get("/projects/remove/{id:string}", routes.RemoveProject)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(addr)

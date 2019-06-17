@@ -8,34 +8,76 @@
 package routes
 
 import (
-	"database/sql"
-	"github.com/kataras/iris"
 	"../dbprovider"
-	"strings"
-	"time"
-	"../classes"
+	"github.com/kataras/iris"
+	"strconv"
 )
 
 func Projects(ctx iris.Context) {
 
 	projects := dbprovider.GetDBManager().GetProjects()
 
+	ctx.ViewData("error", "")
+
+	if len(projects) < 1 {
+		ctx.ViewData("error", "Error: No projects available. Add one!")
+	}
+
 	ctx.ViewData("projectList", projects)
 	ctx.View("projects.html")
 }
 
+// GET
 func CreateProject(ctx iris.Context) {
 
-	//name := ctx.PostValue("Name")
-
-	//var project = classes.NewProject(, dbName, dbUploads, dbDate)
-
-	//createRoom := &sc.Room{id, publicKey, networkAddress,department ,building ,strings.Split(time.Now().String(), ".")[0], true}
-
-	ctx.Redirect("/projects")
+	ctx.View("createProject.html")
 }
 
+// POST
 func AddProject(ctx iris.Context) {
+
+	name := ctx.PostValue("Name")
+
+	err := dbprovider.GetDBManager().AddProject(name)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Not able to add project!")
+	}
+
+	projects := dbprovider.GetDBManager().GetProjects()
+	ctx.ViewData("projectList", projects)
+	ctx.View("projects.html")
+}
+
+func ShowProject(ctx iris.Context) {
+
+	id := ctx.Params().Get("id")
+
+	i, err := strconv.Atoi(id)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing project Id!")
+	}
+
+	project := dbprovider.GetDBManager().GetProjectInfo(i)
+
+	ctx.ViewData("project", project)
+	ctx.View("showProject.html")
+}
+
+func RemoveProject(ctx iris.Context) {
+
+	id := ctx.Params().Get("id")
+
+	i, err := strconv.Atoi(id)
+	err = dbprovider.GetDBManager().RemoveProject(i)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error removing project!")
+	}
 
 	projects := dbprovider.GetDBManager().GetProjects()
 

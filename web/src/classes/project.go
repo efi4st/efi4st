@@ -14,7 +14,11 @@ type Project struct {
 	date string `db:"date"`
 }
 
-func NewProject(project_id int, name string, uploads int, date string) *Project {
+func NewProject(name string, uploads int, date string) *Project {
+	return &Project{name: name, uploads: uploads, date: date}
+}
+
+func NewProjectFromDB(project_id int, name string, uploads int, date string) *Project {
 	return &Project{project_id: project_id, name: name, uploads: uploads, date: date}
 }
 
