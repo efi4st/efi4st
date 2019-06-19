@@ -13,6 +13,11 @@ type Firmware struct {
 	version string `db:"version"`
 	binwalkOutput string `db:"binwalkOutput"`
 	sizeInBytes int `db:"sizeInBytes"`
+	project_id int `db:"project_id"`
+}
+
+func NewFirmware(firmware_id int, name string, version string, binwalkOutput string, sizeInBytes int, project_id int) *Firmware {
+	return &Firmware{firmware_id: firmware_id, name: name, version: version, binwalkOutput: binwalkOutput, sizeInBytes: sizeInBytes, project_id: project_id}
 }
 
 func (f *Firmware) Firmware_id() int {

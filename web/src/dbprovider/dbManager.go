@@ -10,6 +10,7 @@ package dbprovider
 import (
 	"../classes"
 	"../dbUtils"
+	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
@@ -22,6 +23,8 @@ type Manager interface {
 	AddProject(projectName string) error
 	GetProjectInfo(id int) *classes.Project
 	RemoveProject(id int) error
+	AddFirmware(firmwareName string, size int, proj_id int) (err error)
+	GetFirmwareListForProject(id int) []classes.Firmware
 	// Add other methods
 }
 
@@ -40,6 +43,9 @@ func init() {
 	dbMgr = &manager{db: db}
 }
 
+/////////////////////////////////////////
+////	Project
+////////////////////////////////////////
 func (mgr *manager) AddProject(projectName string) (err error) {
 	dt := time.Now()
 	dt.Format("01-02-2006")
@@ -105,6 +111,53 @@ func (mgr *manager) RemoveProject(id int) (err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.DELETE_project)
 
 	stmt.QueryRow(id)
+
+	return err
+}
+
+func (mgr *manager) GetFirmwareListForProject(id int) (firmwares []classes.Firmware) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_firmwareForProject)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(id)
+
+	var ( 	dbfirmware_id int
+			dbname string
+			dbversion string
+			dbbinwalkOutput sql.NullString
+			dbsizeInBytes int
+			dbproject_id int	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbfirmware_id, &dbname, &dbversion, &dbbinwalkOutput, &dbsizeInBytes, &dbproject_id)
+		var firmware = classes.NewFirmware(dbfirmware_id, dbname, dbversion, dbbinwalkOutput.String, dbsizeInBytes, dbproject_id)
+		firmwares=append(firmwares, *firmware)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return firmwares
+}
+
+/////////////////////////////////////////
+////	Firmware
+////////////////////////////////////////
+func (mgr *manager) AddFirmware(firmwareName string, size int, proj_id int) (err error) {
+	dt := time.Now()
+	dt.Format("01-02-2006")
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newFirmware)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(firmwareName, "", size, proj_id)
+
+	if rows == nil{
+		fmt.Println("rows should be null")
+	}
 
 	return err
 }

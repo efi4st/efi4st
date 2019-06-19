@@ -45,15 +45,15 @@
                 </tr>
                 </thead>
                 <tbody>
-                {% for firmware in projectFirmwares %}
+                {% for firmware in firmwareList %}
                 <tr>
-                  <td><a href="/firmwares/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
+                  <td><a href="/firmware/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
                   <td>{{ firmware.date }}</td>
                 </tr>
                 {% endfor %}
                 </tbody>
               </table>
-            <p><a class="btn btn-primary btn-lg" href="/firmware/show/upload" role="button">Upload</a></p>
+            <p><a class="btn btn-primary btn-lg" href="/firmware/show/upload/{{project.project_id}}" role="button">Upload</a></p>
           </div>
         </div>
 

@@ -38,12 +38,15 @@
           <div class="col-md-9">
             <h2>Firmware Uploads:</h2>
             <!-- 3 -->
-                <form action="/firmware/upload" method="POST" class="dropzone" id="my-dropzone">
+                <form action="/firmware/upload/{{project.project_id}}" method="POST" class="dropzone" id="my-dropzone">
                   <div class="fallback">
                     <input name="file" type="file" multiple />
+                    <input name="version" type="text" />
                     <input type="submit" value="Upload" />
                   </div>
                 </form>
+            </br>
+            <p><a class="btn btn-primary btn-lg" href="/projects/show/{{project.project_id}}" role="button">Back to project!</a></p>
           </div>
         </div>
 

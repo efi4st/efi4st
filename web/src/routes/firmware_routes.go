@@ -9,11 +9,13 @@ package routes
 
 import (
 	"../utils"
+	"../dbprovider"
 	"fmt"
 	"github.com/kataras/iris"
 	"io"
 	"os"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
 )
 
 func Firmwares(ctx iris.Context) {
@@ -33,11 +35,28 @@ func Firmwares(ctx iris.Context) {
 // GET
 func ShowFirmwareUpload(ctx iris.Context) {
 
+	id := ctx.Params().Get("project_id")
+	i, err := strconv.Atoi(id)
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing project Id!")
+	}
+	project := dbprovider.GetDBManager().GetProjectInfo(i)
+
+	ctx.ViewData("project", project)
 	ctx.View("firmwareUpload.html")
 }
 
-// GET
+// POST
 func UploadFirmware(ctx iris.Context) {
+
+	id := ctx.Params().Get("project_id")
+
+	i, err := strconv.Atoi(id)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing project Id!")
+	}
 
 	// Get the file from the dropzone request
 	file, info, err := ctx.FormFile("file")
@@ -52,7 +71,6 @@ func UploadFirmware(ctx iris.Context) {
 
 	// Create a file with the same name
 	// assuming that you have a folder named 'uploads'
-	fmt.Println(utils.UploadsDir)
 	out, err := os.OpenFile(utils.UploadsDir+fname,
 		os.O_WRONLY|os.O_CREATE, 0666)
 
@@ -62,6 +80,14 @@ func UploadFirmware(ctx iris.Context) {
 		return
 	}
 	defer out.Close()
+
+	fi, err := out.Stat()
+	if err != nil {
+		fmt.Println("Error getting file Size!")
+		return
+	}
+
+	dbprovider.GetDBManager().AddFirmware(fname, int(fi.Size()),i)
 
 	io.Copy(out, file)
 }

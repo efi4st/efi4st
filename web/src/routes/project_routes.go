@@ -64,7 +64,9 @@ func ShowProject(ctx iris.Context) {
 	}
 
 	project := dbprovider.GetDBManager().GetProjectInfo(i)
+	firmwareList := dbprovider.GetDBManager().GetFirmwareListForProject(i)
 
+	ctx.ViewData("firmwareList", firmwareList)
 	ctx.ViewData("project", project)
 	ctx.View("showProject.html")
 }
