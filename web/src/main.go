@@ -1,19 +1,17 @@
 package main
 
 import (
-	_ "github.com/go-sql-driver/mysql"
-	"./routes"
 	"./dbUtils"
-	"log"
+	"./routes"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/middleware/recover"
-	"fmt"
-	"github.com/jmoiron/sqlx"
+	"log"
+	"./utils"
 )
-
-// Serve using a host:port form.
-var addr = iris.Addr("0.0.0.0:8144")
 
 func main(){
 	fmt.Printf("### Starting efi4st WEBUI...\n")
@@ -74,6 +72,12 @@ func irisMain()() {
 	// GET: http://localhost:8144/projects/remove/1
 	app.Get("/projects/remove/{id:string}", routes.RemoveProject)
 
+	// GET: http://localhost:8144/firmware/upload
+	app.Get("/firmware/show/upload", routes.ShowFirmwareUpload)
+
+	// POST: http://localhost:8144/firmware/upload
+	app.Post("/firmware/upload", iris.LimitRequestBodySize(10<<20), routes.UploadFirmware)
+
 	// Application started. Press CTRL+C to shut down.
-	app.Run(addr)
+	app.Run(utils.Addr)
 }

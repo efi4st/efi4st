@@ -27,24 +27,23 @@
       <div class="container">
 
         <div class="row">
-          <div class="col-md-2">
+          <div class="col-md-3">
+            <ul class="list-group">
+              <li class="list-group-item">Name: {{project.name}}</li>
+              <li class="list-group-item">Uploads: {{project.uploads}}</li>
+              <li class="list-group-item">Start: {{project.date}}</li>
+            </ul>
           </div>
 
-          <div class="col-md-8">
-            <form action="/projects/addProject" method="POST">
-              <div class="form-group">
-
-                <h3>Add new Project:</h3>
-                <label for="Name">Name:</label>
-                <input type="text" class="form-control" name="Name" id="Name" placeholder="Name">
-                </br>
-
-              </div>
-              <button type="submit" class="btn btn-primary">Add</button>
-            </form>
-          </div>
-
-          <div class="col-md-2">
+          <div class="col-md-9">
+            <h2>Firmware Uploads:</h2>
+            <!-- 3 -->
+                <form action="/firmware/upload" method="POST" class="dropzone" id="my-dropzone">
+                  <div class="fallback">
+                    <input name="file" type="file" multiple />
+                    <input type="submit" value="Upload" />
+                  </div>
+                </form>
           </div>
         </div>
 

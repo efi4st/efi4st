@@ -11,6 +11,8 @@ import (
 	"../dbprovider"
 	"github.com/kataras/iris"
 	"strconv"
+	_ "github.com/go-sql-driver/mysql"
+
 )
 
 func Projects(ctx iris.Context) {
