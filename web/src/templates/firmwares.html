@@ -25,31 +25,30 @@
         </div>
 
       <div class="container">
-        <div class="row">
-          <p><a class="btn btn-primary btn-lg" href="/projects/createProject" role="button">New Project &raquo;</a></p>
-        </div>
 
         <div class="row">
           <div class="col-md-2">
           </div>
           <div class="col-md-8">
-            <h2>Projects:</h2>
+            <h2>All uploaded Firmwares:</h2>
             <table class="table">
               <thead>
               <tr>
                 <th>Name</th>
-                <th>Uploads</th>
+                <th>Version</th>
                 <th>Date</th>
+                <th>Project</th>
                 <th><i class="fa fa-trash-o"></i></th>
               </tr>
               </thead>
               <tbody>
-              {% for project in projectList %}
+              {% for firmware in firmwareList %}
               <tr>
-                <td><a href="/projects/show/{{ project.project_id }}">{{ project.name }}</a></td>
-                <td>{{ project.uploads }}</td>
-                <td>{{ project.Date }}</td>
-                <td><a href="/projects/remove/{{project.project_id}}" class="button"><i class="fa fa-close"></i></a></td>
+                <td><a href="/firmware/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
+                <td>{{ firmware.version }}</td>
+                <td>{{ firmware.Created|truncatechars:13 }}</td>
+                <td><a href="/projects/show/{{ firmware.project_id }}">{{ firmware.msg }}</a></td>
+                <td><a href="/firmware/remove/{{firmware.firmware_id}}" class="button"><i class="fa fa-close"></i></a></td>
               </tr>
               {% endfor %}
               </tbody>

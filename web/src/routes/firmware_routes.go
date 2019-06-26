@@ -20,16 +20,33 @@ import (
 
 func Firmwares(ctx iris.Context) {
 
-	/*projects := dbprovider.GetDBManager().GetProjects()
+	firmwares := dbprovider.GetDBManager().GetFirmwares()
 
 	ctx.ViewData("error", "")
 
-	if len(projects) < 1 {
-		ctx.ViewData("error", "Error: No projects available. Add one!")
+	if len(firmwares) < 1 {
+		ctx.ViewData("error", "Error: No firmwares available. Add one!")
 	}
 
-	ctx.ViewData("projectList", projects)
-	ctx.View("projects.html")*/
+	ctx.ViewData("firmwareList", firmwares)
+	ctx.View("firmwares.html")
+}
+
+func ShowFirmware(ctx iris.Context) {
+
+	id := ctx.Params().Get("id")
+
+	i, err := strconv.Atoi(id)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing firmware Id!")
+	}
+
+	firmware := dbprovider.GetDBManager().GetFirmwareInfo(i)
+
+	ctx.ViewData("firmware", firmware)
+	ctx.View("showFirmware.html")
 }
 
 // GET
@@ -89,7 +106,28 @@ func UploadFirmware(ctx iris.Context) {
 
 	dbprovider.GetDBManager().AddFirmware(fname, int(fi.Size()),i)
 
+	proj := dbprovider.GetDBManager().GetProjectInfo(i)
+	dbprovider.GetDBManager().UpdateProjectsUploads(i, proj.Uploads()+1)
+
 	io.Copy(out, file)
+}
+
+func RemoveFirmware(ctx iris.Context) {
+
+	id := ctx.Params().Get("id")
+
+	i, err := strconv.Atoi(id)
+	err = dbprovider.GetDBManager().RemoveFirmware(i)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error removing project!")
+	}
+
+	firmwares := dbprovider.GetDBManager().GetFirmwares()
+
+	ctx.ViewData("firmwareList", firmwares)
+	ctx.View("firmwares.html")
 }
 
 

@@ -25,7 +25,10 @@ type Manager interface {
 	RemoveProject(id int) error
 	AddFirmware(firmwareName string, size int, proj_id int) (err error)
 	GetFirmwareListForProject(id int) []classes.Firmware
-	// Add other methods
+	UpdateProjectsUploads(id int, count int) error
+	GetFirmwares() []classes.Firmware
+	RemoveFirmware(id int) error
+	GetFirmwareInfo(id int) *classes.Firmware
 }
 
 type manager struct {
@@ -36,7 +39,7 @@ var dbMgr Manager
 func GetDBManager() Manager { return dbMgr }
 
 func init() {
-	db, err := sqlx.Connect("mysql", "root:@(localhost:3307)/efi4st")
+	db, err := sqlx.Connect("mysql", "root:@(localhost:3307)/efi4st?parseTime=true")
 	if err != nil {
 		log.Fatal("Failed to init db:", err)
 	}
@@ -48,14 +51,13 @@ func init() {
 ////////////////////////////////////////
 func (mgr *manager) AddProject(projectName string) (err error) {
 	dt := time.Now()
-	dt.Format("01-02-2006")
 
 	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newProject)
 	if err != nil{
 		fmt.Print(err)
 	}
 
-	rows, err := stmt.Query(projectName, 0, dt.Format("01-02-2006"))
+	rows, err := stmt.Query(projectName, 0, dt)
 
 	if rows == nil{
 		fmt.Println("rows should be null")
@@ -74,7 +76,7 @@ func (mgr *manager) GetProjects() (projects []classes.Project) {
 	var ( 	dbId int
 		  	dbName string
 			dbUploads int
-			dbDate string	)
+			dbDate time.Time	)
 
 	for rows.Next() {
 		err := rows.Scan(&dbId, &dbName, &dbUploads, &dbDate)
@@ -97,7 +99,7 @@ func (mgr *manager) GetProjectInfo(id int) (*classes.Project) {
 	var ( 	dbId int
 			dbName string
 			dbUploads int
-			dbDate string	)
+			dbDate time.Time	)
 
 	row := stmt.QueryRow(id)
 	row.Scan(&dbId, &dbName, &dbUploads, &dbDate)
@@ -105,6 +107,14 @@ func (mgr *manager) GetProjectInfo(id int) (*classes.Project) {
 	var project = classes.NewProjectFromDB(dbId, dbName, dbUploads, dbDate)
 
 	return project
+}
+
+func (mgr *manager) UpdateProjectsUploads(id int, count int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_projectUploads)
+
+	stmt.QueryRow(count, id)
+
+	return err
 }
 
 func (mgr *manager) RemoveProject(id int) (err error) {
@@ -127,11 +137,12 @@ func (mgr *manager) GetFirmwareListForProject(id int) (firmwares []classes.Firmw
 			dbversion string
 			dbbinwalkOutput sql.NullString
 			dbsizeInBytes int
-			dbproject_id int	)
+			dbproject_id int
+			created time.Time)
 
 	for rows.Next() {
-		err := rows.Scan(&dbfirmware_id, &dbname, &dbversion, &dbbinwalkOutput, &dbsizeInBytes, &dbproject_id)
-		var firmware = classes.NewFirmware(dbfirmware_id, dbname, dbversion, dbbinwalkOutput.String, dbsizeInBytes, dbproject_id)
+		err := rows.Scan(&dbfirmware_id, &dbname, &dbversion, &dbbinwalkOutput, &dbsizeInBytes, &dbproject_id, &created)
+		var firmware = classes.NewFirmware(dbfirmware_id, dbname, dbversion, dbbinwalkOutput.String, dbsizeInBytes, dbproject_id, created)
 		firmwares=append(firmwares, *firmware)
 		if err != nil {
 			log.Fatal(err)
@@ -144,20 +155,80 @@ func (mgr *manager) GetFirmwareListForProject(id int) (firmwares []classes.Firmw
 /////////////////////////////////////////
 ////	Firmware
 ////////////////////////////////////////
+func (mgr *manager) GetFirmwares() (firmwares []classes.Firmware){
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_firmware)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+
+	var (	dbFirmware_id int
+		dbName string
+		dbVersion string
+		dbBinwalkOutput sql.NullString
+		dbSizeInBytes int
+		dbProject_id int
+		dbCreated time.Time
+		dbProjectName string			)
+
+	for rows.Next() {
+		err := rows.Scan(&dbFirmware_id, &dbName, &dbVersion, &dbBinwalkOutput, &dbSizeInBytes, &dbProject_id, &dbCreated, &dbProjectName)
+		var firmware = classes.NewFirmware(dbFirmware_id, dbName, dbVersion, dbBinwalkOutput.String, dbSizeInBytes, dbProject_id, dbCreated)
+		//Set ProjectName as Msg
+		firmware.SetMsg(dbProjectName)
+		firmwares=append(firmwares, *firmware)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return firmwares
+}
+
 func (mgr *manager) AddFirmware(firmwareName string, size int, proj_id int) (err error) {
 	dt := time.Now()
-	dt.Format("01-02-2006")
 
 	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newFirmware)
 	if err != nil{
 		fmt.Print(err)
 	}
 
-	rows, err := stmt.Query(firmwareName, "", size, proj_id)
+	rows, err := stmt.Query(firmwareName, "", size, proj_id, dt)
 
 	if rows == nil{
-		fmt.Println("rows should be null")
+		fmt.Print(err)
 	}
 
 	return err
+}
+
+func (mgr *manager) RemoveFirmware(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_firmware)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+func (mgr *manager) GetFirmwareInfo(id int) (*classes.Firmware) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_firmwareInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbFirmware_id int
+			dbName string
+			dbVersion string
+			dbBinwalkOutput string
+			dbSizeInBytes int
+			dbProject_id int
+			dbCreated time.Time	)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbFirmware_id, &dbName, &dbVersion, &dbBinwalkOutput, &dbSizeInBytes, &dbProject_id, &dbCreated)
+
+	var firmware = classes.NewFirmware(dbFirmware_id, dbName, dbVersion, dbBinwalkOutput, dbSizeInBytes, dbProject_id, dbCreated)
+
+	return firmware
 }

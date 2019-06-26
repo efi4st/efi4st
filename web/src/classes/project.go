@@ -7,26 +7,28 @@
 
 package classes
 
+import "time"
+
 type Project struct {
 	project_id int `db:"project_id"`
 	name string `db:"name"`
 	uploads int `db:"uploads"`
-	date string `db:"date"`
+	date time.Time `db:"date"`
 }
 
-func NewProject(name string, uploads int, date string) *Project {
+func NewProject(name string, uploads int, date time.Time) *Project {
 	return &Project{name: name, uploads: uploads, date: date}
 }
 
-func NewProjectFromDB(project_id int, name string, uploads int, date string) *Project {
+func NewProjectFromDB(project_id int, name string, uploads int, date time.Time) *Project {
 	return &Project{project_id: project_id, name: name, uploads: uploads, date: date}
 }
 
-func (p *Project) Date() string {
+func (p *Project) Date() time.Time {
 	return p.date
 }
 
-func (p *Project) SetDate(date string) {
+func (p *Project) SetDate(date time.Time) {
 	p.date = date
 }
 
