@@ -29,32 +29,13 @@
         <div class="row">
           <div class="col-md-3">
             <ul class="list-group">
-              <li class="list-group-item">Name: {{project.name}}</li>
-              <li class="list-group-item">Uploads: {{project.uploads}}</li>
-              <li class="list-group-item">Start: {{project.Date|truncatechars:13}}</li>
+              <li class="list-group-item">Name: {{firmware.name}}</li>
+              <li class="list-group-item">Date: {{ firmware.Created|truncatechars:13}}</li>
+              <li class="list-group-item">Size: {{firmware.sizeInBytes}}</li>
+              <li class="list-group-item">Version: {{firmware.version}}</li>
             </ul>
           </div>
 
-          <div class="col-md-9">
-            <h2>Firmware Uploads:</h2>
-              <table class="table">
-                <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Date</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for firmware in firmwareList %}
-                <tr>
-                  <td><a href="/firmware/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
-                  <td>{{ firmware.Created|truncatechars:13}}</td>
-                </tr>
-                {% endfor %}
-                </tbody>
-              </table>
-            <p><a class="btn btn-primary btn-lg" href="/firmware/show/upload/{{project.project_id}}" role="button">Upload</a></p>
-          </div>
         </div>
 
         <hr>

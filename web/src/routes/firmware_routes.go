@@ -99,12 +99,13 @@ func UploadFirmware(ctx iris.Context) {
 	defer out.Close()
 
 	fi, err := out.Stat()
+	fileSize:=int(fi.Size())
 	if err != nil {
 		fmt.Println("Error getting file Size!")
 		return
 	}
 
-	dbprovider.GetDBManager().AddFirmware(fname, int(fi.Size()),i)
+	dbprovider.GetDBManager().AddFirmware(fname, fileSize,i)
 
 	proj := dbprovider.GetDBManager().GetProjectInfo(i)
 	dbprovider.GetDBManager().UpdateProjectsUploads(i, proj.Uploads()+1)

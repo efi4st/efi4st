@@ -193,7 +193,6 @@ func (mgr *manager) AddFirmware(firmwareName string, size int, proj_id int) (err
 	if err != nil{
 		fmt.Print(err)
 	}
-
 	rows, err := stmt.Query(firmwareName, "", size, proj_id, dt)
 
 	if rows == nil{
@@ -220,7 +219,7 @@ func (mgr *manager) GetFirmwareInfo(id int) (*classes.Firmware) {
 	var ( 	dbFirmware_id int
 			dbName string
 			dbVersion string
-			dbBinwalkOutput string
+			dbBinwalkOutput sql.NullString
 			dbSizeInBytes int
 			dbProject_id int
 			dbCreated time.Time	)
@@ -228,7 +227,7 @@ func (mgr *manager) GetFirmwareInfo(id int) (*classes.Firmware) {
 	row := stmt.QueryRow(id)
 	row.Scan(&dbFirmware_id, &dbName, &dbVersion, &dbBinwalkOutput, &dbSizeInBytes, &dbProject_id, &dbCreated)
 
-	var firmware = classes.NewFirmware(dbFirmware_id, dbName, dbVersion, dbBinwalkOutput, dbSizeInBytes, dbProject_id, dbCreated)
+	var firmware = classes.NewFirmware(dbFirmware_id, dbName, dbVersion, dbBinwalkOutput.String, dbSizeInBytes, dbProject_id, dbCreated)
 
 	return firmware
 }

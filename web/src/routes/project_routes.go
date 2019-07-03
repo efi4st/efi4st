@@ -9,11 +9,9 @@ package routes
 
 import (
 	"../dbprovider"
-	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris"
 	"strconv"
-	_ "github.com/go-sql-driver/mysql"
-
 )
 
 func Projects(ctx iris.Context) {
@@ -47,9 +45,7 @@ func AddProject(ctx iris.Context) {
 	if err !=nil {
 		ctx.ViewData("error", "Error: Not able to add project!")
 	}
-	fmt.Println(1)
 	projects := dbprovider.GetDBManager().GetProjects()
-	fmt.Println(2)
 	ctx.ViewData("projectList", projects)
 	ctx.View("projects.html")
 }
