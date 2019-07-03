@@ -39,7 +39,7 @@ var dbMgr Manager
 func GetDBManager() Manager { return dbMgr }
 
 func init() {
-	db, err := sqlx.Connect("mysql", "root:@(localhost:3307)/efi4st?parseTime=true")
+	db, err := sqlx.Connect("mysql", "root:@(localhost:3306)/efi4st?parseTime=true")
 	if err != nil {
 		log.Fatal("Failed to init db:", err)
 	}

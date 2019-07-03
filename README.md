@@ -7,15 +7,20 @@ Automatic Firmware Analysis of Embedded Linux Devices as Preparation for Securit
 Installation:
 
 Web App:
-- Install Golang 1.10
+- Install Golang 1.11
 - go get -u github.com/kataras/iris
 - go get github.com/jmoiron/sqlx
+- go get github.com/go-sql-driver/mysql
 - go run main.go
 
-Database:
+Database: 
+- Windows:
 - Download MariaDB 
-# Silent windows msi install
-- msiexec /i mariadb-10.3.15-winx64.msi SERVICENAME=MySQL PORT=3307 /qn 
+- Silent windows msi install
+- msiexec /i mariadb-10.3.15-winx64.msi SERVICENAME=MySQL PORT=3307 /qn
+- Linux:
+- https://computingforgeeks.com/how-to-install-mariadb-10-3-on-ubuntu-16-04-lts-xenial/
+- https://websiteforstudents.com/install-and-configure-dbeaver-on-ubuntu-16-04-18-04/
 
 
 Links:
