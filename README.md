@@ -36,3 +36,27 @@ Links:
 
 - https://www.owasp.org/index.php/IoT_Firmware_Analysis
 - https://www.pentestpartners.com/security-blog/how-to-do-firmware-analysis-tools-tips-and-tricks/
+
+Installation of firmadyne:
+- git clone --recursive https://github.com/attify/firmware-analysis-toolkit.git
+- delete binwalk folder and download from new source
+- git clone --recursive https://github.com/ReFirmLabs/binwalk.git
+- sudo ./deps.sh
+- (wird nicht funktionieren: Entferne cramfs deps auch die funktion)
+- dann installiere cramfs per hand: apt-get install cramfsprogs, cramsfsswap
+- sudo python3 setup.py install
+
+QEMU:
+- https://opensourceforu.com/2011/05/quick-quide-to-qemu-setup/
+- https://www.youtube.com/watch?v=G0NNBloGIvs
+
+- git clone https://github.com/qemu/qemu.git
+- cd qemu
+- mkdir build
+  cd build
+  sudo apt-get install gcc libc6-dev pkg-config bridge-utils uml-utilities zlib1g-dev libglib2.0-dev autoconf automake libtool libsdl1.2-dev
+  sudo apt-get install libpixman-1-dev
+
+  ../configure
+  make
+
