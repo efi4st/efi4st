@@ -22,7 +22,7 @@ var INSERT_newFirmware = `INSERT INTO firmware (name, version, sizeInBytes, proj
 var DELETE_firmware = `DELETE FROM firmware WHERE firmware_id = ?;`
 
 // relevantApps
-var SELECT_firmware = `SELECT relevantApps.relevantApps_id, relevantApps.name, relevantApps.path, relevantApps.extPort, relevantApps.extProtocoll, relevantApps.intInterface, relevantApps.firmware_id, firmware.name FROM relevantApps JOIN firmware ON relevantApps.firmware_id = firmware.firmware_id;`
+var SELECT_relevantApps = `SELECT relevantApps.relevantApps_id, relevantApps.name, relevantApps.path, relevantApps.extPort, relevantApps.extProtocoll, relevantApps.intInterface, relevantApps.firmware_id, firmware.name FROM relevantApps JOIN firmware ON relevantApps.firmware_id = firmware.firmware_id;`
 var SELECT_relevantAppInfo = `SELECT relevantApps_id, name, path, extPort, extProtocoll, intInterface, firmware_id FROM relevantApps WHERE relevantApps_id = ?;`
 var SELECT_relevantAppsForFirmware = `SELECT * FROM relevantApps WHERE firmware_id = ?`
 var INSERT_newrelevantApps = `INSERT INTO relevantApps (name, path, extPort, extProtocoll, intInterface, firmware_id) VALUES (?,?,?,?,?,?);`

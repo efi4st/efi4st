@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+        <h4 class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for security testing / fuzzing.</h4>
+        <p><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+        <div class="container">
+          {% if error|length > 1 %}
+            <div class="alert alert-warning" role="alert">
+              {{error}}
+            </div>
+          {% endif %}
+        </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-8">
+            <h2>All detected Applications:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Path</th>
+                <th>extPort</th>
+                <th>extProtocoll</th>
+                <th>intInterface</th>
+                <th>Firmware</th>
+                <th><i class="fa fa-trash-o"></i></th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for relApp in relevantAppsList %}
+              <tr>
+                <td><a href="/relevantApps/show/{{ relApp.relevantApps_id }}">{{ relApp.name }}</a></td>
+                <td>{{ relApp.path }}</td>
+                <td>{{ relApp.extPort }}</td>
+                <td>{{ relApp.extProtocoll }}</td>
+                <td>{{ relApp.intInterface|truncatechars:13 }}</td>
+                <td><a href="/firmware/show/{{ relApp.firmware_id }}">{{ relApp.msg }}</a></td>
+                <td><a href="/relevantApps/remove/{{firmware.firmware_id}}" class="button"><i class="fa fa-close"></i></a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+
+
+      </div> <!-- /container -->
+      
+{% endblock %}

@@ -37,10 +37,10 @@ CREATE TABLE IF NOT EXISTS relevantApps (
    	name VARCHAR(150) NOT NULL,
 	path VARCHAR(300) DEFAULT NULL,
 	extPort INT DEFAULT NULL,
-	extProtocoll VARCHAR(300) DEFAULT NULL
+	extProtocoll VARCHAR(300) DEFAULT NULL,
 	intInterface VARCHAR(300) DEFAULT NULL,
 	firmware_id INT(11) NOT NULL,
 	PRIMARY KEY (relevantApps_id),
-	CONSTRAINT firmware_ibfk_1 FOREIGN KEY (firmware_id) REFERENCES firmware (firmware_id) ON UPDATE CASCADE ON DELETE CASCADE
+	CONSTRAINT relevantApps_ibfk_1 FOREIGN KEY (firmware_id) REFERENCES firmware (firmware_id) ON UPDATE CASCADE ON DELETE CASCADE
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 `

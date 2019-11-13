@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+        <h4 class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for security testing / fuzzing.</h4>
+        <p><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-3">
+            <ul class="list-group">
+              <li class="list-group-item">Name: {{relevantApp.name}}</li>
+              <li class="list-group-item">Date: {{ relevantApp.path}}</li>
+              <li class="list-group-item">Size: {{relevantApp.extPort}}</li>
+              <li class="list-group-item">Version: {{relevantApp.extProtocoll}}</li>
+            </ul>
+          </div>
+          <div class="col-md-3">
+              <ul class="list-group">
+                <li class="list-group-item">Name: {{firmware.name}}</li>
+              </ul>
+              <br>
+              <p><a class="btn btn-primary btn-lg" href="/modules/run/copyAndExtractFileSystem" role="button">Check out &raquo;</a></p>
+              <p><a class="btn btn-primary btn-lg" href="/modules/run/copyAndExtractFileSystem" role="button">rel. Apps &raquo;</a></p>
+          </div>
+          <div class="col-md-6">
+              <h2>Results:</h2>
+              <table class="table">
+                <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Link</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for result in projectResults %}
+                <tr>
+                  <td><a href="/results/show/{{ result.result_id }}">{{ result.name }}</a></td>
+                  <td>{{ result.date }}</td>
+                  <td><a href="/results/remove/{{ result.result_id }}">{{ result.name }}</a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+
+        </div>
+
+        <hr>
+
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}

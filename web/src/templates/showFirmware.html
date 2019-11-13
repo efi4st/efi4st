@@ -38,7 +38,6 @@
           <div class="col-md-3">
               <ul class="list-group">
                 <li class="list-group-item">Name: {{firmware.name}}</li>
-                <li class="list-group-item">Date: {{ firmware.Created|truncatechars:13}}</li>
               </ul>
               <br>
               <p><a class="btn btn-primary btn-lg" href="/modules/run/copyAndExtractFileSystem" role="button">Check out &raquo;</a></p>
@@ -65,9 +64,44 @@
               </table>
             </div>
 
-
         </div>
 
+        <hr>
+          <div class="row">
+              <div class="col-md-1">
+              </div>
+              <div class="col-md-10">
+                  <h2>Detected Applications:</h2>
+                  <table class="table">
+                      <thead>
+                      <tr>
+                          <th>Name</th>
+                          <th>Path</th>
+                          <th>extPort</th>
+                          <th>extProtocoll</th>
+                          <th>intInterface</th>
+                          <th>Firmware</th>
+                          <th><i class="fa fa-trash-o"></i></th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      {% for relApp in relevantAppsList %}
+                      <tr>
+                          <td><a href="/relevantApps/show/{{ relApp.relevantApps_id }}">{{ relApp.name }}</a></td>
+                          <td>{{ relApp.path }}</td>
+                          <td>{{ relApp.extPort }}</td>
+                          <td>{{ relApp.extProtocoll }}</td>
+                          <td>{{ relApp.intInterface|truncatechars:13 }}</td>
+                          <td><a href="/firmware/show/{{ relApp.firmware_id }}">{{ relApp.msg }}</a></td>
+                          <td><a href="/relevantApps/remove/{{firmware.firmware_id}}" class="button"><i class="fa fa-close"></i></a></td>
+                      </tr>
+                      {% endfor %}
+                      </tbody>
+                  </table>
+              </div>
+              <div class="col-md-1">
+              </div>
+          </div>
         <hr>
 
         <div class="row">

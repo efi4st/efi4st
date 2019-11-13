@@ -78,9 +78,6 @@ func irisMain()() {
 	// GET: http://localhost:8144/firmware/show/upload/xxx
 	app.Get("/firmware/show/upload/{project_id:string}", routes.ShowFirmwareUpload)
 
-	// GET: http://localhost:8144/firmware/show/apps/xxx
-	app.Get("/firmware/show/apps/{firmware_id:string}", routes.ShowFirmwareApps)
-
 	// POST: http://localhost:8144/firmware/upload/xxx
 	app.Post("/firmware/upload/{project_id:string}", iris.LimitRequestBodySize(10<<20), routes.UploadFirmware)
 
@@ -89,6 +86,15 @@ func irisMain()() {
 
 	// GET: http://localhost:8144/firmware/remove/1
 	app.Get("/firmware/remove/{id:string}", routes.RemoveFirmware)
+
+	// GET: http://localhost:8144/relevantApps
+	app.Get("/relevantApps", routes.RelevantApps)
+
+	// GET: http://localhost:8144/relevantApps/show/1
+	app.Get("/relevantApps/show/{id:string}", routes.ShowRelevantApp)
+
+	// GET: http://localhost:8144/relevantApps/remove/1
+	app.Get("/relevantApps/remove/{id:string}", routes.RemoveRelevantApp)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
