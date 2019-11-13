@@ -63,6 +63,20 @@ func ShowFirmwareUpload(ctx iris.Context) {
 	ctx.View("firmwareUpload.html")
 }
 
+// GET
+func ShowFirmwareApps(ctx iris.Context) {
+
+	id := ctx.Params().Get("firmware_id")
+	i, err := strconv.Atoi(id)
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing project Id!")
+	}
+	apps := dbprovider.GetDBManager().GetFirmwareApps(i)
+
+	ctx.ViewData("apps", apps)
+	ctx.View("showFirmwareApplications.html")
+}
+
 // POST
 func UploadFirmware(ctx iris.Context) {
 

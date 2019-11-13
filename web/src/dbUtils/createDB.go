@@ -14,4 +14,5 @@ import "github.com/jmoiron/sqlx"
 func CreateDB(db *sqlx.DB) {
 	db.MustExec(projectSchema)
 	db.MustExec(firmwareSchema)
+	db.MustExec(relevantAppsSchema)
 }

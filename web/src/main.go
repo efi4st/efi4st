@@ -54,8 +54,8 @@ func irisMain()() {
 	// GET: http://localhost:8144/documentation
 	app.Get("/documentation", routes.Documentation)
 
-	// GET: http://localhost:8144/modules/run/xxx/xxx
-	app.Get("/modules/run/{moduleName:string}/{project:string}/", routes.ModuleRun)
+	// GET: http://localhost:8144/modules/run/xxx
+	app.Get("/modules/run/{moduleName:string}", routes.ModuleRun)
 
 	// GET: http://localhost:8144/projects
 	app.Get("/projects", routes.Projects)
@@ -75,8 +75,11 @@ func irisMain()() {
 	// GET: http://localhost:8144/firmwares
 	app.Get("/firmwares", routes.Firmwares)
 
-	// GET: http://localhost:8144/firmware/upload/xxx
+	// GET: http://localhost:8144/firmware/show/upload/xxx
 	app.Get("/firmware/show/upload/{project_id:string}", routes.ShowFirmwareUpload)
+
+	// GET: http://localhost:8144/firmware/show/apps/xxx
+	app.Get("/firmware/show/apps/{firmware_id:string}", routes.ShowFirmwareApps)
 
 	// POST: http://localhost:8144/firmware/upload/xxx
 	app.Post("/firmware/upload/{project_id:string}", iris.LimitRequestBodySize(10<<20), routes.UploadFirmware)
