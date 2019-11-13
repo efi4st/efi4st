@@ -33,6 +33,7 @@ type Manager interface {
 	AddRelevantApp(relevantAppName string, path string, extPort int, extProtocoll string, intInterface string, firmware_id int)(err error)
 	RemoveRelevantApp(id int) error
 	GetRelevantAppInfo(id int) *classes.RelevantApps
+	GetAppListForFirmware(id int) []classes.RelevantApps
 }
 
 type manager struct {
@@ -315,4 +316,35 @@ func (mgr *manager) GetRelevantAppInfo(id int) (*classes.RelevantApps) {
 	var relevantApp = classes.NewRelevantApps(dbrelevantApps_id, dbName, dbPath.String, dbExtPort, dbExtProtocoll.String, dbIntInterface.String, dbFirmware_id)
 
 	return relevantApp
+}
+
+func (mgr *manager) GetAppListForFirmware(id int) (relevantApps []classes.RelevantApps) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_relevantAppsForFirmware)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(id)
+
+	var (	dbrelevantApps_id int
+		dbName string
+		dbPath sql.NullString
+		dbExtPort int
+		dbExtProtocoll sql.NullString
+		dbIntInterface sql.NullString
+		dbFirmware_id int
+		dbFirmwareName string		)
+
+	for rows.Next() {
+		err := rows.Scan(&dbrelevantApps_id, &dbName, &dbPath, &dbExtPort, &dbExtProtocoll, &dbIntInterface, &dbFirmware_id)
+		var relevantApp = classes.NewRelevantApps(dbrelevantApps_id, dbName, dbPath.String, dbExtPort, dbExtProtocoll.String, dbIntInterface.String, dbFirmware_id)
+
+		//Set FirmwareName as Msg
+		relevantApp.SetMsg(dbFirmwareName)
+		relevantApps=append(relevantApps, *relevantApp)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return relevantApps
 }

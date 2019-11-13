@@ -44,8 +44,13 @@ func ShowFirmware(ctx iris.Context) {
 	}
 
 	firmware := dbprovider.GetDBManager().GetFirmwareInfo(i)
+	relevantApps := dbprovider.GetDBManager().GetAppListForFirmware(i)
+	numberOfApps := len(relevantApps)
 
+	ctx.ViewData("relevantAppsList", relevantApps)
 	ctx.ViewData("firmware", firmware)
+	//ctx.ViewData("numberOfResults", numberOfResults)
+	ctx.ViewData("numberOfApps", numberOfApps)
 	ctx.View("showFirmware.html")
 }
 
