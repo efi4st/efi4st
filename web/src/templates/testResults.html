@@ -30,29 +30,25 @@
           <div class="col-md-2">
           </div>
           <div class="col-md-8">
-            <h2>All detected Applications:</h2>
+            <h2>All Test Results:</h2>
             <table class="table">
               <thead>
               <tr>
-                <th>Name</th>
+                <th>Module Name</th>
                 <th>Path</th>
-                <th>extPort</th>
-                <th>extProtocoll</th>
-                <th>intInterface</th>
+                <th>Exec</th>
                 <th>Firmware</th>
                 <th><i class="fa fa-trash-o"></i></th>
               </tr>
               </thead>
               <tbody>
-              {% for relApp in relevantAppsList %}
+              {% for testResult in testResultsList %}
               <tr>
-                <td><a href="/relevantApps/show/{{ relApp.relevantApps_id }}">{{ relApp.name }}</a></td>
-                <td>{{ relApp.path }}</td>
-                <td>{{ relApp.extPort }}</td>
-                <td>{{ relApp.extProtocoll }}</td>
-                <td>{{ relApp.intInterface|truncatechars:13 }}</td>
-                <td><a href="/firmware/show/{{ relApp.firmware_id }}">{{ relApp.msg }}</a></td>
-                <td><a href="/relevantApps/remove/{{relApp.relevantApps_id}}" class="button"><i class="fa fa-close"></i></a></td>
+                <td><a href="/testResults/show/{{ testResult.testResult_id }}">{{ testResult.moduleName }}</a></td>
+                <td>{{ testResult.path }}</td>
+                <td>{{ testResult.Created }}</td>
+                <td><a href="/firmware/show/{{ testResult.firmware_id }}">{{ testResult.msg }}</a></td>
+                <td><a href="/testResults/remove/{{testResult.testResult_id}}" class="button"><i class="fa fa-close"></i></a></td>
               </tr>
               {% endfor %}
               </tbody>

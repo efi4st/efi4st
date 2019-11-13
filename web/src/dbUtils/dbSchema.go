@@ -44,3 +44,15 @@ CREATE TABLE IF NOT EXISTS relevantApps (
 	CONSTRAINT relevantApps_ibfk_1 FOREIGN KEY (firmware_id) REFERENCES firmware (firmware_id) ON UPDATE CASCADE ON DELETE CASCADE
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 `
+
+var testResultSchema = `
+CREATE TABLE IF NOT EXISTS testResult (
+	testResult_id INT(11) NOT NULL AUTO_INCREMENT,
+   	moduleName VARCHAR(150) NOT NULL,
+	path VARCHAR(300) DEFAULT NULL,
+	created DATE NOT NULL,
+	firmware_id INT(11) NOT NULL,
+	PRIMARY KEY (testResult_id),
+	CONSTRAINT testResult_ibfk_1 FOREIGN KEY (firmware_id) REFERENCES firmware (firmware_id) ON UPDATE CASCADE ON DELETE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+`

@@ -28,5 +28,9 @@ var SELECT_relevantAppsForFirmware = `SELECT * FROM relevantApps WHERE firmware_
 var INSERT_newrelevantApps = `INSERT INTO relevantApps (name, path, extPort, extProtocoll, intInterface, firmware_id) VALUES (?,?,?,?,?,?);`
 var DELETE_relevantApps = `DELETE FROM relevantApps WHERE relevantApps_id = ?;`
 
-
 // Results
+var SELECT_results = `SELECT testResult.testResult_id, testResult.moduleName, testResult.path, testResult.created, testResult.firmware_id, firmware.name FROM testResult JOIN firmware ON testResult.firmware_id = firmware.firmware_id;`
+var SELECT_resultInfo = `SELECT testResult.testResult_id, testResult.moduleName, testResult.path, testResult.created, testResult.firmware_id, firmware.name FROM testResult JOIN firmware ON testResult.firmware_id = firmware.firmware_id WHERE testResult.testResult_id = ?;`
+var SELECT_resultsForFirmware = `SELECT * FROM testResult WHERE firmware_id = ?`
+var INSERT_newresults = `INSERT INTO testResult (moduleName, path, created, firmware_id) VALUES (?,?,?,?);`
+var DELETE_result = `DELETE FROM testResult WHERE testResult_id = ?;`

@@ -96,6 +96,16 @@ func irisMain()() {
 	// GET: http://localhost:8144/relevantApps/remove/1
 	app.Get("/relevantApps/remove/{id:string}", routes.RemoveRelevantApp)
 
+
+	// GET: http://localhost:8144/testResults
+	app.Get("/testResults", routes.TestResults)
+
+	// GET: http://localhost:8144/testResults/show/1
+	app.Get("/testResults/show/{id:string}", routes.ShowTestResult)
+
+	// GET: http://localhost:8144/testResults/remove/1
+	app.Get("/testResults/remove/{id:string}", routes.RemoveTestResult)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

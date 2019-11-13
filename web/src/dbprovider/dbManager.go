@@ -34,6 +34,11 @@ type Manager interface {
 	RemoveRelevantApp(id int) error
 	GetRelevantAppInfo(id int) *classes.RelevantApps
 	GetAppListForFirmware(id int) []classes.RelevantApps
+	GetTestResults() []classes.TestResult
+	AddTestResult(moduleName string, path string, created time.Time, firmware_id int) (err error)
+	RemoveTestResult(id int) error
+	GetTestResultInfo(id int) *classes.TestResult
+	GetTestResultForFirmware(id int) []classes.TestResult
 }
 
 type manager struct {
@@ -331,15 +336,12 @@ func (mgr *manager) GetAppListForFirmware(id int) (relevantApps []classes.Releva
 		dbExtPort int
 		dbExtProtocoll sql.NullString
 		dbIntInterface sql.NullString
-		dbFirmware_id int
-		dbFirmwareName string		)
+		dbFirmware_id int	)
 
 	for rows.Next() {
 		err := rows.Scan(&dbrelevantApps_id, &dbName, &dbPath, &dbExtPort, &dbExtProtocoll, &dbIntInterface, &dbFirmware_id)
 		var relevantApp = classes.NewRelevantApps(dbrelevantApps_id, dbName, dbPath.String, dbExtPort, dbExtProtocoll.String, dbIntInterface.String, dbFirmware_id)
 
-		//Set FirmwareName as Msg
-		relevantApp.SetMsg(dbFirmwareName)
 		relevantApps=append(relevantApps, *relevantApp)
 		if err != nil {
 			log.Fatal(err)
@@ -347,4 +349,109 @@ func (mgr *manager) GetAppListForFirmware(id int) (relevantApps []classes.Releva
 	}
 
 	return relevantApps
+}
+
+/////////////////////////////////////////
+////	Test Results
+////////////////////////////////////////
+func (mgr *manager) GetTestResults() (testResults []classes.TestResult){
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_results)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+
+	var (	dbTestResult_id int
+			dbModuleName string
+			dbPath sql.NullString
+			dbCreated time.Time
+			dbFirmware_id int
+			dbFirmwareName string	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbTestResult_id, &dbModuleName, &dbPath, &dbCreated, &dbFirmware_id, &dbFirmwareName)
+		var testResult = classes.NewTestResult(dbTestResult_id, dbModuleName, dbPath.String, dbCreated, dbFirmware_id)
+
+		//Set FirmwareName as Msg
+		testResult.SetMsg(dbFirmwareName)
+		testResults=append(testResults, *testResult)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return testResults
+}
+
+func (mgr *manager) AddTestResult(moduleName string, path string, created time.Time, firmware_id int) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newresults)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(moduleName , path , created, firmware_id)
+
+	if rows == nil{
+		fmt.Print(err)
+	}
+
+	return err
+}
+
+func (mgr *manager) RemoveTestResult(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_result)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+func (mgr *manager) GetTestResultInfo(id int) (*classes.TestResult) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_resultInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbTestResult_id int
+			dbModuleName string
+			dbPath sql.NullString
+			dbCreated time.Time
+			dbFirmware_id int
+			dbFirmwareName string)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbTestResult_id, &dbModuleName, &dbPath, &dbCreated, &dbFirmware_id, &dbFirmwareName)
+	var testResult = classes.NewTestResult(dbTestResult_id, dbModuleName, dbPath.String, dbCreated, dbFirmware_id)
+
+	testResult.SetMsg(dbFirmwareName)
+
+	return testResult
+}
+
+func (mgr *manager) GetTestResultForFirmware(id int) (testResults []classes.TestResult) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_resultsForFirmware)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(id)
+
+	var (	dbTestResult_id int
+			dbModuleName string
+			dbPath sql.NullString
+			dbCreated time.Time
+			dbFirmware_id int	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbTestResult_id, &dbModuleName, &dbPath, &dbCreated, &dbFirmware_id)
+		var testResult = classes.NewTestResult(dbTestResult_id, dbModuleName, dbPath.String, dbCreated, dbFirmware_id)
+
+		//Set FirmwareName as Msg
+		testResults=append(testResults, *testResult)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return testResults
 }
