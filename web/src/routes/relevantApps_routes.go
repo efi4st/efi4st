@@ -9,8 +9,10 @@ package routes
 
 import (
 	"../dbprovider"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -44,6 +46,27 @@ func ShowRelevantApp(ctx iris.Context) {
 
 	ctx.ViewData("relevantApp", relevantApp)
 	ctx.View("showRelevantApp.html")
+}
+
+func DownloadRelevantApp(ctx iris.Context) {
+
+	id := ctx.Params().Get("id")
+
+	i, err := strconv.Atoi(id)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing firmware Id!")
+	}
+
+	dir, err := os.Getwd()
+	fmt.Printf(dir)
+
+	relevantApp := dbprovider.GetDBManager().GetRelevantAppInfo(i)
+
+	file := dir+"/../../working/filesystem" + relevantApp.Path()
+	ctx.SendFile(file, relevantApp.Name())
+
 }
 
 

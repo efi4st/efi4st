@@ -93,6 +93,9 @@ func irisMain()() {
 	// GET: http://localhost:8144/relevantApps/show/1
 	app.Get("/relevantApps/show/{id:string}", routes.ShowRelevantApp)
 
+	// GET: http://localhost:8144/relevantApps/download/1
+	app.Get("/relevantApps/download/{id:string}", routes.DownloadRelevantApp)
+
 	// GET: http://localhost:8144/relevantApps/remove/1
 	app.Get("/relevantApps/remove/{id:string}", routes.RemoveRelevantApp)
 

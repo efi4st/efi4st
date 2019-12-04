@@ -31,11 +31,11 @@
             <ul class="list-group">
               <li class="list-group-item">Name: {{relevantApp.name}}</li>
               <li class="list-group-item">Path: {{ relevantApp.path}}</li>
-                <li class="list-group-item"><a href="/firmware/show/{{ relevantApp.firmware_id }}">Back</a></li>
+                <li class="list-group-item"><a href="/firmware/show/{{ relevantApp.firmware_id }}">Back to Firmware</a></li>
             </ul>
           </div>
           <div class="col-md-9">
-
+              <p><a class="btn btn-primary btn-lg" href="/relevantApps/download/{{relevantApp.relevantApps_id}}" role="button">Download &raquo;</a></p>
           </div>
 
 
@@ -50,7 +50,7 @@
                       <tr>
                           <th>Module</th>
                           <th>Description</th>
-                          <th>Exec.</th>
+                          <th>Detect</th>
                       </tr>
                       </thead>
                       <tbody>
@@ -86,7 +86,7 @@
                       <tr>
                           <th>Module</th>
                           <th>Description</th>
-                          <th>Exec.</th>
+                          <th>Detect</th>
                       </tr>
                       </thead>
                       <tbody>
@@ -119,7 +119,7 @@
                       <tr>
                           <th>Module</th>
                           <th>Description</th>
-                          <th>Exec.</th>
+                          <th>Detect</th>
                       </tr>
                       </thead>
                       <tbody>
@@ -142,7 +142,7 @@
                       <tr>
                           <th>Module</th>
                           <th>Description</th>
-                          <th>Exec.</th>
+                          <th>Detect</th>
                       </tr>
                       </thead>
                       <tbody>

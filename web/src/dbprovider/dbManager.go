@@ -299,11 +299,46 @@ func (mgr *manager) AddRelevantApp(relevantAppName string, path string, extPort 
 
 func (mgr *manager) UpdateRelevantApp(column string, relevantApp_id string) (err error) {
 
-	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_relevantApp)
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleDefault)
+
+	switch column {
+	case "moduleDefault":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleDefault)
+	case "moduleInitSystem":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleInitSystem)
+	case "moduleFileContent":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleFileContent)
+	case "moduleBash":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleBash)
+	case "moduleCronJob":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleCronJob)
+	case "moduleProcesses":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleProcesses)
+	case "moduleInterfaces":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleInterfaces)
+	case "moduleSystemControls":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleSystemControls)
+	case "moduleFileSystem":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleFileSystem)
+	case "modulePortscanner":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmodulePortscanner)
+	case "moduleProtocolls":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleProtocolls)
+	case "moduleNetInterfaces":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleNetInterfaces)
+	case "moduleFileSystemInterfaces":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleFileSystemInterfaces)
+	case "moduleFileHandles":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_relevantAppmoduleFileHandles)
+
+	default:
+		fmt.Printf("Error updating relevant app! Unknown column!");
+	}
+
 	if err != nil{
 		fmt.Print(err)
 	}
-	rows, err := stmt.Query(column, 1, relevantApp_id)
+	rows, err := stmt.Query(1, relevantApp_id)
 
 	if rows == nil{
 		fmt.Print(err)

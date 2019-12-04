@@ -93,7 +93,7 @@ func (rAD *resultAnalysisDispatcher) analyzeExecutableFinder(result string, firm
 			name := path[1][lastIndex+1:len(path[1])]
 			dbprovider.GetDBManager().AddRelevantApp(name, path[1], 0, "", "", firmwareId)
 			id := dbprovider.GetDBManager().GetRelevantAppByPath(path[1], firmwareId)
-			dbprovider.GetDBManager().UpdateRelevantApp("moduleCronJob",strconv.Itoa(id))
+			dbprovider.GetDBManager().UpdateRelevantApp("moduleDefault",strconv.Itoa(id))
 		}
 		i = i + 1
 		if(i%15==0){
