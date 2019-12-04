@@ -14,9 +14,11 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
+	"sort"
 	"strconv"
 	"time"
 	_ "github.com/go-sql-driver/mysql"
+	"../utils"
 )
 
 type Manager interface {
@@ -488,6 +490,8 @@ func (mgr *manager) GetAppListForFirmware(id int) (relevantApps []classes.Releva
 			log.Fatal(err)
 		}
 	}
+
+	sort.Sort(utils.RelevantAppsByScoreSorter(relevantApps))
 
 	return relevantApps
 }
