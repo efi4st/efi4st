@@ -25,16 +25,41 @@
       </div>
 
       <div class="container">
+        <div class="row">
+          <div class="col-md-2">
+
+          </div>
+          <div class="col-md-8">
+            <form action="/testResults/addRelevantApp/{{ testResult.firmware_id }}" method="post">
+              <div class="form-group">
+                <label for="relevantAppByHand">Add relevant app by hand:</label>
+                <input type="text" class="form-control" id="RelevantAppByHand" name="RelevantAppByHand" placeholder="/bin/app">
+              </div>
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+            <br/>
+          </div>
+          <div class="col-md-2">
+
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
 
         <div class="row">
-          <div class="col-md-3">
+          <div class="col-md-2">
             <ul class="list-group">
-              <li class="list-group-item">Module: {{testResult.moduleName}}</li>
-              <li class="list-group-item">Path: {{ testResult.path}}</li>
+              <li class="list-group-item">Modul: {{testResult.moduleName}}</li>
               <li class="list-group-item">Date: {{testResult.Created}}</li>
-              <li class="list-group-item"><a href="/firmwares/show/{{ testResult.firmware_id }}">Firmware: {{testResult.msg}}</a></li>
+              <li class="list-group-item"><a href="/firmware/show/{{ testResult.firmware_id }}">Back</a></li>
             </ul>
           </div>
+          <div class="col-md-10">
+              <ul class="list-group">
+                <li class="list-group-item"><div style="white-space: pre-wrap">{{testResult.result}}</div></li>
+              </ul>
+            </div>
 
 
 

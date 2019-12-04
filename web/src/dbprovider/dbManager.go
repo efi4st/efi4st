@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
+	"strconv"
 	"time"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -38,7 +39,9 @@ type Manager interface {
 	AddTestResult(moduleName string, path string, created time.Time, firmware_id int) (err error)
 	RemoveTestResult(id int) error
 	GetTestResultInfo(id int) *classes.TestResult
-	GetTestResultForFirmware(id int) []classes.TestResult
+	GetResultListForFirmware(id int) []classes.TestResult
+	GetRelevantAppByPath(path string, firmwareId int) int
+	UpdateRelevantApp(column string, relevantApp_id string) error
 }
 
 type manager struct {
@@ -289,6 +292,23 @@ func (mgr *manager) AddRelevantApp(relevantAppName string, path string, extPort 
 	if rows == nil{
 		fmt.Print(err)
 	}
+	rows.Close()
+
+	return err
+}
+
+func (mgr *manager) UpdateRelevantApp(column string, relevantApp_id string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_relevantApp)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(column, 1, relevantApp_id)
+
+	if rows == nil{
+		fmt.Print(err)
+	}
+	rows.Close()
 
 	return err
 }
@@ -313,14 +333,55 @@ func (mgr *manager) GetRelevantAppInfo(id int) (*classes.RelevantApps) {
 		dbExtPort int
 		dbExtProtocoll sql.NullString
 		dbIntInterface sql.NullString
+		dbmoduleDefault sql.NullBool
+		dbmoduleInitSystem sql.NullBool
+		dbmoduleFileContent sql.NullBool
+		dbmoduleBash sql.NullBool
+		dbmoduleCronJob sql.NullBool
+		dbmoduleProcesses sql.NullBool
+		dbmoduleInterfaces sql.NullBool
+		dbmoduleSystemControls sql.NullBool
+		dbmoduleFileSystem sql.NullBool
+		dbmodulePortscanner sql.NullBool
+		dbmoduleProtocolls sql.NullBool
+		dbmoduleNetInterfaces sql.NullBool
+		dbmoduleFileSystemInterfaces sql.NullBool
+		dbmoduleFileHandles sql.NullBool
 		dbFirmware_id int			)
 
 	row := stmt.QueryRow(id)
-	row.Scan(&dbrelevantApps_id, &dbName, &dbPath, &dbExtPort, &dbExtProtocoll, &dbIntInterface, &dbFirmware_id)
+	row.Scan(&dbrelevantApps_id, &dbName, &dbPath, &dbExtPort, &dbExtProtocoll, &dbIntInterface, &dbmoduleDefault, &dbmoduleInitSystem, &dbmoduleFileContent, &dbmoduleBash, &dbmoduleCronJob, &dbmoduleProcesses, &dbmoduleInterfaces, &dbmoduleSystemControls, &dbmoduleFileSystem, &dbmodulePortscanner, &dbmoduleProtocolls, &dbmoduleNetInterfaces, &dbmoduleFileSystemInterfaces, &dbmoduleFileHandles, &dbFirmware_id)
 
 	var relevantApp = classes.NewRelevantApps(dbrelevantApps_id, dbName, dbPath.String, dbExtPort, dbExtProtocoll.String, dbIntInterface.String, dbFirmware_id)
+	relevantApp.SetModuleDefault(dbmoduleDefault.Bool)
+	relevantApp.SetModuleInitSystem(dbmoduleInitSystem.Bool)
+	relevantApp.SetModuleFileContent(dbmoduleFileContent.Bool)
+	relevantApp.SetModuleBash(dbmoduleBash.Bool)
+	relevantApp.SetModuleCronJob(dbmoduleCronJob.Bool)
+	relevantApp.SetModuleProcesses(dbmoduleProcesses.Bool)
+	relevantApp.SetModuleInterfaces(dbmoduleInterfaces.Bool)
+	relevantApp.SetModuleSystemControls(dbmoduleSystemControls.Bool)
+	relevantApp.SetModuleFileSystem(dbmoduleFileSystem.Bool)
+	relevantApp.SetModulePortscanner(dbmodulePortscanner.Bool)
+	relevantApp.SetModuleProtocolls(dbmoduleProtocolls.Bool)
+	relevantApp.SetModuleNetInterfaces(dbmoduleNetInterfaces.Bool)
+	relevantApp.SetModuleFileSystemInterfaces(dbmoduleFileSystemInterfaces.Bool)
+	relevantApp.SetModuleFileHandles(dbmoduleFileHandles.Bool)
 
 	return relevantApp
+}
+
+func (mgr *manager) GetRelevantAppByPath(path string, firmwareId int) (appId int) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_relevantAppByPath)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbrelevantApps_id int
+									)
+	row := stmt.QueryRow(path, firmwareId)
+	row.Scan(&dbrelevantApps_id)
+	return dbrelevantApps_id
 }
 
 func (mgr *manager) GetAppListForFirmware(id int) (relevantApps []classes.RelevantApps) {
@@ -336,12 +397,57 @@ func (mgr *manager) GetAppListForFirmware(id int) (relevantApps []classes.Releva
 		dbExtPort int
 		dbExtProtocoll sql.NullString
 		dbIntInterface sql.NullString
-		dbFirmware_id int	)
+		dbmoduleDefault sql.NullBool
+		dbmoduleInitSystem sql.NullBool
+		dbmoduleFileContent sql.NullBool
+		dbmoduleBash sql.NullBool
+		dbmoduleCronJob sql.NullBool
+		dbmoduleProcesses sql.NullBool
+		dbmoduleInterfaces sql.NullBool
+		dbmoduleSystemControls sql.NullBool
+		dbmoduleFileSystem sql.NullBool
+		dbmodulePortscanner sql.NullBool
+		dbmoduleProtocolls sql.NullBool
+		dbmoduleNetInterfaces sql.NullBool
+		dbmoduleFileSystemInterfaces sql.NullBool
+		dbmoduleFileHandles sql.NullBool
+		dbFirmware_id int			)
 
 	for rows.Next() {
-		err := rows.Scan(&dbrelevantApps_id, &dbName, &dbPath, &dbExtPort, &dbExtProtocoll, &dbIntInterface, &dbFirmware_id)
+		err := rows.Scan(&dbrelevantApps_id, &dbName, &dbPath, &dbExtPort, &dbExtProtocoll, &dbIntInterface, &dbmoduleDefault, &dbmoduleInitSystem, &dbmoduleFileContent, &dbmoduleBash, &dbmoduleCronJob, &dbmoduleProcesses, &dbmoduleInterfaces, &dbmoduleSystemControls, &dbmoduleFileSystem, &dbmodulePortscanner, &dbmoduleProtocolls, &dbmoduleNetInterfaces, &dbmoduleFileSystemInterfaces, &dbmoduleFileHandles, &dbFirmware_id)
 		var relevantApp = classes.NewRelevantApps(dbrelevantApps_id, dbName, dbPath.String, dbExtPort, dbExtProtocoll.String, dbIntInterface.String, dbFirmware_id)
+		count:= 0
+		if(dbmoduleDefault.Bool){
+			count++
+		}else if(dbmoduleInitSystem.Bool){
+			count++
+		}else if(dbmoduleFileContent.Bool){
+			count++
+		} else if(dbmoduleBash.Bool){
+			count++
+		}else if(dbmoduleCronJob.Bool){
+			count++
+		} else if(dbmoduleProcesses.Bool){
+			count++
+		} else if(dbmoduleInterfaces.Bool){
+			count++
+		} else if(dbmoduleSystemControls.Bool){
+			count++
+		} else if(dbmoduleFileSystem.Bool){
+			count++
+		} else if(dbmodulePortscanner.Bool){
+			count++
+		} else if(dbmoduleProtocolls.Bool){
+			count++
+		} else if(dbmoduleNetInterfaces.Bool){
+			count++
+		} else if(dbmoduleFileSystemInterfaces.Bool){
+			count++
+		} else if(dbmoduleFileHandles.Bool){
+			count++
+		}
 
+		relevantApp.SetMsg(strconv.Itoa(count))
 		relevantApps=append(relevantApps, *relevantApp)
 		if err != nil {
 			log.Fatal(err)
@@ -349,6 +455,31 @@ func (mgr *manager) GetAppListForFirmware(id int) (relevantApps []classes.Releva
 	}
 
 	return relevantApps
+}
+
+func (mgr *manager) GetResultListForFirmware(id int) (firmwareResults []classes.TestResult) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_resultsForFirmware)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(id)
+	
+	var (	dbTestResult_id int
+			dbModuleName string
+			dbCreated time.Time
+			dbFirmware_id int	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbTestResult_id, &dbModuleName, &dbCreated, &dbFirmware_id)
+		var firmwareResult = classes.NewTestResult(dbTestResult_id, dbModuleName, "", dbCreated, dbFirmware_id)
+
+		firmwareResults=append(firmwareResults, *firmwareResult)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return firmwareResults
 }
 
 /////////////////////////////////////////
@@ -364,14 +495,14 @@ func (mgr *manager) GetTestResults() (testResults []classes.TestResult){
 
 	var (	dbTestResult_id int
 			dbModuleName string
-			dbPath sql.NullString
+			dbResult sql.NullString
 			dbCreated time.Time
 			dbFirmware_id int
 			dbFirmwareName string	)
 
 	for rows.Next() {
-		err := rows.Scan(&dbTestResult_id, &dbModuleName, &dbPath, &dbCreated, &dbFirmware_id, &dbFirmwareName)
-		var testResult = classes.NewTestResult(dbTestResult_id, dbModuleName, dbPath.String, dbCreated, dbFirmware_id)
+		err := rows.Scan(&dbTestResult_id, &dbModuleName, &dbResult, &dbCreated, &dbFirmware_id, &dbFirmwareName)
+		var testResult = classes.NewTestResult(dbTestResult_id, dbModuleName, dbResult.String, dbCreated, dbFirmware_id)
 
 		//Set FirmwareName as Msg
 		testResult.SetMsg(dbFirmwareName)
@@ -384,13 +515,13 @@ func (mgr *manager) GetTestResults() (testResults []classes.TestResult){
 	return testResults
 }
 
-func (mgr *manager) AddTestResult(moduleName string, path string, created time.Time, firmware_id int) (err error) {
+func (mgr *manager) AddTestResult(moduleName string, result string, created time.Time, firmware_id int) (err error) {
 
 	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newresults)
 	if err != nil{
 		fmt.Print(err)
 	}
-	rows, err := stmt.Query(moduleName , path , created, firmware_id)
+	rows, err := stmt.Query(moduleName , result , created, firmware_id)
 
 	if rows == nil{
 		fmt.Print(err)
@@ -415,43 +546,17 @@ func (mgr *manager) GetTestResultInfo(id int) (*classes.TestResult) {
 
 	var (	dbTestResult_id int
 			dbModuleName string
-			dbPath sql.NullString
+			dbResult sql.NullString
 			dbCreated time.Time
 			dbFirmware_id int
 			dbFirmwareName string)
 
 	row := stmt.QueryRow(id)
-	row.Scan(&dbTestResult_id, &dbModuleName, &dbPath, &dbCreated, &dbFirmware_id, &dbFirmwareName)
-	var testResult = classes.NewTestResult(dbTestResult_id, dbModuleName, dbPath.String, dbCreated, dbFirmware_id)
+	row.Scan(&dbTestResult_id, &dbModuleName, &dbResult, &dbCreated, &dbFirmware_id, &dbFirmwareName)
+	var testResult = classes.NewTestResult(dbTestResult_id, dbModuleName, dbResult.String, dbCreated, dbFirmware_id)
 
 	testResult.SetMsg(dbFirmwareName)
 
 	return testResult
 }
 
-func (mgr *manager) GetTestResultForFirmware(id int) (testResults []classes.TestResult) {
-	stmt, err := mgr.db.Prepare(dbUtils.SELECT_resultsForFirmware)
-	if err != nil{
-		fmt.Print(err)
-	}
-	rows, err := stmt.Query(id)
-
-	var (	dbTestResult_id int
-			dbModuleName string
-			dbPath sql.NullString
-			dbCreated time.Time
-			dbFirmware_id int	)
-
-	for rows.Next() {
-		err := rows.Scan(&dbTestResult_id, &dbModuleName, &dbPath, &dbCreated, &dbFirmware_id)
-		var testResult = classes.NewTestResult(dbTestResult_id, dbModuleName, dbPath.String, dbCreated, dbFirmware_id)
-
-		//Set FirmwareName as Msg
-		testResults=append(testResults, *testResult)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	return testResults
-}

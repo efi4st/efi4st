@@ -54,8 +54,8 @@ func irisMain()() {
 	// GET: http://localhost:8144/documentation
 	app.Get("/documentation", routes.Documentation)
 
-	// GET: http://localhost:8144/modules/run/xxx
-	app.Get("/modules/run/{moduleName:string}", routes.ModuleRun)
+	// GET: http://localhost:8144/modules/run/xxx/xxx
+	app.Get("/modules/run/{moduleName:string}/{firmwareId:string}", routes.ModuleRun)
 
 	// GET: http://localhost:8144/projects
 	app.Get("/projects", routes.Projects)
@@ -96,7 +96,6 @@ func irisMain()() {
 	// GET: http://localhost:8144/relevantApps/remove/1
 	app.Get("/relevantApps/remove/{id:string}", routes.RemoveRelevantApp)
 
-
 	// GET: http://localhost:8144/testResults
 	app.Get("/testResults", routes.TestResults)
 
@@ -105,6 +104,12 @@ func irisMain()() {
 
 	// GET: http://localhost:8144/testResults/remove/1
 	app.Get("/testResults/remove/{id:string}", routes.RemoveTestResult)
+
+	// POST: http://localhost:8144/testResults/addResultSet/xxx
+	app.Post("/testResults/addResultSet/{project_id:string}", iris.LimitRequestBodySize(10<<20), routes.AddResultSet)
+
+	// POST: http://localhost:8144/testResults/addRelevantApp/xxx
+	app.Post("/testResults/addRelevantApp/{project_id:string}", iris.LimitRequestBodySize(10<<20), routes.AddRelevantApp)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

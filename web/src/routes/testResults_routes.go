@@ -9,9 +9,15 @@ package routes
 
 import (
 	"../dbprovider"
+	"../analysis"
+	"encoding/json"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris"
+	"io/ioutil"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func TestResults(ctx iris.Context) {
@@ -40,6 +46,9 @@ func ShowTestResult(ctx iris.Context) {
 	}
 
 	testResult := dbprovider.GetDBManager().GetTestResultInfo(i)
+	testResult.SetResult( strings.Replace(testResult.Result(), "../../working/filesystem", "[testtarget] -> ", -1))
+
+	fmt.Printf(testResult.Result())
 
 	ctx.ViewData("testResult", testResult)
 	ctx.View("showTestResult.html")
@@ -64,6 +73,33 @@ func RemoveTestResult(ctx iris.Context) {
 	ctx.View("testResults.html")
 }
 
+type TestResultMsg struct {
+	Result string `json:"result"`
+	Source string `json:"source"`
+}
+
+// POST
+func AddResultSet(ctx iris.Context) {
+
+	id := ctx.Params().Get("project_id")
+	dt := time.Now()
+	i, err := strconv.Atoi(id)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing project Id!")
+	}
+
+	body, _ := ioutil.ReadAll(ctx.Request().Body)
+	result := TestResultMsg{}
+	json.Unmarshal([]byte(body), &result)
+
+	dbprovider.GetDBManager().AddTestResult(result.Source, result.Result, dt, i)
+
+	err = analysis.GetResultAnalysisDispatcher().DispatchResult(result.Source, result.Result, i)
+
+	ctx.Writef("Result set received!")
+}
 
 
 

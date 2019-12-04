@@ -21,7 +21,7 @@ func ModuleRun(ctx iris.Context) {
 
 	var (
 		moduleName = ctx.Params().Get("moduleName")
-		project = ctx.Params().Get("project")
+		firmwareId = ctx.Params().Get("firmwareId")
 	)
 
 	dir, err := os.Getwd()
@@ -29,10 +29,10 @@ func ModuleRun(ctx iris.Context) {
 		log.Fatal(err)
 	}
 
-	path := filepath.FromSlash(dir +"../../modules/python/")
-	fmt.Println("Starting "+ moduleName +" on project "+ project+":")
+	path := filepath.FromSlash(dir +"/../../modules/shell/")
+	fmt.Println("Starting "+ moduleName +" on project "+ firmwareId+":"+path+moduleName)
 
-	var cmd = exec.Command("python", path+moduleName, "-c", "-m", "-r", "report", dir)
+	var cmd = exec.Command("/bin/sh", path+moduleName, firmwareId)
 	out, err := cmd.Output()
 
 	if err != nil {
@@ -42,5 +42,5 @@ func ModuleRun(ctx iris.Context) {
 
 	fmt.Println(string(out))
 
-	ctx.Redirect("/")
+	ctx.Redirect("/firmware/show/"+firmwareId)
 }

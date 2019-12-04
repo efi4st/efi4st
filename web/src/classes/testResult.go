@@ -12,7 +12,7 @@ import "time"
 type TestResult struct {
 	testResult_id int `db:"testResult_id"`
 	moduleName string `db:"moduleName"`
-	path string `db:"path"`
+	result string `db:"result"`
 	Created time.Time `db:"created"`
 	firmware_id int `db:"firmware_id"`
 	msg string
@@ -39,12 +39,12 @@ func (t *TestResult) SetFirmware_id(firmware_id int) {
 	t.firmware_id = firmware_id
 }
 
-func (t *TestResult) Path() string {
-	return t.path
+func (t *TestResult) Result() string {
+	return t.result
 }
 
-func (t *TestResult) SetPath(path string) {
-	t.path = path
+func (t *TestResult) SetResult(result string) {
+	t.result = result
 }
 
 func (t *TestResult) ModuleName() string {
@@ -63,7 +63,7 @@ func (t *TestResult) SetTestResult_id(testResult_id int) {
 	t.testResult_id = testResult_id
 }
 
-func NewTestResult(testResult_id int, moduleName string, path string, created time.Time, firmware_id int) *TestResult {
-	return &TestResult{testResult_id: testResult_id, moduleName: moduleName, path: path, Created: created, firmware_id: firmware_id}
+func NewTestResult(testResult_id int, moduleName string, result string, created time.Time, firmware_id int) *TestResult {
+	return &TestResult{testResult_id: testResult_id, moduleName: moduleName, result: result, Created: created, firmware_id: firmware_id}
 }
 

@@ -12,6 +12,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris"
 	"strconv"
+	"strings"
 )
 
 func RelevantApps(ctx iris.Context) {
@@ -63,6 +64,26 @@ func RemoveRelevantApp(ctx iris.Context) {
 	ctx.ViewData("relevantAppsList", relevantApps)
 	ctx.View("relevantApps.html")
 }
+
+// POST
+func AddRelevantApp(ctx iris.Context) {
+
+	id := ctx.Params().Get("project_id")
+	relevantAppByHand := ctx.PostValue("RelevantAppByHand")
+	i, err := strconv.Atoi(id)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing project Id!")
+	}
+
+	lastIndex := strings.LastIndex(relevantAppByHand,"/")
+	name := relevantAppByHand[lastIndex+1:len(relevantAppByHand)]
+	dbprovider.GetDBManager().AddRelevantApp(name, relevantAppByHand, 0, "", "", i)
+
+	ctx.Redirect("/firmware/show/"+id)
+}
+
 
 
 

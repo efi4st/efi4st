@@ -30,45 +30,141 @@
           <div class="col-md-3">
             <ul class="list-group">
               <li class="list-group-item">Name: {{relevantApp.name}}</li>
-              <li class="list-group-item">Date: {{ relevantApp.path}}</li>
-              <li class="list-group-item">Size: {{relevantApp.extPort}}</li>
-              <li class="list-group-item">Version: {{relevantApp.extProtocoll}}</li>
+              <li class="list-group-item">Path: {{ relevantApp.path}}</li>
+                <li class="list-group-item"><a href="/firmware/show/{{ relevantApp.firmware_id }}">Back</a></li>
             </ul>
           </div>
-          <div class="col-md-3">
-              <ul class="list-group">
-                <li class="list-group-item">Name: {{firmware.name}}</li>
-              </ul>
-              <br>
-              <p><a class="btn btn-primary btn-lg" href="/modules/run/copyAndExtractFileSystem" role="button">Check out &raquo;</a></p>
-              <p><a class="btn btn-primary btn-lg" href="/modules/run/copyAndExtractFileSystem" role="button">rel. Apps &raquo;</a></p>
+          <div class="col-md-9">
+
           </div>
-          <div class="col-md-6">
-              <h2>Results:</h2>
-              <table class="table">
-                <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Date</th>
-                  <th>Link</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for result in projectResults %}
-                <tr>
-                  <td><a href="/results/show/{{ result.result_id }}">{{ result.name }}</a></td>
-                  <td>{{ result.date }}</td>
-                  <td><a href="/results/remove/{{ result.result_id }}">{{ result.name }}</a></td>
-                </tr>
-                {% endfor %}
-                </tbody>
-              </table>
-            </div>
 
 
         </div>
+          <br/>
+          <hr/>
+          <div class="row">
+              <div class="col-md-6">
+                  <h5>Static Analysis</h5>
+                  <table class="table">
+                      <thead>
+                      <tr>
+                          <th>Module</th>
+                          <th>Description</th>
+                          <th>Exec.</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <tr>
+                          <td><a>Executable Finder</a></td>
+                          <td>All exec. binaries of system</td>
+                          <td> {% if relevantApp.moduleDefault %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      <tr>
+                          <td><a>Init System</a></td>
+                          <td>Check Init system for start apps</td>
+                          <td> {% if relevantApp.moduleInitSystem %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      <tr>
+                          <td><a>File Content</a></td>
+                          <td>Check file content for starts</td>
+                          <td> {% if relevantApp.moduleFileContent %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      <tr>
+                          <td><a>Bash Init</a></td>
+                          <td>Check bash initialization</td>
+                          <td> {% if relevantApp.moduleBash %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>
+                      </tr>
+                      <tr>
+                          <td><a>Cron Jobs</a></td>
+                          <td>Search Cron Jobs</td>
+                          <td> {% if relevantApp.moduleCronJob %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                     </tr>
+                      </tbody>
+                  </table>
+              </div>
+              <div class="col-md-6">
+
+                  <h5>Local System Analysis</h5>
+                  <table class="table">
+                      <thead>
+                      <tr>
+                          <th>Module</th>
+                          <th>Description</th>
+                          <th>Exec.</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <tr>
+                          <td><a>Local Processes</a></td>
+                          <td>List system processes</td>
+                          <td> {% if relevantApp.moduleProcesses %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      <tr>
+                          <td><a>Process Interfaces</a></td>
+                          <td>Check interfaces of processes</td>
+                          <td> {% if relevantApp.moduleInterfaces %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      <tr>
+                          <td><a>System Controls</a></td>
+                          <td>Check status and controls of system</td>
+                          <td> {% if relevantApp.moduleSystemControls %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                     </tr>
+                      <tr>
+                          <td><a>File System Analysis</a></td>
+                          <td>Analyze Files that contain management info</td>
+                          <td> {% if relevantApp.moduleFileSystem %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+          <hr>
+          <div class="row">
+              <div class="col-md-6">
+                  <h5>Dynamic Analysis</h5>
+                  <table class="table">
+                      <thead>
+                      <tr>
+                          <th>Module</th>
+                          <th>Description</th>
+                          <th>Exec.</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <tr>
+                          <td><a>Portscanner</a></td>
+                          <td>port analysis with nmap</td>
+                          <td> {% if relevantApp.modulePortscanner %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      <tr>
+                          <td><a>Protocoll Tests</a></td>
+                          <td>Simple Protocoll tests like HTTP</td>
+                          <td> {% if relevantApp.moduleProtocolls %}<i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      </tbody>
+                  </table>
+              </div>
+              <div class="col-md-6">
+
+                  <h5>Local Interface Analysis</h5>
+                  <table class="table">
+                      <thead>
+                      <tr>
+                          <th>Module</th>
+                          <th>Description</th>
+                          <th>Exec.</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <tr>
+                          <td><a>Network interfaces</a></td>
+                          <td>status of network interfaces</td>
+                          <td> {% if relevantApp.moduleNetInterfaces %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      <tr>
+                          <td><a>File System</a></td>
+                          <td>dynamic File System Analysis</td>
+                          <td> {% if relevantApp.moduleFileSystemInterfaces %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>>                      </tr>
+                      <tr>
+                          <td><a>File Handles</a></td>
+                          <td>Check File Handles and used Files</td>
+                          <td> {% if relevantApp.moduleFileHandles %} <i class="fa fa-check-circle fa-2x" style="color:#00cc6a"></i> {% else %} <i class="fa fa-thumbs-down" style="color:#FF0000"></i> {% endif %}</td>                      </tr>
+                      </tbody>
+                  </table>
+              </div>
+          </div>
 
         <hr>
+
 
 
         <hr>

@@ -23,14 +23,17 @@ var DELETE_firmware = `DELETE FROM firmware WHERE firmware_id = ?;`
 
 // relevantApps
 var SELECT_relevantApps = `SELECT relevantApps.relevantApps_id, relevantApps.name, relevantApps.path, relevantApps.extPort, relevantApps.extProtocoll, relevantApps.intInterface, relevantApps.firmware_id, firmware.name FROM relevantApps JOIN firmware ON relevantApps.firmware_id = firmware.firmware_id;`
-var SELECT_relevantAppInfo = `SELECT relevantApps_id, name, path, extPort, extProtocoll, intInterface, firmware_id FROM relevantApps WHERE relevantApps_id = ?;`
+var SELECT_relevantAppInfo = `SELECT * FROM relevantApps WHERE relevantApps_id = ?;`
 var SELECT_relevantAppsForFirmware = `SELECT * FROM relevantApps WHERE firmware_id = ?`
 var INSERT_newrelevantApps = `INSERT INTO relevantApps (name, path, extPort, extProtocoll, intInterface, firmware_id) VALUES (?,?,?,?,?,?);`
 var DELETE_relevantApps = `DELETE FROM relevantApps WHERE relevantApps_id = ?;`
+var SELECT_relevantAppByPath = `SELECT relevantApps_id FROM relevantApps WHERE relevantApps.path = ? AND relevantApps.firmware_id = ?;`
+var UPDATE_relevantApp = `UPDATE relevantApps SET ? = ? WHERE relevantApps.relevantApps_id = ?;`
 
 // Results
-var SELECT_results = `SELECT testResult.testResult_id, testResult.moduleName, testResult.path, testResult.created, testResult.firmware_id, firmware.name FROM testResult JOIN firmware ON testResult.firmware_id = firmware.firmware_id;`
-var SELECT_resultInfo = `SELECT testResult.testResult_id, testResult.moduleName, testResult.path, testResult.created, testResult.firmware_id, firmware.name FROM testResult JOIN firmware ON testResult.firmware_id = firmware.firmware_id WHERE testResult.testResult_id = ?;`
-var SELECT_resultsForFirmware = `SELECT * FROM testResult WHERE firmware_id = ?`
-var INSERT_newresults = `INSERT INTO testResult (moduleName, path, created, firmware_id) VALUES (?,?,?,?);`
+var SELECT_results = `SELECT testResult.testResult_id, testResult.moduleName, testResult.result, testResult.created, testResult.firmware_id, firmware.name FROM testResult JOIN firmware ON testResult.firmware_id = firmware.firmware_id;`
+var SELECT_resultInfo = `SELECT testResult.testResult_id, testResult.moduleName, testResult.result, testResult.created, testResult.firmware_id, firmware.name FROM testResult JOIN firmware ON testResult.firmware_id = firmware.firmware_id WHERE testResult.testResult_id = ?;`
+var SELECT_resultsForFirmware = `SELECT testResult.testResult_id, testResult.moduleName, testResult.created, testResult.firmware_id FROM testResult WHERE firmware_id = ?`
+var INSERT_newresults = `INSERT INTO testResult (moduleName, result, created, firmware_id) VALUES (?,?,?,?);`
 var DELETE_result = `DELETE FROM testResult WHERE testResult_id = ?;`
+

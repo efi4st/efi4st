@@ -2,19 +2,22 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1d4d6b72-d329-4831-bbd6-e6930dc7b584" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/classes/testResult.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/routes/testResults_routes.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/templates/showTestResult.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/templates/testResults.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/analysis/resultAnalysisDispatcher.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dbUtils/createDB.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/dbUtils/createDB.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/classes/relevantApps.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/classes/relevantApps.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/classes/testResult.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/classes/testResult.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/dbUtils/dbSchema.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/dbUtils/dbSchema.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/dbUtils/dbStatements.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/dbUtils/dbStatements.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/dbprovider/dbManager.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/dbprovider/dbManager.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/firmware_routes.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/firmware_routes.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/relevantApps_routes.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/relevantApps_routes.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/testResults_routes.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/testResults_routes.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/routes/tool_routes.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/tool_routes.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/templates/layout.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/layout.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/templates/relevantApps.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/relevantApps.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/templates/showFirmware.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/showFirmware.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/templates/showRelevantApp.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/showRelevantApp.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/templates/showTestResult.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/showTestResult.html" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -27,8 +30,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/dbprovider/dbManager.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="549">
-              <caret line="426" column="37" selection-start-line="426" selection-start-column="37" selection-end-line="426" selection-end-column="37" />
+            <state relative-caret-position="-795">
+              <caret line="299" column="37" selection-start-line="299" selection-start-column="20" selection-end-line="299" selection-end-column="37" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/classes/relevantApps.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="390">
+              <caret line="29" column="51" selection-start-line="29" selection-start-column="51" selection-end-line="29" selection-end-column="51" />
             </state>
           </provider>
         </entry>
@@ -36,8 +48,26 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/dbUtils/dbStatements.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="480">
-              <caret line="32" column="252" selection-start-line="32" selection-start-column="252" selection-end-line="32" selection-end-column="252" />
+            <state relative-caret-position="450">
+              <caret line="30" column="89" lean-forward="true" selection-start-line="30" selection-start-column="89" selection-end-line="30" selection-end-column="89" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/dbUtils/dbSchema.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="675">
+              <caret line="45" column="17" selection-start-line="45" selection-start-column="4" selection-end-line="45" selection-end-column="17" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/templates/showTestResult.html">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="489">
+              <caret line="54" column="14" lean-forward="true" selection-start-line="54" selection-start-column="14" selection-end-line="54" selection-end-column="109" />
             </state>
           </provider>
         </entry>
@@ -45,44 +75,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/routes/testResults_routes.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="540">
-              <caret line="41" column="64" lean-forward="true" selection-start-line="41" selection-start-column="64" selection-end-line="41" selection-end-column="64" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/templates/testResults.html">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="564">
-              <caret line="51" column="19" lean-forward="true" selection-start-line="51" selection-start-column="19" selection-end-line="51" selection-end-column="19" />
+            <state relative-caret-position="639">
+              <caret line="95" lean-forward="true" selection-start-line="95" selection-end-line="95" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/templates/showTestResult.html">
+        <entry file="file://$PROJECT_DIR$/src/analysis/resultAnalysisDispatcher.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="510">
-              <caret line="34" column="125" selection-start-line="34" selection-start-column="125" selection-end-line="34" selection-end-column="125" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/templates/showRelevantApp.html">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="510">
-              <caret line="34" column="77" selection-start-line="34" selection-start-column="77" selection-end-line="34" selection-end-column="77" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/templates/firmwares.html">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="662">
-              <caret line="49" column="16" selection-start-line="49" selection-start-column="16" selection-end-line="49" selection-end-column="98" />
+            <state relative-caret-position="768">
+              <caret line="94" column="72" selection-start-line="94" selection-start-column="72" selection-end-line="94" selection-end-column="72" />
             </state>
           </provider>
         </entry>
@@ -90,26 +93,56 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/templates/showFirmware.html">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-396">
-              <caret line="40" column="64" selection-start-line="40" selection-start-column="52" selection-end-line="40" selection-end-column="64" />
+            <state relative-caret-position="600">
+              <caret line="98" column="130" selection-start-line="98" selection-start-column="103" selection-end-line="98" selection-end-column="130" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main.go">
+        <entry file="file://$PROJECT_DIR$/src/templates/showRelevantApp.html">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="729">
-              <caret line="106" column="71" selection-start-line="106" selection-start-column="71" selection-end-line="106" selection-end-column="71" />
+            <state relative-caret-position="495">
+              <caret line="33" column="82" selection-start-line="33" selection-start-column="82" selection-end-line="33" selection-end-column="82" />
+              <folding>
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#3;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#3;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#4;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#4;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#3;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#3;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#0;n#div#2;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#0;n#div#2;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#0;n#div#2;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#0;n#div#2;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#0;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+                <element signature="n#style#0;n#i#1;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/templates/layout.html">
+        <entry file="file://$PROJECT_DIR$/src/routes/relevantApps_routes.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="525">
-              <caret line="35" column="52" selection-start-line="35" selection-start-column="52" selection-end-line="35" selection-end-column="52" />
+            <state relative-caret-position="630">
+              <caret line="69" lean-forward="true" selection-start-line="69" selection-end-line="69" />
             </state>
           </provider>
         </entry>
@@ -156,31 +189,32 @@
         <option value="$PROJECT_DIR$/src/templates/firmwares.html" />
         <option value="$PROJECT_DIR$/src/routes/project_routes.go" />
         <option value="$PROJECT_DIR$/src/templates/firmwareUpload.html" />
-        <option value="$PROJECT_DIR$/src/classes/relevantApps.go" />
-        <option value="$PROJECT_DIR$/src/templates/showRelevantApp.html" />
-        <option value="$PROJECT_DIR$/src/routes/relevantApps_routes.go" />
-        <option value="$PROJECT_DIR$/src/templates/showFirmware.html" />
         <option value="$PROJECT_DIR$/src/routes/firmware_routes.go" />
         <option value="$PROJECT_DIR$/src/templates/index.html" />
-        <option value="$PROJECT_DIR$/src/dbUtils/dbSchema.go" />
         <option value="$PROJECT_DIR$/src/dbUtils/createDB.go" />
         <option value="$PROJECT_DIR$/src/classes/testResults.go" />
         <option value="$PROJECT_DIR$/src/classes/testResult.go" />
-        <option value="$PROJECT_DIR$/src/routes/testResults_routes.go" />
-        <option value="$PROJECT_DIR$/src/templates/relevantApps.html" />
         <option value="$PROJECT_DIR$/src/templates/testResults.html" />
         <option value="$PROJECT_DIR$/src/templates/layout.html" />
+        <option value="$PROJECT_DIR$/src/dbUtils/dbSchema.go" />
+        <option value="$PROJECT_DIR$/src/routes/testResults_routes.go" />
+        <option value="$PROJECT_DIR$/src/templates/relevantApps.html" />
         <option value="$PROJECT_DIR$/src/main.go" />
+        <option value="$PROJECT_DIR$/src/routes/relevantApps_routes.go" />
+        <option value="$PROJECT_DIR$/src/templates/showTestResult.html" />
+        <option value="$PROJECT_DIR$/src/classes/relevantApps.go" />
+        <option value="$PROJECT_DIR$/src/templates/showFirmware.html" />
+        <option value="$PROJECT_DIR$/src/templates/showRelevantApp.html" />
         <option value="$PROJECT_DIR$/src/dbUtils/dbStatements.go" />
         <option value="$PROJECT_DIR$/src/dbprovider/dbManager.go" />
-        <option value="$PROJECT_DIR$/src/templates/showTestResult.html" />
+        <option value="$PROJECT_DIR$/src/analysis/resultAnalysisDispatcher.go" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="y" value="763" />
+    <option name="y" value="-1" />
     <option name="width" value="1920" />
-    <option name="height" value="1080" />
+    <option name="height" value="1055" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -200,6 +234,12 @@
               <item name="web" type="b2602c69:ProjectViewProjectNode" />
               <item name="web" type="462c0819:PsiDirectoryNode" />
               <item name="src" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="web" type="b2602c69:ProjectViewProjectNode" />
+              <item name="web" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="analysis" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="web" type="b2602c69:ProjectViewProjectNode" />
@@ -250,19 +290,19 @@
     <property name="go.gopath.indexing.explicitly.defined" value="true" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/templates" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/analysis" />
     <property name="nodejs_package_manager_path" value="npm" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Projekte\efi4st\web\src\dbprovider" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/analysis" />
       <recent name="$PROJECT_DIR$/src/templates" />
       <recent name="$PROJECT_DIR$/src/routes" />
       <recent name="$PROJECT_DIR$/src/classes" />
       <recent name="C:\Projekte\efi4st\web\src\templates" />
-      <recent name="C:\Projekte\efi4st\web\src\routes" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Projekte\efi4st\web\src\dbprovider" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -289,10 +329,10 @@
     </configuration>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="763" width="1920" height="1055" extended-state="6" />
+    <frame x="0" y="-1" width="1920" height="1055" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.19797225" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.16328709" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -317,9 +357,6 @@
     <option name="version" value="1" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/static/scss/_animated.scss">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/static/scss/_fixed-width.scss">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -367,16 +404,6 @@
         <state relative-caret-position="-2295" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/routes/api_routes.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="408">
-          <caret line="24" column="1" lean-forward="true" selection-start-line="24" selection-start-column="1" selection-end-line="24" selection-end-column="1" />
-          <folding>
-            <element signature="e#90#145#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/templates/projects.html">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="833">
@@ -398,13 +425,6 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/static/scss/_bordered-pulled.scss">
       <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/routes/project_routes.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="645">
-          <caret line="48" selection-start-line="48" selection-end-line="48" />
-        </state>
-      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/templates/firmwareUpload.html">
       <provider selected="true" editor-type-id="text-editor">
@@ -444,41 +464,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/routes/firmware_routes.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="519">
-          <caret line="62" column="65" lean-forward="true" selection-start-line="62" selection-start-column="65" selection-end-line="62" selection-end-column="65" />
-          <folding>
-            <element signature="e#90#222#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/templates/index.html">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="585">
           <caret line="39" column="60" selection-start-line="39" selection-start-column="60" selection-end-line="39" selection-end-column="60" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/dbUtils/createDB.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="18" column="1" lean-forward="true" selection-start-line="18" selection-start-column="1" selection-end-line="18" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/classes/relevantApps.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="24" lean-forward="true" selection-start-line="24" selection-end-line="24" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/dbUtils/dbSchema.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="609">
-          <caret line="46" selection-start-line="46" selection-end-line="58" />
         </state>
       </provider>
     </entry>
@@ -489,24 +478,17 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/routes/relevantApps_routes.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="645">
-          <caret line="48" column="22" selection-start-line="48" selection-start-column="5" selection-end-line="48" selection-end-column="22" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/templates/relevantApps.html">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="585">
-          <caret line="54" column="74" selection-start-line="54" selection-start-column="74" selection-end-line="54" selection-end-column="74" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/classes/testResult.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="180">
           <caret line="12" selection-start-line="12" selection-end-line="17" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/templates/firmwares.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="735">
+          <caret line="49" column="16" selection-start-line="49" selection-start-column="16" selection-end-line="49" selection-end-column="98" />
         </state>
       </provider>
     </entry>
@@ -517,66 +499,158 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main.go">
+    <entry file="file://$PROJECT_DIR$/src/templates/relevantApps.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="729">
-          <caret line="106" column="71" selection-start-line="106" selection-start-column="71" selection-end-line="106" selection-end-column="71" />
+        <state relative-caret-position="570">
+          <caret line="53" column="95" lean-forward="true" selection-start-line="53" selection-start-column="95" selection-end-line="53" selection-end-column="95" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/routes/api_routes.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="24" column="1" lean-forward="true" selection-start-line="24" selection-start-column="1" selection-end-line="24" selection-end-column="1" />
+          <folding>
+            <element signature="e#90#145#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/routes/firmware_routes.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-441">
+          <caret line="62" column="30" lean-forward="true" selection-start-line="62" selection-start-column="30" selection-end-line="62" selection-end-column="30" />
+          <folding>
+            <element signature="e#90#222#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/routes/project_routes.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="204">
+          <caret line="48" selection-start-line="48" selection-end-line="48" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/templates/testResults.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="564">
-          <caret line="51" column="19" lean-forward="true" selection-start-line="51" selection-start-column="19" selection-end-line="51" selection-end-column="19" />
+        <state relative-caret-position="765">
+          <caret line="51" column="19" selection-start-line="51" selection-start-column="19" selection-end-line="51" selection-end-column="19" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/dbUtils/dbStatements.go">
+    <entry file="file://$PROJECT_DIR$/src/main.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="480">
-          <caret line="32" column="252" selection-start-line="32" selection-start-column="252" selection-end-line="32" selection-end-column="252" />
+        <state relative-caret-position="1230">
+          <caret line="93" column="68" selection-start-line="93" selection-start-column="53" selection-end-line="93" selection-end-column="68" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/dbprovider/dbManager.go">
+    <entry file="file://$PROJECT_DIR$/src/dbUtils/createDB.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="549">
-          <caret line="426" column="37" selection-start-line="426" selection-start-column="37" selection-end-line="426" selection-end-column="37" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/routes/testResults_routes.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="540">
-          <caret line="41" column="64" lean-forward="true" selection-start-line="41" selection-start-column="64" selection-end-line="41" selection-end-column="64" />
+        <state relative-caret-position="270">
+          <caret line="18" column="1" selection-start-line="18" selection-start-column="1" selection-end-line="18" selection-end-column="1" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/templates/showFirmware.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-396">
-          <caret line="40" column="64" selection-start-line="40" selection-start-column="52" selection-end-line="40" selection-end-column="64" />
+        <state relative-caret-position="600">
+          <caret line="98" column="130" selection-start-line="98" selection-start-column="103" selection-end-line="98" selection-end-column="130" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/templates/showRelevantApp.html">
+    <entry file="file://$PROJECT_DIR$/src/classes/relevantApps.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="510">
-          <caret line="34" column="77" selection-start-line="34" selection-start-column="77" selection-end-line="34" selection-end-column="77" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/templates/firmwares.html">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="662">
-          <caret line="49" column="16" selection-start-line="49" selection-start-column="16" selection-end-line="49" selection-end-column="98" />
+        <state relative-caret-position="390">
+          <caret line="29" column="51" selection-start-line="29" selection-start-column="51" selection-end-line="29" selection-end-column="51" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/templates/showTestResult.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="510">
-          <caret line="34" column="125" selection-start-line="34" selection-start-column="125" selection-end-line="34" selection-end-column="125" />
+        <state relative-caret-position="489">
+          <caret line="54" column="14" lean-forward="true" selection-start-line="54" selection-start-column="14" selection-end-line="54" selection-end-column="109" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/templates/showRelevantApp.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="495">
+          <caret line="33" column="82" selection-start-line="33" selection-start-column="82" selection-end-line="33" selection-end-column="82" />
+          <folding>
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#3;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#3;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#4;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#4;n#tbody#0;n#table#0;n#div#0;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#3;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#3;n#tbody#0;n#table#0;n#div#1;n#div#1;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#0;n#div#2;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#0;n#div#2;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#0;n#div#2;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#0;n#div#2;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#0;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#1;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#0;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+            <element signature="n#style#0;n#i#1;n#td#2;n#tr#2;n#tbody#0;n#table#0;n#div#1;n#div#2;n#div#2;n#!!top" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/dbUtils/dbStatements.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="450">
+          <caret line="30" column="89" lean-forward="true" selection-start-line="30" selection-start-column="89" selection-end-line="30" selection-end-column="89" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/routes/testResults_routes.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="639">
+          <caret line="95" lean-forward="true" selection-start-line="95" selection-end-line="95" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/routes/relevantApps_routes.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="630">
+          <caret line="69" lean-forward="true" selection-start-line="69" selection-end-line="69" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/dbprovider/dbManager.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-795">
+          <caret line="299" column="37" selection-start-line="299" selection-start-column="20" selection-end-line="299" selection-end-column="37" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/dbUtils/dbSchema.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="675">
+          <caret line="45" column="17" selection-start-line="45" selection-start-column="4" selection-end-line="45" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/analysis/resultAnalysisDispatcher.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="768">
+          <caret line="94" column="72" selection-start-line="94" selection-start-column="72" selection-end-line="94" selection-end-column="72" />
         </state>
       </provider>
     </entry>
