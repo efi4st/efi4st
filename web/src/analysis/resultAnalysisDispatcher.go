@@ -40,6 +40,8 @@ func (rAD *resultAnalysisDispatcher) DispatchResult(source string, result string
 		err = rAD.analyzeCronJobSearch(result, firmwareId)
 	case "ExecutableFinder":
 		err = rAD.analyzeExecutableFinder(result, firmwareId)
+	case "BashInitAnalysis":
+		err = rAD.analyzeBashSearch(result, firmwareId)
 	default:
 
 	}
@@ -49,6 +51,32 @@ func (rAD *resultAnalysisDispatcher) DispatchResult(source string, result string
 
 func (rAD *resultAnalysisDispatcher) AddRelevantApp(source string, result string, firmwareId int) (err error) {
 
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeBashSearch(result string, firmwareId int) (err error) {
+	for _, line := range strings.Split(strings.TrimSuffix(result, "\n"), "\n") {
+		if(len(string(line))>2 && string(line[0]) != "#") {
+				path := strings.Split(line, " ")
+				for _, v := range path {
+					if(len(string(v)) > 3){
+						if (string(v[0]) == "/" && len(string(v)) > 3) {
+							if (!strings.Contains(string(v), "bash.bashrc")) {
+								id := dbprovider.GetDBManager().GetRelevantAppByPath(v, firmwareId)
+								if (id == 0) {
+									lastIndex := strings.LastIndex(path[1], "/")
+									name := path[1][lastIndex+1 : len(path[1])]
+									dbprovider.GetDBManager().AddRelevantApp(name, v, 0, "", "", firmwareId)
+									id := dbprovider.GetDBManager().GetRelevantAppByPath(v, firmwareId)
+									dbprovider.GetDBManager().UpdateRelevantApp("moduleBash", strconv.Itoa(id))
+								}
+							}
+						}
+					}
+				}
+
+		}
+	}
 	return err
 }
 
