@@ -36,10 +36,31 @@
           </div>
           <div class="col-md-9">
               <p><a class="btn btn-primary btn-lg" href="/relevantApps/download/{{relevantApp.relevantApps_id}}" role="button">Download &raquo;</a></p>
+              <p><a class="btn btn-primary btn-lg" href="/modules/run/startAppChainAnalysis.sh/{{relevantApp.firmware_id}}/{{relevantApp.relevantApps_id}}" role="button">Chain Analysis &raquo;</a></p>
+              <p><a class="btn btn-primary btn-lg" href="/relevantApps/showEmu/{{relevantApp.relevantApps_id}}" role="button">User-Mode-Emul &raquo;</a></p>
           </div>
 
 
         </div>
+          <br/>
+          <hr/>
+          <div class="row">
+              <div class="col-md-4">
+              <h5>Chain Analysis / Content:</h5>
+              </div>
+              <div class="col-md-4">
+              <ul class="list-group">
+                  {% for path in relevantAppContent %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                      {{path}}
+                      <span class="badge badge-primary badge-pill">Add</span>
+                  </li>
+                  {% endfor %}
+
+              </ul>
+              </div>
+              <div class="col-md-4"></div>
+          </div>
           <br/>
           <hr/>
           <div class="row">

@@ -16,4 +16,5 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(firmwareSchema)
 	db.MustExec(relevantAppsSchema)
 	db.MustExec(testResultSchema)
+	db.MustExec(appContentSchema)
 }

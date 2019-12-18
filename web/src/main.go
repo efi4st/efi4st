@@ -57,6 +57,9 @@ func irisMain()() {
 	// GET: http://localhost:8144/modules/run/xxx/xxx
 	app.Get("/modules/run/{moduleName:string}/{firmwareId:string}", routes.ModuleRun)
 
+	// GET: http://localhost:8144/modules/run/xxx/xxx/xxx
+	app.Get("/modules/run/{moduleName:string}/{firmwareId:string}/{relevantAppId:string}", routes.ModuleOnAppRun)
+
 	// GET: http://localhost:8144/projects
 	app.Get("/projects", routes.Projects)
 
@@ -92,6 +95,9 @@ func irisMain()() {
 
 	// GET: http://localhost:8144/relevantApps/show/1
 	app.Get("/relevantApps/show/{id:string}", routes.ShowRelevantApp)
+
+	// GET: http://localhost:8144/relevantApps/show/1
+	app.Get("/relevantApps/showEmu/{id:string}", routes.ShowRelevantAppEmu)
 
 	// GET: http://localhost:8144/relevantApps/download/1
 	app.Get("/relevantApps/download/{id:string}", routes.DownloadRelevantApp)

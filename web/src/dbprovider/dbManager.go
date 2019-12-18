@@ -44,6 +44,12 @@ type Manager interface {
 	GetResultListForFirmware(id int) []classes.TestResult
 	GetRelevantAppByPath(path string, firmwareId int) int
 	UpdateRelevantApp(column string, relevantApp_id string) error
+	GetAppContent() *classes.AppContent
+	AddAppContent(contentPathList string, binwalkOutput string, relevantApps_id string) error
+	RemoveAppContent(id int) error
+	GetAppContentForRelevantApp(id int) *classes.AppContent
+	RemoveAppContentByRelevantAppPath(path string) error
+	GetAppContentForRelevantAppByPath(path string) *classes.AppContent
 }
 
 type manager struct {
@@ -597,5 +603,97 @@ func (mgr *manager) GetTestResultInfo(id int) (*classes.TestResult) {
 	testResult.SetMsg(dbFirmwareName)
 
 	return testResult
+}
+
+
+/////////////////////////////////////////
+////	App Content
+////////////////////////////////////////
+func (mgr *manager) GetAppContent() (appcontent *classes.AppContent){
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_appContent)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbAppContent_id int
+		dbContentPathList sql.NullString
+		dbBinwalkOutput sql.NullString
+		dbRelevantApps_id string			)
+
+	row := stmt.QueryRow()
+	row.Scan(&dbAppContent_id, &dbContentPathList, &dbBinwalkOutput, &dbRelevantApps_id)
+
+	appcontent = classes.NewAppContent(dbAppContent_id, dbContentPathList.String, dbBinwalkOutput.String, dbRelevantApps_id)
+
+	return appcontent
+}
+
+func (mgr *manager) AddAppContent(contentPathList string, binwalkOutput string, relevantApps_path string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newappContent)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(contentPathList, binwalkOutput, relevantApps_path)
+
+	if rows == nil{
+		fmt.Print(err)
+	}
+
+	return err
+}
+
+func (mgr *manager) RemoveAppContent(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_appContent)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+func (mgr *manager) RemoveAppContentByRelevantAppPath(path string) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_appContentByRelevantAppPath)
+
+	stmt.QueryRow(path)
+
+	return err
+}
+
+func (mgr *manager) GetAppContentForRelevantApp(id int) (appContentInfo *classes.AppContent) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_appContentForRelevantApp)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbAppContent_id int
+		dbContentPathList sql.NullString
+		dbBinwalkOutput sql.NullString
+		dbRelevantApps_id string			)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbAppContent_id, &dbContentPathList, &dbBinwalkOutput, &dbRelevantApps_id)
+
+	appContentInfo = classes.NewAppContent(dbAppContent_id, dbContentPathList.String, dbBinwalkOutput.String, dbRelevantApps_id)
+
+	return appContentInfo
+}
+
+func (mgr *manager) GetAppContentForRelevantAppByPath(path string) (appContentInfo *classes.AppContent) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_appContentByPath)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbAppContent_id int
+		dbContentPathList sql.NullString
+		dbBinwalkOutput sql.NullString
+		dbRelevantApps_id string			)
+
+	row := stmt.QueryRow(path)
+	row.Scan(&dbAppContent_id, &dbContentPathList, &dbBinwalkOutput, &dbRelevantApps_id)
+
+	appContentInfo = classes.NewAppContent(dbAppContent_id, dbContentPathList.String, dbBinwalkOutput.String, dbRelevantApps_id)
+
+	return appContentInfo
 }
 

@@ -9,6 +9,7 @@ package routes
 
 import (
 	"../dbprovider"
+	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris"
@@ -44,8 +45,37 @@ func ShowRelevantApp(ctx iris.Context) {
 
 	relevantApp := dbprovider.GetDBManager().GetRelevantAppInfo(i)
 
+	relevantAppContent := dbprovider.GetDBManager().GetAppContentForRelevantAppByPath(relevantApp.Path())
+
+	var pathList []string
+
+	json.Unmarshal([]byte(relevantAppContent.ContentPathList()), &pathList)
+	ctx.ViewData("relevantAppContent", pathList)
 	ctx.ViewData("relevantApp", relevantApp)
 	ctx.View("showRelevantApp.html")
+}
+
+func ShowRelevantAppEmu(ctx iris.Context) {
+
+	id := ctx.Params().Get("id")
+
+	i, err := strconv.Atoi(id)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing firmware Id!")
+	}
+
+	relevantApp := dbprovider.GetDBManager().GetRelevantAppInfo(i)
+
+	relevantAppContent := dbprovider.GetDBManager().GetAppContentForRelevantAppByPath(relevantApp.Path())
+
+	var pathList []string
+
+	json.Unmarshal([]byte(relevantAppContent.ContentPathList()), &pathList)
+	ctx.ViewData("relevantAppContent", pathList)
+	ctx.ViewData("relevantApp", relevantApp)
+	ctx.View("showRelevantAppEmu.html")
 }
 
 func DownloadRelevantApp(ctx iris.Context) {

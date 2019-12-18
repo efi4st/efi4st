@@ -8,13 +8,14 @@
 package routes
 
 import (
+	"../dbprovider"
 	"fmt"
 	"github.com/kataras/iris"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-
+	"strconv"
 )
 
 func ModuleRun(ctx iris.Context) {
@@ -43,4 +44,37 @@ func ModuleRun(ctx iris.Context) {
 	fmt.Println(string(out))
 
 	ctx.Redirect("/firmware/show/"+firmwareId)
+}
+
+func ModuleOnAppRun(ctx iris.Context) {
+
+var (
+moduleName = ctx.Params().Get("moduleName")
+firmwareId = ctx.Params().Get("firmwareId")
+relevantAppId = ctx.Params().Get("relevantAppId")
+)
+
+dir, err := os.Getwd()
+if err != nil {
+log.Fatal(err)
+}
+
+i, err := strconv.Atoi(relevantAppId)
+
+relApp := dbprovider.GetDBManager().GetRelevantAppInfo(i)
+
+path := filepath.FromSlash(dir +"/../../modules/shell/")
+fmt.Println("Starting "+ moduleName +" on project "+ firmwareId+":"+path+moduleName)
+
+var cmd = exec.Command("/bin/sh", path+moduleName, firmwareId, "../../working/filesystem" + relApp.Path())
+out, err := cmd.Output()
+
+if err != nil {
+println(err.Error())
+return
+}
+
+fmt.Println(string(out))
+
+ctx.Redirect("/relevantApps/show/"+relevantAppId)
 }

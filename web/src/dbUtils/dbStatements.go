@@ -50,3 +50,12 @@ var SELECT_resultInfo = `SELECT testResult.testResult_id, testResult.moduleName,
 var SELECT_resultsForFirmware = `SELECT testResult.testResult_id, testResult.moduleName, testResult.created, testResult.firmware_id FROM testResult WHERE firmware_id = ?`
 var INSERT_newresults = `INSERT INTO testResult (moduleName, result, created, firmware_id) VALUES (?,?,?,?);`
 var DELETE_result = `DELETE FROM testResult WHERE testResult_id = ?;`
+
+// AppContent
+var SELECT_appContent = `SELECT * FROM appContent WHERE appContent.appContent_id = ?;`
+var SELECT_appContentForRelevantApp = `SELECT appContent.appContent_id, appContent.contentPathList, appContent.binwalkOutput, appContent.relevantApps_path FROM appContent WHERE relevantApps_path = ?`
+var INSERT_newappContent = `INSERT INTO appContent (contentPathList, binwalkOutput, relevantApps_path) VALUES (?,?,?);`
+var DELETE_appContent = `DELETE FROM appContent WHERE appContent_id = ?;`
+var DELETE_appContentByRelevantAppPath = `DELETE FROM appContent WHERE relevantApps_path = ?;`
+var SELECT_appContentByPath = `SELECT * FROM appContent WHERE appContent.relevantApps_path = ?;`
+

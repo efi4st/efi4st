@@ -76,6 +76,7 @@ func RemoveTestResult(ctx iris.Context) {
 type TestResultMsg struct {
 	Result string `json:"result"`
 	Source string `json:"source"`
+	RelevantApp_path string  `json:"relevantapppath"`
 }
 
 // POST
@@ -96,7 +97,12 @@ func AddResultSet(ctx iris.Context) {
 
 	dbprovider.GetDBManager().AddTestResult(result.Source, result.Result, dt, i)
 
-	err = analysis.GetResultAnalysisDispatcher().DispatchResult(result.Source, result.Result, i)
+	fmt.Printf(result.Source)
+	fmt.Printf(result.Result)
+	fmt.Printf(id)
+	fmt.Printf(result.RelevantApp_path)
+
+	err = analysis.GetResultAnalysisDispatcher().DispatchResult(result.Source, result.Result, i, result.RelevantApp_path)
 
 	ctx.Writef("Result set received!")
 }
