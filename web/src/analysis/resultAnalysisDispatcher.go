@@ -46,6 +46,20 @@ func (rAD *resultAnalysisDispatcher) DispatchResult(source string, result string
 		err = rAD.analyzeAppChain(result, firmwareId, relevantApp_path)
 	case "BinWalkAnalysis":
 		err = rAD.analyzeBinWalk(result, firmwareId, relevantApp_path)
+	case "InitSystemAnalysis":
+		err = rAD.analyzeInitSystem(result, firmwareId)
+	case "PSLocalProcesses":
+		err = rAD.analyzeLocalProcesses(result, firmwareId)
+	case "NetstatLocalInterfaces":
+		err = rAD.analyzeLocalInterfaces(result, firmwareId)
+	case "LocalSystemServices":
+		err = rAD.analyzeLocalSystemServices(result, firmwareId)
+	case "Binary4EmuAnalysisreadelf":
+		err = rAD.analyzeBinary4Emureadelf(result, firmwareId, relevantApp_path)
+	case "Binary4EmuAnalysisldd":
+		err = rAD.analyzeBinary4Emuldd(result, firmwareId, relevantApp_path)
+	case "Binary4EmuAnalysisstrace":
+		err = rAD.analyzeBinary4Emustrace(result, firmwareId, relevantApp_path)
 	default:
 
 	}
@@ -63,8 +77,12 @@ func (rAD *resultAnalysisDispatcher) analyzeBinWalk(result string, firmwareId in
 	orgPathIndex := strings.Index(relevantApp_path, "working/filesystem")
 	orgPath := relevantApp_path[orgPathIndex+len("working/filesystem"):len(relevantApp_path)]
 
-	dbprovider.GetDBManager().RemoveAppContentByRelevantAppPath(orgPath)
-	dbprovider.GetDBManager().AddAppContent("", result, orgPath)
+	appcontent := dbprovider.GetDBManager().GetAppContentForRelevantAppByPath(orgPath)
+	if (appcontent == nil) {
+		dbprovider.GetDBManager().AddAppContent("", result, "", "", "",  orgPath)
+	}else{
+		dbprovider.GetDBManager().UpdateAppContent(appcontent.AppContent_id(), "binwalk", result)
+	}
 
 	return err
 }
@@ -76,7 +94,7 @@ func (rAD *resultAnalysisDispatcher) analyzeAppChain(result string, firmwareId i
 	orgPath := relevantApp_path[orgPathIndex+len("working/filesystem"):len(relevantApp_path)]
 
 	dbprovider.GetDBManager().RemoveAppContentByRelevantAppPath(orgPath)
-	dbprovider.GetDBManager().AddAppContent(result[i : len(result)], "", orgPath)
+	dbprovider.GetDBManager().AddAppContent(result[i : len(result)], "", "", "", "", orgPath)
 
 	return err
 }
@@ -139,6 +157,108 @@ func (rAD *resultAnalysisDispatcher) analyzeCronJobSearch(result string, firmwar
 			}
 		}
 	}
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeInitSystem(result string, firmwareId int) (err error) {
+	for _, line := range strings.Split(strings.TrimSuffix(result, "\n"), "\n") {
+		if(len(line)>3){
+			if(string(line[0])=="+"){
+				id := dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
+				if (id == 0) {
+					lastIndex := strings.LastIndex(line[1:len(line)],"/")
+					name := line[1:len(line)][lastIndex+1:len(line[1:len(line)])]
+					dbprovider.GetDBManager().AddRelevantApp(name, line[1:len(line)], 0, "", "", firmwareId)
+				}
+				id = dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
+				dbprovider.GetDBManager().UpdateRelevantApp("moduleInitSystem",strconv.Itoa(id))
+			}
+		}
+	}
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeLocalProcesses(result string, firmwareId int) (err error) {
+	for _, line := range strings.Split(strings.TrimSuffix(result, "\n"), "\n") {
+		if(len(line)>3){
+			if(string(line[0])=="+"){
+				id := dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
+				if (id == 0) {
+					lastIndex := strings.LastIndex(line[1:len(line)],"/")
+					name := line[1:len(line)][lastIndex+1:len(line[1:len(line)])]
+					dbprovider.GetDBManager().AddRelevantApp(name, line[1:len(line)], 0, "", "", firmwareId)
+				}
+				id = dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
+				dbprovider.GetDBManager().UpdateRelevantApp("moduleProcesses",strconv.Itoa(id))
+			}
+		}
+	}
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeLocalInterfaces(result string, firmwareId int) (err error) {
+	for _, line := range strings.Split(strings.TrimSuffix(result, "\n"), "\n") {
+		if(len(line)>3){
+			if(string(line[0])=="+"){
+				id := dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
+				if (id == 0) {
+					lastIndex := strings.LastIndex(line[1:len(line)],"/")
+					name := line[1:len(line)][lastIndex+1:len(line[1:len(line)])]
+					dbprovider.GetDBManager().AddRelevantApp(name, line[1:len(line)], 0, "", "", firmwareId)
+				}
+				id = dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
+				dbprovider.GetDBManager().UpdateRelevantApp("moduleInterfaces",strconv.Itoa(id))
+			}
+		}
+	}
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeLocalSystemServices(result string, firmwareId int) (err error) {
+
+	return err
+}
+
+
+func (rAD *resultAnalysisDispatcher) analyzeBinary4Emureadelf(result string, firmwareId int, relevantApp_path string) (err error) {
+	orgPathIndex := strings.Index(relevantApp_path, "working/filesystem")
+	orgPath := relevantApp_path[orgPathIndex+len("working/filesystem"):len(relevantApp_path)]
+
+	appcontent := dbprovider.GetDBManager().GetAppContentForRelevantAppByPath(orgPath)
+	if (appcontent == nil) {
+		dbprovider.GetDBManager().AddAppContent("", "", result, "", "",  orgPath)
+	}else{
+		dbprovider.GetDBManager().UpdateAppContent(appcontent.AppContent_id(), "readelf", result)
+	}
+
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeBinary4Emuldd(result string, firmwareId int, relevantApp_path string) (err error) {
+	orgPathIndex := strings.Index(relevantApp_path, "working/filesystem")
+	orgPath := relevantApp_path[orgPathIndex+len("working/filesystem"):len(relevantApp_path)]
+
+	appcontent := dbprovider.GetDBManager().GetAppContentForRelevantAppByPath(orgPath)
+	if (appcontent == nil) {
+		dbprovider.GetDBManager().AddAppContent("", "", "", result, "",  orgPath)
+	}else{
+		dbprovider.GetDBManager().UpdateAppContent(appcontent.AppContent_id(), "ldd", result)
+	}
+
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeBinary4Emustrace(result string, firmwareId int, relevantApp_path string) (err error) {
+	orgPathIndex := strings.Index(relevantApp_path, "working/filesystem")
+	orgPath := relevantApp_path[orgPathIndex+len("working/filesystem"):len(relevantApp_path)]
+
+	appcontent := dbprovider.GetDBManager().GetAppContentForRelevantAppByPath(orgPath)
+	if (appcontent == nil) {
+		dbprovider.GetDBManager().AddAppContent("", "", "", "", result,  orgPath)
+	}else{
+		dbprovider.GetDBManager().UpdateAppContent(appcontent.AppContent_id(), "strace", result)
+	}
+
 	return err
 }
 

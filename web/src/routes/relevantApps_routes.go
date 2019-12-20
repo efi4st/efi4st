@@ -49,7 +49,9 @@ func ShowRelevantApp(ctx iris.Context) {
 
 	var pathList []string
 
-	json.Unmarshal([]byte(relevantAppContent.ContentPathList()), &pathList)
+	if(relevantAppContent != nil){
+		json.Unmarshal([]byte(relevantAppContent.ContentPathList()), &pathList)
+	}
 	ctx.ViewData("relevantAppContent", pathList)
 	ctx.ViewData("relevantApp", relevantApp)
 	ctx.View("showRelevantApp.html")
@@ -70,9 +72,24 @@ func ShowRelevantAppEmu(ctx iris.Context) {
 
 	relevantAppContent := dbprovider.GetDBManager().GetAppContentForRelevantAppByPath(relevantApp.Path())
 
-	var pathList []string
+	binwalk := ""
+	readelf := ""
+	ldd := ""
+	strace := ""
 
-	json.Unmarshal([]byte(relevantAppContent.ContentPathList()), &pathList)
+	var pathList []string
+	if(relevantAppContent != nil){
+		json.Unmarshal([]byte(relevantAppContent.ContentPathList()), &pathList)
+		binwalk = relevantAppContent.BinwalkOutput()
+		readelf = relevantAppContent.ReadelfOutput()
+		ldd = relevantAppContent.LddOutput()
+		strace = relevantAppContent.StraceOutput()
+	}
+
+	ctx.ViewData("relevantAppBinwalk", binwalk)
+	ctx.ViewData("relevantAppReadelf", readelf)
+	ctx.ViewData("relevantAppLDD", ldd)
+	ctx.ViewData("relevantAppSTrace", strace)
 	ctx.ViewData("relevantAppContent", pathList)
 	ctx.ViewData("relevantApp", relevantApp)
 	ctx.View("showRelevantAppEmu.html")

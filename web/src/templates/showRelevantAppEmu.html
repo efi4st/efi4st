@@ -37,10 +37,46 @@
           <div class="col-md-9">
               <p><a class="btn btn-primary btn-lg" href="/relevantApps/download/{{relevantApp.relevantApps_id}}" role="button">Download &raquo;</a></p>
               <p><a class="btn btn-primary btn-lg" href="/modules/run/startBinWalkOnApp.sh/{{relevantApp.firmware_id}}/{{relevantApp.relevantApps_id}}" role="button">BinWalkAnalysis &raquo;</a></p>
+              <p><a class="btn btn-primary btn-lg" href="/modules/run/startBinaryAnalysisForEmu.sh/{{relevantApp.firmware_id}}/{{relevantApp.relevantApps_id}}" role="button">BinaryAnalysis4Emu &raquo;</a></p>
           </div>
 
 
         </div>
+          <br/>
+          <hr/>
+        <div class="row">
+          <div class="col-md-5">
+            BinWalk Output:
+          </div>
+          <div class="col-md-7">
+          {{relevantAppBinwalk}}
+          </div>
+
+
+        </div>
+        <br/>
+        <hr/>
+          <div class="row">
+              <div class="col-md-6">
+                  {{relevantAppReadelf}}
+              </div>
+              <div class="col-md-6">
+                  {{relevantAppLDD}}
+              </div>
+
+
+          </div>
+          <br/>
+          <hr/>
+          <div class="row">
+              <div class="col-md-6">
+                  {{relevantAppSTrace}}
+              </div>
+              <div class="col-md-6">
+              </div>
+
+
+          </div>
           <br/>
           <hr/>
           <div class="row">
@@ -49,6 +85,8 @@
           <div dir="ltr" id="content" lang="en"><span class="anchor" id="top"></span>
             <span class="anchor" id="line-1"></span><span class="anchor" id="line-2"></span><p class="line867">
             <h2 id="QEMU_User_Emulation">QEMU User Emulation</h2>
+            (from https://wiki.debian.org/QemuUserEmulation)
+            <hr/>
             <span class="anchor" id="line-3"></span><span class="anchor" id="line-4"></span><p class="line862">This page describes how to setup and use QEMU user emulation in a &quot;transparent&quot; fashion, allowing execution of non-native target executables just like native ones (i.e. <tt>./program</tt>). <span class="anchor" id="line-5"></span><span class="anchor" id="line-6"></span><p class="line874">In this text, &quot;target&quot; means the system being emulated, and &quot;host&quot; means the system where QEMU is running. <span class="anchor" id="line-7"></span><span class="anchor" id="line-8"></span><p class="line867"><strong>Note</strong> this setup is incompatible with <a class="http" href="http://www.scratchbox.org">Scratchbox</a> (both use the binfmt_misc module to register the same formats), so it's recommended to remove it (or stop its init script) before continuing. <span class="anchor" id="line-9"></span><span class="anchor" id="line-10"></span><p class="line867">
             <h3 id="Installing_packages">Installing packages</h3>
             <span class="anchor" id="line-11"></span><span class="anchor" id="line-12"></span><p class="line862">The binfmt-support package contains a helper script to easily register/unregister binary formats with the kernel using the <a class="interwiki" href="https://en.wikipedia.org/wiki/binfmt_misc" title="WikiPedia">binfmt_misc</a> module. <span class="anchor" id="line-13"></span><span class="anchor" id="line-14"></span><ol type="1"><li>Install qemu, binfmt-support, and qemu-user-static: <span class="anchor" id="line-15"></span><span class="anchor" id="line-16"></span></li></ol><p class="line867"><span class="anchor" id="line-17"></span><span class="anchor" id="line-18"></span><pre><span class="anchor" id="line-1"></span># apt install qemu binfmt-support qemu-user-static</pre><span class="anchor" id="line-19"></span><span class="anchor" id="line-20"></span><ol type="1"><li>Check whether the binfmt entries were successfully registered: <span class="anchor" id="line-21"></span><span class="anchor" id="line-22"></span></li></ol><p class="line867"><span class="anchor" id="line-23"></span><span class="anchor" id="line-24"></span><pre><span class="anchor" id="line-1-1"></span># update-binfmts --display</pre><span class="anchor" id="line-25"></span><span class="anchor" id="line-26"></span><ul><li style="list-style-type:none">This command should print entries for each supported target user emulator, except for the host system. <span class="anchor" id="line-27"></span><span class="anchor" id="line-28"></span></li></ul><p class="line867">

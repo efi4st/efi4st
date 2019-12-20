@@ -45,11 +45,12 @@ type Manager interface {
 	GetRelevantAppByPath(path string, firmwareId int) int
 	UpdateRelevantApp(column string, relevantApp_id string) error
 	GetAppContent() *classes.AppContent
-	AddAppContent(contentPathList string, binwalkOutput string, relevantApps_id string) error
+	AddAppContent(contentPathList string, binwalkOutput string, readelfOutput string, lddOutput string, straceOutput string, relevantApps_path string) error
 	RemoveAppContent(id int) error
 	GetAppContentForRelevantApp(id int) *classes.AppContent
 	RemoveAppContentByRelevantAppPath(path string) error
 	GetAppContentForRelevantAppByPath(path string) *classes.AppContent
+	UpdateAppContent(id int, module string, content string) error
 }
 
 type manager struct {
@@ -618,23 +619,55 @@ func (mgr *manager) GetAppContent() (appcontent *classes.AppContent){
 	var (	dbAppContent_id int
 		dbContentPathList sql.NullString
 		dbBinwalkOutput sql.NullString
+		dbReadelfOutput sql.NullString
+		dbLDDOutput sql.NullString
+		dbStraceOutput sql.NullString
 		dbRelevantApps_id string			)
 
 	row := stmt.QueryRow()
-	row.Scan(&dbAppContent_id, &dbContentPathList, &dbBinwalkOutput, &dbRelevantApps_id)
+	row.Scan(&dbAppContent_id, &dbContentPathList, &dbBinwalkOutput, &dbReadelfOutput, &dbLDDOutput, &dbStraceOutput, &dbRelevantApps_id)
 
-	appcontent = classes.NewAppContent(dbAppContent_id, dbContentPathList.String, dbBinwalkOutput.String, dbRelevantApps_id)
+	appcontent = classes.NewAppContent(dbAppContent_id, dbContentPathList.String, dbBinwalkOutput.String, dbReadelfOutput.String, dbLDDOutput.String, dbStraceOutput.String, dbRelevantApps_id)
 
 	return appcontent
 }
 
-func (mgr *manager) AddAppContent(contentPathList string, binwalkOutput string, relevantApps_path string) (err error) {
+func (mgr *manager) AddAppContent(contentPathList string, binwalkOutput string, readelfOutput string, lddOutput string, straceOutput string, relevantApps_path string) (err error) {
 
 	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newappContent)
 	if err != nil{
 		fmt.Print(err)
 	}
-	rows, err := stmt.Query(contentPathList, binwalkOutput, relevantApps_path)
+	rows, err := stmt.Query(contentPathList, binwalkOutput, readelfOutput, lddOutput, straceOutput, relevantApps_path)
+
+	if rows == nil{
+		fmt.Print(err)
+	}
+
+	return err
+}
+
+func (mgr *manager) UpdateAppContent(id int, module string, content string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_appContentbinwalk)
+
+	switch module {
+	case "binwalk":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_appContentbinwalk)
+	case "readelf":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_appContentreadelf)
+	case "ldd":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_appContentldd)
+	case "strace":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATE_appContentstrace)
+
+	default:
+
+	}
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(content, id)
 
 	if rows == nil{
 		fmt.Print(err)
@@ -668,12 +701,19 @@ func (mgr *manager) GetAppContentForRelevantApp(id int) (appContentInfo *classes
 	var (	dbAppContent_id int
 		dbContentPathList sql.NullString
 		dbBinwalkOutput sql.NullString
+		dbReadelfOutput sql.NullString
+		dbLDDOutput sql.NullString
+		dbStraceOutput sql.NullString
 		dbRelevantApps_id string			)
 
 	row := stmt.QueryRow(id)
-	row.Scan(&dbAppContent_id, &dbContentPathList, &dbBinwalkOutput, &dbRelevantApps_id)
 
-	appContentInfo = classes.NewAppContent(dbAppContent_id, dbContentPathList.String, dbBinwalkOutput.String, dbRelevantApps_id)
+	err2 := row.Scan(&dbAppContent_id, &dbContentPathList, &dbBinwalkOutput, &dbReadelfOutput, &dbLDDOutput, &dbStraceOutput, &dbRelevantApps_id)
+	if err2 != nil {
+		return nil
+	}
+
+	appContentInfo = classes.NewAppContent(dbAppContent_id, dbContentPathList.String, dbBinwalkOutput.String, dbReadelfOutput.String, dbLDDOutput.String, dbStraceOutput.String, dbRelevantApps_id)
 
 	return appContentInfo
 }
@@ -687,12 +727,18 @@ func (mgr *manager) GetAppContentForRelevantAppByPath(path string) (appContentIn
 	var (	dbAppContent_id int
 		dbContentPathList sql.NullString
 		dbBinwalkOutput sql.NullString
+		dbReadelfOutput sql.NullString
+		dbLDDOutput sql.NullString
+		dbStraceOutput sql.NullString
 		dbRelevantApps_id string			)
 
 	row := stmt.QueryRow(path)
-	row.Scan(&dbAppContent_id, &dbContentPathList, &dbBinwalkOutput, &dbRelevantApps_id)
+	err2 := row.Scan(&dbAppContent_id, &dbContentPathList, &dbBinwalkOutput, &dbReadelfOutput, &dbLDDOutput, &dbStraceOutput, &dbRelevantApps_id)
+	if err2 != nil {
+		return nil
+	}
 
-	appContentInfo = classes.NewAppContent(dbAppContent_id, dbContentPathList.String, dbBinwalkOutput.String, dbRelevantApps_id)
+	appContentInfo = classes.NewAppContent(dbAppContent_id, dbContentPathList.String, dbBinwalkOutput.String, dbReadelfOutput.String, dbLDDOutput.String, dbStraceOutput.String, dbRelevantApps_id)
 
 	return appContentInfo
 }
