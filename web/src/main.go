@@ -57,6 +57,9 @@ func irisMain()() {
 	// GET: http://localhost:8144/modules/run/xxx/xxx
 	app.Get("/modules/run/{moduleName:string}/{firmwareId:string}", routes.ModuleRun)
 
+	// GET: http://localhost:8144/modules/run/xxx/xxx
+	app.Get("/modules/runEmulation/{moduleName:string}/{firmwareId:string}/{firmwareName:string}", routes.EmulationRun)
+
 	// GET: http://localhost:8144/modules/run/xxx/xxx/xxx
 	app.Get("/modules/run/{moduleName:string}/{firmwareId:string}/{relevantAppId:string}", routes.ModuleOnAppRun)
 

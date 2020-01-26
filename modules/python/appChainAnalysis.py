@@ -14,13 +14,15 @@ def findPathInLine(line, relPath):
         else:
                 parts = re.split(' \"=', line)
                 for part in parts:
-                        if(len(part) > 0):
-                                if(part[0]=='/'):
-                                        if(os.path.exists(cwd + "/../../working/filesystem"+part)):
-                                                return part
-                                        #line is path relative
-                                        elif((os.path.exists(cwd + "/../../working/filesystem" + relPath + part)) or (os.path.exists(cwd + "/../../working/filesystem" + relPath + "/" + part))):
-                                                return part
+                        words = part.split()
+                        for word in words:
+                                if(len(word) > 0):
+                                        if(word[0]=='/'):
+                                                if(os.path.exists(cwd + "/../../working/filesystem"+word)):
+                                                        return word
+                                                #line is path relative
+                                                elif((os.path.exists(cwd + "/../../working/filesystem" + relPath + word)) or (os.path.exists(cwd + "/../../working/filesystem" + relPath + "/" + word))):
+                                                        return word
                 return ""    
 
 

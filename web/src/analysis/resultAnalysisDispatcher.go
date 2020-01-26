@@ -60,10 +60,70 @@ func (rAD *resultAnalysisDispatcher) DispatchResult(source string, result string
 		err = rAD.analyzeBinary4Emuldd(result, firmwareId, relevantApp_path)
 	case "Binary4EmuAnalysisstrace":
 		err = rAD.analyzeBinary4Emustrace(result, firmwareId, relevantApp_path)
+	case "NMAPNetworkInterfaces":
+		err = rAD.analyzeNMAPNetworkInterfaces(result, firmwareId)
+	case "SimpleHTTPTest":
+		err = rAD.analyzeSimpleHTTPTest(result, firmwareId)
 	default:
 
 	}
 
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeSimpleHTTPTest(result string, firmwareId int) (err error) {
+	fmt.Printf("UUUUUUUUUUUuuu")
+	protocol := ""
+	port := 0
+	app := ""
+	target := false
+	for _, line := range strings.Split(strings.TrimSuffix(result, "\n"), "\n") {
+		if(len(line)>3){
+			if(strings.Contains(line, "HTTP") && strings.Contains(line, "200") && strings.Contains(line, "OK") ){
+				protocol = "HTTP"
+				port = 80
+				target=true
+			}
+			if(strings.Contains(line, "Server")){
+				serverParts := strings.Split(line, ":")
+				s := strings.TrimSpace(serverParts[1])
+				sP := strings.Split(s, "/")
+				app = sP[0]
+				fmt.Printf("LLLLLLLLLLLLLLLL"+app+"LLLLLLLLLLLll")
+				target = true
+			}
+			if(target== true){
+				id := dbprovider.GetDBManager().GetRelevantAppByName(app, firmwareId)
+				if (id == 0) {
+					fmt.Printf("AAAAAAA")
+					dbprovider.GetDBManager().AddRelevantApp(app, "", 0, protocol, "", firmwareId)
+				}
+				id = dbprovider.GetDBManager().GetRelevantAppByName(app, firmwareId)
+				fmt.Printf("OOOOOOOOOOOOOO"+strconv.Itoa(id))
+				dbprovider.GetDBManager().UpdateRelevantAppForInterface("moduleProtocolls",strconv.Itoa(id), port, protocol)
+			}
+			target=false
+
+		}
+	}
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeNMAPNetworkInterfaces(result string, firmwareId int) (err error) {
+	for _, line := range strings.Split(strings.TrimSuffix(result, "\n"), "\n") {
+		if(len(line)>3){
+			if(string(line[0])=="+"){
+				id := dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
+				if (id == 0) {
+					lastIndex := strings.LastIndex(line[1:len(line)],"/")
+					name := line[1:len(line)][lastIndex+1:len(line[1:len(line)])]
+					dbprovider.GetDBManager().AddRelevantApp(name, line[1:len(line)], 0, "", "", firmwareId)
+				}
+				id = dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
+				dbprovider.GetDBManager().UpdateRelevantApp("moduleInitSystem",strconv.Itoa(id))
+			}
+		}
+	}
 	return err
 }
 

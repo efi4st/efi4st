@@ -46,6 +46,36 @@ func ModuleRun(ctx iris.Context) {
 	ctx.Redirect("/firmware/show/"+firmwareId)
 }
 
+func EmulationRun(ctx iris.Context) {
+
+	var (
+		moduleName = ctx.Params().Get("moduleName")
+		firmwareId = ctx.Params().Get("firmwareId")
+		firmwareName = ctx.Params().Get("firmwareName")
+
+	)
+
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	path := filepath.FromSlash(dir +"/../../modules/shell/")
+	fmt.Println("Starting "+ moduleName +" on project "+ firmwareId+":"+path+moduleName)
+
+	var cmd = exec.Command("/bin/sh", path+moduleName, firmwareId, firmwareName)
+	out, err := cmd.Output()
+
+	if err != nil {
+		println(err.Error())
+		return
+	}
+
+	fmt.Println(string(out))
+
+	ctx.Redirect("/firmware/show/"+firmwareId)
+}
+
 func ModuleOnAppRun(ctx iris.Context) {
 
 var (

@@ -43,7 +43,9 @@ type Manager interface {
 	GetTestResultInfo(id int) *classes.TestResult
 	GetResultListForFirmware(id int) []classes.TestResult
 	GetRelevantAppByPath(path string, firmwareId int) int
+	GetRelevantAppByName(name string, firmwareId int) int
 	UpdateRelevantApp(column string, relevantApp_id string) error
+	UpdateRelevantAppForInterface(column string, relevantApp_id string, port int, protocol string) error
 	GetAppContent() *classes.AppContent
 	AddAppContent(contentPathList string, binwalkOutput string, readelfOutput string, lddOutput string, straceOutput string, relevantApps_path string) error
 	RemoveAppContent(id int) error
@@ -357,6 +359,62 @@ func (mgr *manager) UpdateRelevantApp(column string, relevantApp_id string) (err
 	return err
 }
 
+func (mgr *manager) UpdateRelevantAppForInterface(column string, relevantApp_id string, port int, protocol string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleDefault)
+
+	switch column {
+	case "moduleDefault":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleDefault)
+	case "moduleInitSystem":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleInitSystem)
+	case "moduleFileContent":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleFileContent)
+	case "moduleBash":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleBash)
+	case "moduleCronJob":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleCronJob)
+	case "moduleProcesses":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleProcesses)
+	case "moduleInterfaces":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleInterfaces)
+	case "moduleSystemControls":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleSystemControls)
+	case "moduleFileSystem":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleFileSystem)
+	case "modulePortscanner":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmodulePortscanner)
+	case "moduleProtocolls":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleProtocolls)
+	case "moduleNetInterfaces":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleNetInterfaces)
+	case "moduleFileSystemInterfaces":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleFileSystemInterfaces)
+	case "moduleFileHandles":
+		stmt, err = mgr.db.Prepare(dbUtils.UPDATEWITHINTERFACE_relevantAppmoduleFileHandles)
+
+	default:
+		fmt.Printf("Error updating relevant app! Unknown column!");
+	}
+
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(1, port, protocol, relevantApp_id)
+	fmt.Printf("fvfvfvfv")
+	fmt.Printf(relevantApp_id)
+	fmt.Printf(strconv.Itoa(port))
+	fmt.Printf(protocol)
+
+
+	if rows == nil{
+		fmt.Print(err)
+	}
+	rows.Close()
+
+	return err
+}
+
 func (mgr *manager) RemoveRelevantApp(id int) (err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.DELETE_relevantApps)
 
@@ -428,6 +486,19 @@ func (mgr *manager) GetRelevantAppByPath(path string, firmwareId int) (appId int
 	return dbrelevantApps_id
 }
 
+func (mgr *manager) GetRelevantAppByName(name string, firmwareId int) (appId int) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_relevantAppByName)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbrelevantApps_id int
+	)
+	row := stmt.QueryRow(name, firmwareId)
+	row.Scan(&dbrelevantApps_id)
+	return dbrelevantApps_id
+}
+
 func (mgr *manager) GetAppListForFirmware(id int) (relevantApps []classes.RelevantApps) {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_relevantAppsForFirmware)
 	if err != nil{
@@ -463,31 +534,44 @@ func (mgr *manager) GetAppListForFirmware(id int) (relevantApps []classes.Releva
 		count:= 0
 		if(dbmoduleDefault.Bool){
 			count++
-		}else if(dbmoduleInitSystem.Bool){
+		}
+		if(dbmoduleInitSystem.Bool){
 			count++
-		}else if(dbmoduleFileContent.Bool){
+		}
+		if(dbmoduleFileContent.Bool){
 			count++
-		} else if(dbmoduleBash.Bool){
+		}
+		if(dbmoduleBash.Bool){
 			count++
-		}else if(dbmoduleCronJob.Bool){
+		}
+		if(dbmoduleCronJob.Bool){
 			count++
-		} else if(dbmoduleProcesses.Bool){
+		}
+		if(dbmoduleProcesses.Bool){
 			count++
-		} else if(dbmoduleInterfaces.Bool){
+		}
+		if(dbmoduleInterfaces.Bool){
 			count++
-		} else if(dbmoduleSystemControls.Bool){
+		}
+		if(dbmoduleSystemControls.Bool){
 			count++
-		} else if(dbmoduleFileSystem.Bool){
+		}
+		if(dbmoduleFileSystem.Bool){
 			count++
-		} else if(dbmodulePortscanner.Bool){
+		}
+		if(dbmodulePortscanner.Bool){
 			count++
-		} else if(dbmoduleProtocolls.Bool){
+		}
+		if(dbmoduleProtocolls.Bool){
 			count++
-		} else if(dbmoduleNetInterfaces.Bool){
+		}
+		if(dbmoduleNetInterfaces.Bool){
 			count++
-		} else if(dbmoduleFileSystemInterfaces.Bool){
+		}
+		if(dbmoduleFileSystemInterfaces.Bool){
 			count++
-		} else if(dbmoduleFileHandles.Bool){
+		}
+		if(dbmoduleFileHandles.Bool){
 			count++
 		}
 

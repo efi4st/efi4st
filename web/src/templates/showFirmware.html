@@ -41,6 +41,7 @@
                 <li class="list-group-item">Apps: {{numberOfApps}}</li>
               </ul>
               <br>
+              <p><a class="btn btn-primary btn-lg" href="/modules/runEmulation/emulateWithFirmadyne.sh/{{firmware.firmware_id}}/{{firmware.name}}" role="button">Emulate ! &raquo;</a></p>
               <p><a class="btn btn-primary btn-lg" href="/modules/run/copyAndExtractFileSystem.sh/{{firmware.firmware_id}}" role="button">Check out &raquo;</a></p>
           </div>
           <div class="col-md-6">
@@ -199,12 +200,12 @@
                     <tr>
                       <td><a>Portscanner</a></td>
                       <td>port analysis with nmap</td>
-                      <td><a href="/modules/run/dynNmap">Run</a></td>
+                      <td><a href="/modules/run/startNmapScan.sh/{{firmware.firmware_id}}">Run</a></td>
                     </tr>
                     <tr>
                         <td><a>Protocoll Tests</a></td>
                         <td>Simple Protocoll tests like HTTP</td>
-                        <td><a href="/modules/run/dynSimpleProtocolls">Run</a></td>
+                        <td><a href="/modules/run/startSimpleProtocolScan.sh/{{firmware.firmware_id}}">Run</a></td>
                     </tr>
                     </tbody>
                   </table>

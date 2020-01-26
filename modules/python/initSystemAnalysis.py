@@ -10,6 +10,7 @@ print("  ------> Exists? /etc/systemd/system/:"+str(os.path.isdir(rootpath+"etc/
 print("\n")
 print(" --> SysVInit ?")
 print("  ------> Exists? /etc/init.d/:"+str(os.path.isdir(rootpath+"etc/init.d")))
+print("  ------> Exists? /etc/inittab:"+str(os.path.isfile(rootpath+"etc/inittab")))
 
 if(os.path.isdir(rootpath+"etc/systemd/system")):
     print("\n")
@@ -37,3 +38,11 @@ for entry in listOfFiles:
         for entry2 in listOfFiles2:
             print("  --> "+entry2+"   "+"/etc/"+entry+"/"+entry2)
 print("____________________________________________")
+
+if(os.path.isfile(rootpath+"etc/bash.bashrc")):
+    print("\n")
+    print("_____________ /etc/inittab _________________")
+    f=open(rootpath+"etc/inittab", "r")
+    content=f.read()
+    print(content)
+    print("____________________________________________")
