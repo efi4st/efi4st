@@ -50,7 +50,7 @@ func (rAD *resultAnalysisDispatcher) DispatchResult(source string, result string
 		err = rAD.analyzeInitSystem(result, firmwareId)
 	case "PSLocalProcesses":
 		err = rAD.analyzeLocalProcesses(result, firmwareId)
-	case "NetstatLocalInterfaces":
+	case "NetstatLocal":
 		err = rAD.analyzeLocalInterfaces(result, firmwareId)
 	case "LocalSystemServices":
 		err = rAD.analyzeLocalSystemServices(result, firmwareId)
@@ -64,9 +64,44 @@ func (rAD *resultAnalysisDispatcher) DispatchResult(source string, result string
 		err = rAD.analyzeNMAPNetworkInterfaces(result, firmwareId)
 	case "SimpleHTTPTest":
 		err = rAD.analyzeSimpleHTTPTest(result, firmwareId)
+	case "SystemCTL":
+		err = rAD.analyzeSystemCtl(result, firmwareId)
+	case "ListProc":
+		err = rAD.analyzeProc(result, firmwareId)
+	case "NetstatLocalInterfaces":
+		err = rAD.analyzeNetstatInterfaces(result, firmwareId)
+	case "LSOF":
+		err = rAD.analyzeLSOF(result, firmwareId)
+	case "NetworkHandles":
+		err = rAD.analyzeNetworkHandles(result, firmwareId)
 	default:
 
 	}
+
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeNetworkHandles(result string, firmwareId int) (err error) {
+
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeLSOF(result string, firmwareId int) (err error) {
+
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeNetstatInterfaces(result string, firmwareId int) (err error) {
+
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeProc(result string, firmwareId int) (err error) {
+
+	return err
+}
+
+func (rAD *resultAnalysisDispatcher) analyzeSystemCtl(result string, firmwareId int) (err error) {
 
 	return err
 }
@@ -112,15 +147,23 @@ func (rAD *resultAnalysisDispatcher) analyzeSimpleHTTPTest(result string, firmwa
 func (rAD *resultAnalysisDispatcher) analyzeNMAPNetworkInterfaces(result string, firmwareId int) (err error) {
 	for _, line := range strings.Split(strings.TrimSuffix(result, "\n"), "\n") {
 		if(len(line)>3){
-			if(string(line[0])=="+"){
-				id := dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
-				if (id == 0) {
-					lastIndex := strings.LastIndex(line[1:len(line)],"/")
-					name := line[1:len(line)][lastIndex+1:len(line[1:len(line)])]
-					dbprovider.GetDBManager().AddRelevantApp(name, line[1:len(line)], 0, "", "", firmwareId)
+			i, err := strconv.Atoi(string(line[0]))
+			i=i+1
+			if (err == nil) {
+				path := strings.Split(line, " ")
+
+				for _, v := range path {
+					if(len(string(v)) > 3){
+							id := dbprovider.GetDBManager().GetRelevantAppByName(v, firmwareId)
+							if (id == 0) {
+								name := string(v)
+								dbprovider.GetDBManager().AddRelevantApp(name, v, 0, "", "", firmwareId)
+							}
+							dbprovider.GetDBManager().UpdateRelevantApp("modulePortscanner",strconv.Itoa(id))
+
+
+					}
 				}
-				id = dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
-				dbprovider.GetDBManager().UpdateRelevantApp("moduleInitSystem",strconv.Itoa(id))
 			}
 		}
 	}
@@ -241,15 +284,22 @@ func (rAD *resultAnalysisDispatcher) analyzeInitSystem(result string, firmwareId
 func (rAD *resultAnalysisDispatcher) analyzeLocalProcesses(result string, firmwareId int) (err error) {
 	for _, line := range strings.Split(strings.TrimSuffix(result, "\n"), "\n") {
 		if(len(line)>3){
-			if(string(line[0])=="+"){
-				id := dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
-				if (id == 0) {
-					lastIndex := strings.LastIndex(line[1:len(line)],"/")
-					name := line[1:len(line)][lastIndex+1:len(line[1:len(line)])]
-					dbprovider.GetDBManager().AddRelevantApp(name, line[1:len(line)], 0, "", "", firmwareId)
+			path := strings.Split(line, " ")
+
+			for _, v := range path {
+				if(len(string(v)) > 3){
+					if (string(v[0]) == "/" && len(string(v)) > 3) {
+							id := dbprovider.GetDBManager().GetRelevantAppByPath(v, firmwareId)
+							if (id == 0) {
+								lastIndex := strings.LastIndex(path[1],"/")
+								name := path[1][lastIndex+1:len(path[1])]
+								dbprovider.GetDBManager().AddRelevantApp(name, v, 0, "", "", firmwareId)
+							}
+							id = dbprovider.GetDBManager().GetRelevantAppByPath(v, firmwareId)
+							dbprovider.GetDBManager().UpdateRelevantApp("moduleProcesses",strconv.Itoa(id))
+
+					}
 				}
-				id = dbprovider.GetDBManager().GetRelevantAppByPath(line[1:len(line)], firmwareId)
-				dbprovider.GetDBManager().UpdateRelevantApp("moduleProcesses",strconv.Itoa(id))
 			}
 		}
 	}
