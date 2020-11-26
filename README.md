@@ -46,14 +46,14 @@ Installation of firmadyne:
 QEMU:
 - https://opensourceforu.com/2011/05/quick-quide-to-qemu-setup/
 - https://www.youtube.com/watch?v=G0NNBloGIvs
-
+_________________________________________________-
 - git clone https://github.com/qemu/qemu.git
 - cd qemu
 - mkdir build
-  cd build
-  sudo apt-get install gcc libc6-dev pkg-config bridge-utils uml-utilities zlib1g-dev libglib2.0-dev autoconf automake libtool libsdl1.2-dev
-  sudo apt-get install libpixman-1-dev
-
-  ../configure
-  make
+- cd build
+- sudo apt-get install gcc libc6-dev pkg-config bridge-utils uml-utilities zlib1g-dev libglib2.0-dev autoconf automake libtool libsdl1.2-dev
+- sudo apt-get install libpixman-1-dev
+- sudo apt-get install ninja
+- ../configure
+- make
 
