@@ -53,7 +53,6 @@ _________________________________________________-
 - cd build
 - sudo apt-get install gcc libc6-dev pkg-config bridge-utils uml-utilities zlib1g-dev libglib2.0-dev autoconf automake libtool libsdl1.2-dev
 - sudo apt-get install libpixman-1-dev
-- sudo apt-get install ninja
+- sudo apt-get install ninja-build
 - ../configure
 - make
-
