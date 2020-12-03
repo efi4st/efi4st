@@ -17,10 +17,7 @@ Database:
 - Linux:
 - https://computingforgeeks.com/how-to-install-mariadb-10-3-on-ubuntu-16-04-lts-xenial/
 - https://websiteforstudents.com/install-and-configure-dbeaver-on-ubuntu-16-04-18-04/ 
-- Windows:
-- Download MariaDB 
-- Silent windows msi install
-- msiexec /i mariadb-10.3.15-winx64.msi SERVICENAME=MySQL PORT=3307 /qn
+- (use a mariadb docker container https://hub.docker.com/_/mariadb)
 
 Links:
 - https://blog.attify.com/getting-started-with-firmware-emulation/
@@ -38,8 +35,9 @@ Installation of firmadyne:
 - git clone --recursive https://github.com/attify/firmware-analysis-toolkit.git
 - delete binwalk folder and download from new source
 - git clone --recursive https://github.com/ReFirmLabs/binwalk.git
+- (into firmware-analysis-toolkit folder)
 - sudo ./deps.sh
-- (wird nicht funktionieren: Entferne cramfs deps auch die funktion)
+- (If fails: Remove cramfs dependencies and installation function from deps.sh)
 - dann installiere cramfs per hand: apt-get install cramfsprogs, cramsfsswap
 - sudo python3 setup.py install
 
