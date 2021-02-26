@@ -83,3 +83,24 @@ CREATE TABLE IF NOT EXISTS appContent (
 	PRIMARY KEY (appContent_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 `
+
+var binaryAnalysisSchema = `
+CREATE TABLE IF NOT EXISTS binaryAnalysis (
+	binaryAnalysis_id INT(11) NOT NULL AUTO_INCREMENT,
+	toolOutput LONGTEXT DEFAULT NULL,
+	analysisTool_id INT(11) NOT NULL,
+	relevantApps_id INT(11) NOT NULL,
+	PRIMARY KEY (binaryAnalysis_id),
+	CONSTRAINT binaryAnalysis_ibfk_1 FOREIGN KEY (analysisTool_id) REFERENCES analysisTool (analysisTool_id) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT binaryAnalysis_ibfk_2 FOREIGN KEY (relevantApps_id) REFERENCES relevantApps (relevantApps_id) ON UPDATE CASCADE ON DELETE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+`
+
+var analysisToolSchema = `
+CREATE TABLE IF NOT EXISTS analysisTool (
+	analysisTool_id INT(11) NOT NULL AUTO_INCREMENT,
+	name VARCHAR(150) NOT NULL,
+	call VARCHAR(300) NOT NULL,
+	PRIMARY KEY (analysisTool_id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+`
