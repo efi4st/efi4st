@@ -53,6 +53,10 @@ type Manager interface {
 	RemoveAppContentByRelevantAppPath(path string) error
 	GetAppContentForRelevantAppByPath(path string) *classes.AppContent
 	UpdateAppContent(id int, module string, content string) error
+	GetAnalysisTools() []classes.AnalysisTool
+	GetAnalysisToolInfo(id int) *classes.AnalysisTool
+	AddAnalysisTool(analysisToolName string,  callPattern string) (err error)
+	RemoveAnalysisTool(id int) error
 }
 
 type manager struct {
@@ -827,3 +831,71 @@ func (mgr *manager) GetAppContentForRelevantAppByPath(path string) (appContentIn
 	return appContentInfo
 }
 
+
+/////////////////////////////////////////
+////	AnalysisTool
+////////////////////////////////////////
+func (mgr *manager) GetAnalysisTools() (analysisTools []classes.AnalysisTool){
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_analysisTool)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+
+	var (	dbAnalysisTool_id int
+			dbName string
+			dbCall string			)
+
+	for rows.Next() {
+		err := rows.Scan(&dbAnalysisTool_id, &dbName, &dbCall)
+		var analysisTool = classes.NewAnalysisTool(dbAnalysisTool_id, dbName, dbCall)
+		analysisTools=append(analysisTools, *analysisTool)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return analysisTools
+}
+
+func (mgr *manager) GetAnalysisToolInfo(id int) (*classes.AnalysisTool) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_analysisToolInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbAnalysisTool_id int
+			dbName string
+			dbCall string			)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbAnalysisTool_id, &dbName, &dbCall)
+
+	var analysisTool = classes.NewAnalysisTool(dbAnalysisTool_id, dbName, dbCall)
+
+	return analysisTool
+}
+
+func (mgr *manager) AddAnalysisTool(analysisToolName string,  callPattern string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newAnalysisTool)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(analysisToolName, callPattern)
+
+	if rows == nil{
+		fmt.Print(err)
+	}
+
+	return err
+}
+
+func (mgr *manager) RemoveAnalysisTool(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_analysisTool)
+
+	stmt.QueryRow(id)
+
+	return err
+}
