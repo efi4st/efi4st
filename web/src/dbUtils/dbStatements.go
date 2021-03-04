@@ -81,10 +81,10 @@ var UPDATE_appContentstrace = `UPDATE appContent SET appContent.straceOutput = ?
 // BinaryAnalysis
 var SELECT_binaryAnalysis = `SELECT * FROM binaryAnalysis WHERE binaryAnalysis.binaryAnalysis_id = ?;`
 var SELECT_binaryAnalysisForRelevantApp = `SELECT binaryAnalysis.binaryAnalysis_id, binaryAnalysis.toolOutput, binaryAnalysis.analysisTool_id, analysisTool.name, binaryAnalysis.relevantApps_id FROM binaryAnalysis JOIN analysisTool ON binaryAnalysis.analysisTool_id = analysisTool.analysisTool_id WHERE binaryAnalysis.relevantApps_id = ?`
+var SELECT_binaryAnalysisForRelevantAppAndTool = `SELECT binaryAnalysis.binaryAnalysis_id, binaryAnalysis.toolOutput, binaryAnalysis.analysisTool_id, analysisTool.name, binaryAnalysis.relevantApps_id FROM binaryAnalysis JOIN analysisTool ON binaryAnalysis.analysisTool_id = analysisTool.analysisTool_id WHERE binaryAnalysis.relevantApps_id = ? AND binaryAnalysis.analysisTool_id = ?`
 var INSERT_newbinaryAnalysis = `INSERT INTO binaryAnalysis (toolOutput, analysisTool_id, relevantApps_id) VALUES (?,?,?);`
 var DELETE_binaryAnalysis = `DELETE FROM binaryAnalysis WHERE binaryAnalysis_id = ?;`
-var DELETE_binaryAnalysisByRelevantAppPath = `DELETE FROM binaryAnalysis WHERE binaryAnalysis_id = ?;`
-var SELECT_binaryAnalysistByBinary = `SELECT * FROM binaryAnalysis WHERE binaryAnalysis.relevantApps_id = ?;`
+var DELETE_binaryAnalysisByRelevantApp = `DELETE FROM binaryAnalysis WHERE relevantApps_id = ?;`
 var UPDATE_binaryAnalysis = `UPDATE binaryAnalysis SET binaryAnalysis.toolOutput = ? WHERE binaryAnalysis.binaryAnalysis_id = ?;`
 
 // AnalysisTool

@@ -57,6 +57,13 @@ type Manager interface {
 	GetAnalysisToolInfo(id int) *classes.AnalysisTool
 	AddAnalysisTool(analysisToolName string,  callPattern string) (err error)
 	RemoveAnalysisTool(id int) error
+	GetBinaryAnalysis(id int) *classes.BinaryAnalysis
+	GetBinaryAnalysisForRelevantApp(id int) []classes.BinaryAnalysis
+	GetBinaryAnalysisForRelevantAppAndTool(id int, toolId int) []classes.BinaryAnalysis
+	AddBinaryAnalysis(toolOutput string, analysisTool_id int, relevantApps_id int)  error
+	RemoveBinaryAnalysis(id int) error
+	RemoveBinaryAnalysisByRelevantApp(id int) error
+	UpdateBinaryAnalysis(id int, output string) error
 }
 
 type manager struct {
@@ -896,6 +903,126 @@ func (mgr *manager) RemoveAnalysisTool(id int) (err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.DELETE_analysisTool)
 
 	stmt.QueryRow(id)
+
+	return err
+}
+
+/////////////////////////////////////////
+////	BinaryAnalysis
+////////////////////////////////////////
+func (mgr *manager) GetBinaryAnalysis(id int) (binaryAnalysis *classes.BinaryAnalysis){
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_binaryAnalysis)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbBinaryAnalysis_id int
+			dbToolOutput sql.NullString
+			dbAnalysisTool_id int
+			dbRelevantApps_id int			)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbBinaryAnalysis_id, &dbToolOutput, &dbAnalysisTool_id, &dbRelevantApps_id)
+
+	binaryAnalysis = classes.NewBinaryAnalysis(dbBinaryAnalysis_id, dbToolOutput.String, dbAnalysisTool_id, dbRelevantApps_id)
+
+	return binaryAnalysis
+}
+
+func (mgr *manager) GetBinaryAnalysisForRelevantApp(id int) (binaryAnalysisList []classes.BinaryAnalysis) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_binaryAnalysisForRelevantApp)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbBinaryAnalysis_id int
+			dbToolOutput sql.NullString
+			dbAnalysisTool_id int
+			dbRelevantApps_id int			)
+
+	rows, err := stmt.Query(id)
+
+	for rows.Next() {
+		err := rows.Scan(&dbBinaryAnalysis_id, &dbToolOutput, &dbAnalysisTool_id, &dbRelevantApps_id)
+		var binaryAnalysis = classes.NewBinaryAnalysis(dbBinaryAnalysis_id, dbToolOutput.String, dbAnalysisTool_id, dbRelevantApps_id)
+		binaryAnalysisList=append(binaryAnalysisList, *binaryAnalysis)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return binaryAnalysisList
+}
+
+func (mgr *manager) GetBinaryAnalysisForRelevantAppAndTool(id int, toolId int) (binaryAnalysisList []classes.BinaryAnalysis) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_binaryAnalysisForRelevantAppAndTool)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (	dbBinaryAnalysis_id int
+			dbToolOutput sql.NullString
+			dbAnalysisTool_id int
+			dbRelevantApps_id int			)
+
+	rows, err := stmt.Query(id, toolId)
+
+	for rows.Next() {
+		err := rows.Scan(&dbBinaryAnalysis_id, &dbToolOutput, &dbAnalysisTool_id, &dbRelevantApps_id)
+		var binaryAnalysis = classes.NewBinaryAnalysis(dbBinaryAnalysis_id, dbToolOutput.String, dbAnalysisTool_id, dbRelevantApps_id)
+		binaryAnalysisList=append(binaryAnalysisList, *binaryAnalysis)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return binaryAnalysisList
+}
+
+func (mgr *manager) AddBinaryAnalysis(toolOutput string, analysisTool_id int, relevantApps_id int) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newbinaryAnalysis)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(toolOutput, analysisTool_id, relevantApps_id)
+
+	if rows == nil{
+		fmt.Print(err)
+	}
+
+	return err
+}
+
+func (mgr *manager) RemoveBinaryAnalysis(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_binaryAnalysis)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+func (mgr *manager) RemoveBinaryAnalysisByRelevantApp(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_binaryAnalysisByRelevantApp)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+func (mgr *manager) UpdateBinaryAnalysis(id int, output string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_binaryAnalysis)
+
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(output, id)
+
+	if rows == nil{
+		fmt.Print(err)
+	}
 
 	return err
 }
