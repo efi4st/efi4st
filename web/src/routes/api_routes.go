@@ -9,8 +9,8 @@ package routes
 
 import (
 
-	"github.com/kataras/iris"
-	"../dbprovider"
+	"github.com/kataras/iris/v12"
+	"github.com/efi4st/efi4st/dbprovider"
 )
 
 func Index(ctx iris.Context) {

@@ -8,17 +8,17 @@
 package dbprovider
 
 import (
-	"../classes"
-	"../dbUtils"
 	"database/sql"
 	"fmt"
+	"github.com/efi4st/efi4st/classes"
+	"github.com/efi4st/efi4st/dbUtils"
+	"github.com/efi4st/efi4st/utils"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"log"
 	"sort"
 	"strconv"
 	"time"
-	_ "github.com/go-sql-driver/mysql"
-	"../utils"
 )
 
 type Manager interface {

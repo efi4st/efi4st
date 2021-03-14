@@ -1,16 +1,16 @@
 package main
 
 import (
-	"./dbUtils"
-	"./routes"
+	"github.com/efi4st/efi4st/dbUtils"
+	"github.com/efi4st/efi4st/routes"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/middleware/logger"
-	"github.com/kataras/iris/middleware/recover"
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/logger"
+	"github.com/kataras/iris/v12/middleware/recover"
 	"log"
-	"./utils"
+	"github.com/efi4st/efi4st/utils"
 )
 
 func main(){
@@ -46,7 +46,7 @@ func irisMain()() {
 	app.RegisterView(iris.Django("./templates", ".html"))
 
 	// Serve static content like css, js, images
-	app.StaticWeb("/static", "./static")
+	app.HandleDir("/static", "./static")
 
 	// GET: http://localhost:8144
 	app.Get("/", routes.Index)

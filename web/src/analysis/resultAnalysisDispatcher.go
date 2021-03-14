@@ -8,8 +8,8 @@
 package analysis
 
 import (
-	"../dbprovider"
 	"fmt"
+	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"

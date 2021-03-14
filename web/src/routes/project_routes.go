@@ -8,9 +8,9 @@
 package routes
 
 import (
-	"../dbprovider"
+	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	"strconv"
 )
 
