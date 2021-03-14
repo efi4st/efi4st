@@ -852,11 +852,11 @@ func (mgr *manager) GetAnalysisTools() (analysisTools []classes.AnalysisTool){
 
 	var (	dbAnalysisTool_id int
 			dbName string
-			dbCall string			)
+			dbExecutionString string			)
 
 	for rows.Next() {
-		err := rows.Scan(&dbAnalysisTool_id, &dbName, &dbCall)
-		var analysisTool = classes.NewAnalysisTool(dbAnalysisTool_id, dbName, dbCall)
+		err := rows.Scan(&dbAnalysisTool_id, &dbName, &dbExecutionString)
+		var analysisTool = classes.NewAnalysisTool(dbAnalysisTool_id, dbName, dbExecutionString)
 		analysisTools=append(analysisTools, *analysisTool)
 		if err != nil {
 			log.Fatal(err)
@@ -874,23 +874,23 @@ func (mgr *manager) GetAnalysisToolInfo(id int) (*classes.AnalysisTool) {
 
 	var (	dbAnalysisTool_id int
 			dbName string
-			dbCall string			)
+			dbExecutionString string			)
 
 	row := stmt.QueryRow(id)
-	row.Scan(&dbAnalysisTool_id, &dbName, &dbCall)
+	row.Scan(&dbAnalysisTool_id, &dbName, &dbExecutionString)
 
-	var analysisTool = classes.NewAnalysisTool(dbAnalysisTool_id, dbName, dbCall)
+	var analysisTool = classes.NewAnalysisTool(dbAnalysisTool_id, dbName, dbExecutionString)
 
 	return analysisTool
 }
 
-func (mgr *manager) AddAnalysisTool(analysisToolName string,  callPattern string) (err error) {
+func (mgr *manager) AddAnalysisTool(analysisToolName string,  executionStringPattern string) (err error) {
 
 	stmt, err := mgr.db.Prepare(dbUtils.INSERT_newAnalysisTool)
 	if err != nil{
 		fmt.Print(err)
 	}
-	rows, err := stmt.Query(analysisToolName, callPattern)
+	rows, err := stmt.Query(analysisToolName, executionStringPattern)
 
 	if rows == nil{
 		fmt.Print(err)

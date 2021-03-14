@@ -10,11 +10,11 @@ package classes
 type AnalysisTool struct {
 	analysisTool_id int `db:"analysisTool_id"`
 	name string `db:"name"`
-	call string `db:"call"`
+	executionString string `db:"executionString"`
 }
 
-func NewAnalysisTool(analysisTool_id int, name string, call string) *AnalysisTool {
-	return &AnalysisTool{analysisTool_id: analysisTool_id, name: name, call: call}
+func NewAnalysisTool(analysisTool_id int, name string, executionString string) *AnalysisTool {
+	return &AnalysisTool{analysisTool_id: analysisTool_id, name: name, executionString: executionString}
 }
 
 func (a *AnalysisTool) Name() string {
@@ -25,12 +25,12 @@ func (a *AnalysisTool) SetName(name string) {
 	a.name = name
 }
 
-func (a *AnalysisTool) Call() string {
-	return a.call
+func (a *AnalysisTool) ExecutionString() string {
+	return a.executionString
 }
 
-func (a *AnalysisTool) SetCall(call string) {
-	a.call = call
+func (a *AnalysisTool) SetExecutionString(executionString string) {
+	a.executionString = executionString
 }
 
 func (a *AnalysisTool) AnalysisTool_id() int {

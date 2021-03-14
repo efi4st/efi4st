@@ -88,9 +88,9 @@ var DELETE_binaryAnalysisByRelevantApp = `DELETE FROM binaryAnalysis WHERE relev
 var UPDATE_binaryAnalysis = `UPDATE binaryAnalysis SET binaryAnalysis.toolOutput = ? WHERE binaryAnalysis.binaryAnalysis_id = ?;`
 
 // AnalysisTool
-var SELECT_analysisTool = `SELECT analysisTool.analysisTool_id, analysisTool.name, analysisTool.call from analysisTool;`
-var SELECT_analysisToolInfo = `SELECT analysisTool_id, name, call FROM analysisTool WHERE analysisTool_id = ?;`
-var INSERT_newAnalysisTool = `INSERT INTO analysisTool (name, call) VALUES (?,?);`
+var SELECT_analysisTool = `SELECT analysisTool.analysisTool_id, analysisTool.name, analysisTool.executionString from analysisTool;`
+var SELECT_analysisToolInfo = `SELECT analysisTool_id, name, executionString FROM analysisTool WHERE analysisTool_id = ?;`
+var INSERT_newAnalysisTool = `INSERT INTO analysisTool (name, executionString) VALUES (?,?);`
 var DELETE_analysisTool = `DELETE FROM analysisTool WHERE analysisTool_id = ?;`
 
 
