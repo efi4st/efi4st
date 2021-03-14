@@ -8,12 +8,12 @@
 package routes
 
 import (
-	"../dbprovider"
-	"../analysis"
+	"github.com/efi4st/efi4st/dbprovider"
+	"github.com/efi4st/efi4st/analysis"
 	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	"io/ioutil"
 	"strconv"
 	"strings"

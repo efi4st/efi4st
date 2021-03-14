@@ -8,10 +8,10 @@
 package routes
 
 import (
-	"../utils"
-	"../dbprovider"
+	"github.com/efi4st/efi4st/utils"
+	"github.com/efi4st/efi4st/dbprovider"
 	"fmt"
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	"io"
 	"os"
 	_ "github.com/go-sql-driver/mysql"

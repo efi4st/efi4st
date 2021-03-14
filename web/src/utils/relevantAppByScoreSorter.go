@@ -8,7 +8,7 @@ package utils
  **/
 
 import (
-	"../classes"
+	"github.com/efi4st/efi4st/classes"
 )
 
 // RelevantAppsByScoreSorter implements sort.Interface based on the Age field.

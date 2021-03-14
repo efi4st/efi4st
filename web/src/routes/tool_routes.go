@@ -8,9 +8,9 @@
 package routes
 
 import (
-	"../dbprovider"
+	"github.com/efi4st/efi4st/dbprovider"
 	"fmt"
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	"log"
 	"os"
 	"os/exec"
