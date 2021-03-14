@@ -100,7 +100,7 @@ var analysisToolSchema = `
 CREATE TABLE IF NOT EXISTS analysisTool (
 	analysisTool_id INT(11) NOT NULL AUTO_INCREMENT,
 	name VARCHAR(150) NOT NULL,
-	call VARCHAR(300) NOT NULL,
+	executionString VARCHAR(300) NOT NULL,
 	PRIMARY KEY (analysisTool_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 `
