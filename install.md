@@ -16,10 +16,11 @@ Web App:
 - go run main.go
 
 Database:
-- Linux:
 - https://computingforgeeks.com/how-to-install-mariadb-10-3-on-ubuntu-16-04-lts-xenial/
 - https://websiteforstudents.com/install-and-configure-dbeaver-on-ubuntu-16-04-18-04/ 
 - (use a mariadb docker container https://hub.docker.com/_/mariadb)
+- docker pull mariadb/server:10.3
+- docker run -d --name maria -eMARIADB_ROOT_PASSWORD=mypassword mariadb/server:10.3
 
 Links:
 - https://blog.attify.com/getting-started-with-firmware-emulation/
