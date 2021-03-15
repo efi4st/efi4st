@@ -20,7 +20,8 @@ Database:
 - https://websiteforstudents.com/install-and-configure-dbeaver-on-ubuntu-16-04-18-04/ 
 - (use a mariadb docker container https://hub.docker.com/_/mariadb)
 - docker pull mariadb/server:10.3
-- docker run -d --name maria -eMARIADB_ROOT_PASSWORD=mypassword mariadb/server:10.3
+- sudo docker run -p 3306:3306 -d --name maria -e MARIADB_ROOT_PASSWORD=mypassword -e MYSQL_DATABASE=efi4st -e MYSQL_USER=efi4db -e MYSQL_PASSWORD=efi4db mariadb/server:10.3
+- Note the credentials, maybe change them here and in webapp (main.go & dbManager.go)
 
 Links:
 - https://blog.attify.com/getting-started-with-firmware-emulation/

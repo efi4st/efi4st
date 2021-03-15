@@ -21,7 +21,8 @@ func main(){
 
 func dbInit()() {
 
-	db, err := sqlx.Connect("mysql", "root:@(localhost:3306)/efi4st")
+	db, err := sqlx.Connect("mysql", "efi4db:efi4db@tcp(127.0.0.1:3306)/efi4st")
+
 	if err != nil {
 		log.Fatalln(err)
 	}
