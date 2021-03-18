@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+        <h4 class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for security testing / fuzzing.</h4>
+        <p><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/tools/addTool" method="POST">
+              <div class="form-group">
+
+                <h3>Add new Tool:</h3>
+                <label for="Name">Name:</label>
+                <input type="text" class="form-control" name="Name" id="Name" placeholder="Name">
+                <label for="CallPattern">CallPattern:</label>
+                <input type="text" class="form-control" name="CallPattern" id="CallPattern" placeholder="CallPattern">
+                </br>
+                <div>Include {param1},{param2}... or {file} into CallPattern to generate placeholders!</div>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}

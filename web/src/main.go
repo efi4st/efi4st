@@ -79,6 +79,21 @@ func irisMain()() {
 	// GET: http://localhost:8144/projects/remove/1
 	app.Get("/projects/remove/{id:string}", routes.RemoveProject)
 
+	// GET: http://localhost:8144/tools
+	app.Get("/tools", routes.Tools)
+
+	// GET: http://localhost:8144/tools/createTool
+	app.Get("/tools/createTool", routes.CreateTool)
+
+	// GET: http://localhost:8144/tools/show/1
+	app.Get("/tools/show/{id:string}", routes.ShowTool)
+
+	// GET: http://localhost:8144/tools/remove/1
+	app.Get("/tools/remove/{id:string}", routes.RemoveTool)
+
+	// POST: http://localhost:8144/tools/createTool
+	app.Post("/tools/addTool", routes.AddTool)
+
 	// GET: http://localhost:8144/firmwares
 	app.Get("/firmwares", routes.Firmwares)
 

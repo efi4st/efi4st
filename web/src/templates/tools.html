@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+        <h4 class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for security testing / fuzzing.</h4>
+        <p><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+        <div class="container">
+          {% if error|length > 1 %}
+            <div class="alert alert-warning" role="alert">
+              {{error}}
+            </div>
+          {% endif %}
+        </div>
+
+      <div class="container">
+        <div class="row">
+          <p><a class="btn btn-primary btn-lg" href="/tools/createTool" role="button">New Tool &raquo;</a></p>
+        </div>
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-8">
+            <h2>Tools:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Caller</th>
+                <th><i class="fa fa-trash-o"></i></th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for tool in toolList %}
+              <tr>
+                <td><a href="/tools/show/{{ tool.analysisTool_id }}">{{ tool.name }}</a></td>
+                <td>{{ tool.executionString }}</td>
+                <td><a href="/tools/remove/{{tool.analysisTool_id}}" class="button"><i class="fa fa-close"></i></a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+
+
+      </div> <!-- /container -->
+      
+{% endblock %}
