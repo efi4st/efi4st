@@ -86,7 +86,7 @@ func irisMain()() {
 	app.Get("/firmware/show/upload/{project_id:string}", routes.ShowFirmwareUpload)
 
 	// POST: http://localhost:8144/firmware/upload/xxx
-	app.Post("/firmware/upload/{project_id:string}", iris.LimitRequestBodySize(10<<20), routes.UploadFirmware)
+	app.Post("/firmware/upload/{project_id:string}", iris.LimitRequestBodySize(10<<50), routes.UploadFirmware)
 
 	// GET: http://localhost:8144/firmware/show/1
 	app.Get("/firmware/show/{id:string}", routes.ShowFirmware)
