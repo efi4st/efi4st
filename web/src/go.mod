@@ -14,7 +14,7 @@ require (
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/kataras/golog v0.0.18 // indirect
 	github.com/kataras/iris/v12 v12.1.8
-	github.com/microcosm-cc/bluemonday v1.0.3 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.20 // indirect
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
