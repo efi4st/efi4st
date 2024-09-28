@@ -7,9 +7,21 @@ Automatic Firmware Analysis of Embedded Linux Devices as Preparation for Securit
 
 Installation:
 
+Requirements: Git + Docker + build-essentials + dbeaver
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.1.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+
+sudo apt install git
+
+sudo apt install docker.io
+
+sudo add-apt-repository ppa:serge-rider/dbeaver-ce
+sudo apt-get update
+sudo apt-get install dbeaver-ce
+
 Web App:
-- Install Golang 1.16
-- (there is a go.mod)
+- Install Golang 1.23
+- (there is a go.mod inside project, clone project execute commands in folder of go.mod)
 - go get -u github.com/kataras/iris/v12
 - go get github.com/jmoiron/sqlx
 - go get github.com/go-sql-driver/mysql
@@ -19,8 +31,8 @@ Database:
 - https://computingforgeeks.com/how-to-install-mariadb-10-3-on-ubuntu-16-04-lts-xenial/
 - https://websiteforstudents.com/install-and-configure-dbeaver-on-ubuntu-16-04-18-04/ 
 - (use a mariadb docker container https://hub.docker.com/_/mariadb)
-- docker pull mariadb/server:10.3
-- sudo docker run -p 3306:3306 -d --name maria -e MARIADB_ROOT_PASSWORD=mypassword -e MYSQL_DATABASE=efi4st -e MYSQL_USER=efi4db -e MYSQL_PASSWORD=efi4db mariadb/server:10.3
+- sudo docker pull mariadb:10.4
+- sudo docker run -p 3306:3306 -d --name maria -e MARIADB_ROOT_PASSWORD=mypassword -e MYSQL_DATABASE=efi4st -e MYSQL_USER=efi4db -e MYSQL_PASSWORD=efi4db mariadb:10.4
 - Note the credentials, maybe change them here and in webapp (main.go & dbManager.go)
 
 Links:
