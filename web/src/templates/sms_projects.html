@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+        <h4 hidden class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for security testing / fuzzing.</h4>
+        <p hidden><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+        <div class="container">
+          {% if error|length > 1 %}
+            <div class="alert alert-warning" role="alert">
+              {{error}}
+            </div>
+          {% endif %}
+        </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_systems" role="button">Systems &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_devices" role="button">Devices &raquo;</a></p>
+      <p><a class="btn btn-info" href="/sms_deviceInstances" role="button">Instances &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_applications" role="button">Applications &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_components" role="button">Components &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_issues" role="button">Issues &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_incidents" role="button">Incidents &raquo;</a></p>
+    </div>
+
+  </div>
+</div>
+<hr>
+      <div class="container">
+        <div class="row">
+          <p><a class="btn btn-primary btn-lg" href="/sms_projects/createSMSProject" role="button">New Project &raquo;</a></p>
+        </div>
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-8">
+            <h2>Projects:</h2>
+            <input class="form-control" id="myInput" type="text" placeholder="Search.."
+            <br>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Reference</th>
+                <th>Active?</th>
+                <th><i class="fa fa-trash-o"></i></th>
+              </tr>
+              </thead>
+              <tbody id="myTable">
+              {% for project in projectList %}
+              <tr>
+                <td>{{ project.date|truncatechars:13 }}</td>
+                <td><a href="/sms_projects/show/{{ project.project_id }}">{{ project.name }}</a></td>
+                <td>{{ project.projecttype }}</td>
+                <td>{{ project.reference }}</td>
+                <td>{{ project.active }}</td>
+                <td><a href="/sms_projects/remove/{{project.project_id}}" class="button"><i class="fa fa-close"></i></a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+
+
+      </div> <!-- /container -->
+      
+{% endblock %}
+
+

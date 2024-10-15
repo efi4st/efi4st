@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+        <div class="container">
+          {% if error|length > 1 %}
+            <div class="alert alert-warning" role="alert">
+              {{error}}
+            </div>
+          {% endif %}
+        </div>
+
+      <div class="container">
+        <div class="row">
+          <p><a class="btn btn-primary btn-lg" href="/sms_deviceInstances/createSMSDeviceInstance" role="button">New Device Instance &raquo;</a></p>
+        </div>
+
+        <div class="row">
+          <div class="col-md-0">
+          </div>
+          <div class="col-md-12">
+            <h2>Systems:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Project</th>
+                <th>Device</th>
+                <th>Version</th>
+                <th>Serial</th>
+                <th>Provisioner</th>
+                <th>Configuration</th>
+                <th>Date</th>
+                <th><i class="fa fa-trash-o"></i></th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for deviceInstance in deviceInstanceList %}
+              <tr>
+                <td><a href="/sms_projects/show/{{ deviceInstance.project_id }}">{{ deviceInstance.projectName }}</a></td>
+                <td><a href="/sms_deviceInstances/show/{{ deviceInstance.deviceInstance_id }}">{{ deviceInstance.deviceType }}</a></td>
+                <td>{{ deviceInstance.deviceVersion }}</td>
+                <td>{{ deviceInstance.serialnumber }}</td>
+                <td>{{ deviceInstance.provisioner }}</td>
+                <td>{{ deviceInstance.configuration }}</td>
+                <td>{{ deviceInstance.date|truncatechars:13 }}</td>
+                <td><a href="/sms_deviceInstances/remove/{{deviceInstance.deviceInstance_id}}" class="button"><i class="fa fa-close"></i></a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-0">
+          </div>
+        </div>
+
+        <hr>
+
+      </div> <!-- /container -->
+      
+{% endblock %}
+
+

@@ -94,3 +94,54 @@ var INSERT_newAnalysisTool = `INSERT INTO analysisTool (name, executionString) V
 var DELETE_analysisTool = `DELETE FROM analysisTool WHERE analysisTool_id = ?;`
 
 
+/**
+ * Security Management System
+ * Created:   29.09.2024
+ *
+ * (C)
+ **/
+
+
+// SMS Project
+var SELECT_sms_projects = `SELECT sms_project.project_id, sms_project.name, sms_project.customer, sms_projecttype.type, sms_project.reference, sms_project.date, sms_project.active FROM sms_project LEFT JOIN sms_projecttype ON sms_project.projecttype_id = sms_projecttype.projecttype_id `
+var SELECT_sms_projectInfo = `SELECT sms_project.project_id, sms_project.name, sms_project.customer, sms_projecttype.type, sms_project.reference, sms_project.date, sms_project.active FROM sms_project LEFT JOIN sms_projecttype ON sms_project.projecttype_id = sms_projecttype.projecttype_id WHERE project_id = ?;`
+var INSERT_sms_newProject = `INSERT INTO sms_project (name, customer, projecttype_id, reference, date, active) VALUES (?,?,?,?,?,?);`
+var DELETE_sms_project = `DELETE FROM sms_project WHERE project_id = ?;`
+var UPDATE_sms_projectActive = `UPDATE sms_project SET active = ? WHERE project_id = ?;`
+
+// SMS System
+var SELECT_sms_systems = `SELECT sms_system.system_id, sms_system.version, sms_system.date, sms_systemtype.type FROM sms_system LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id `
+var SELECT_sms_systemInfo = `SELECT sms_system.system_id, sms_system.version, sms_system.date, sms_systemtype.type FROM sms_system LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id WHERE system_id = ?;`
+var INSERT_sms_newSystem = `INSERT INTO sms_system (systemtype_id, version, date) VALUES (?,?,?);`
+var DELETE_sms_system = `DELETE FROM sms_system WHERE system_id = ?;`
+
+// SMS Device
+var SELECT_sms_devices = `SELECT sms_device.device_id, sms_device.version, sms_device.date, sms_devicetype.type FROM sms_device LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id `
+var SELECT_sms_deviceInfo = `SELECT sms_device.device_id, sms_device.version, sms_device.date, sms_devicetype.type FROM sms_device LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id WHERE device_id = ?;`
+var INSERT_sms_newDevice = `INSERT INTO sms_device (devicetype_id, version, date) VALUES (?,?,?);`
+var DELETE_sms_device = `DELETE FROM sms_device WHERE device_id = ?;`
+
+// SMS DeviceInstance
+var SELECT_sms_deviceInstances = `SELECT sms_deviceInstance.deviceInstance_id, sms_deviceInstance.project_id, sms_deviceInstance.device_id, sms_deviceInstance.serialnumber, sms_deviceInstance.provisioner, sms_deviceInstance.configuration, sms_deviceInstance.date, sms_project.name, sms_device.devicetype_id, sms_device.version, sms_devicetype.type FROM sms_deviceInstance LEFT JOIN sms_project ON sms_deviceInstance.project_id = sms_project.project_id LEFT JOIN sms_device ON sms_deviceInstance.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id ; `
+var SELECT_sms_deviceInstanceInfo = `SELECT sms_deviceInstance.deviceInstance_id, sms_deviceInstance.project_id, sms_deviceInstance.device_id, sms_deviceInstance.serialnumber, sms_deviceInstance.provisioner, sms_deviceInstance.configuration, sms_deviceInstance.date, sms_project.name, sms_device.devicetype_id, sms_device.version, sms_devicetype.type FROM sms_deviceInstance LEFT JOIN sms_project ON sms_deviceInstance.project_id = sms_project.project_id LEFT JOIN sms_device ON sms_deviceInstance.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id WHERE deviceInstance_id = ?;`
+var INSERT_sms_newDeviceInstance = `INSERT INTO sms_deviceInstance (project_id, device_id, serialnumber, provisioner, configuration, date) VALUES (?,?,?,?,?,?);`
+var DELETE_sms_deviceInstance = `DELETE FROM sms_deviceInstance WHERE deviceInstance_id = ?;`
+var SELECT_sms_deviceInstancesForProject = `SELECT sms_deviceInstance.deviceInstance_id, sms_deviceInstance.project_id, sms_deviceInstance.device_id, sms_deviceInstance.serialnumber, sms_deviceInstance.provisioner, sms_deviceInstance.configuration, sms_deviceInstance.date, sms_project.name, sms_device.devicetype_id, sms_device.version, sms_devicetype.type FROM sms_deviceInstance LEFT JOIN sms_project ON sms_deviceInstance.project_id = sms_project.project_id LEFT JOIN sms_device ON sms_deviceInstance.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id WHERE sms_deviceInstance.project_id = ?; `
+
+// SMS_UpdateHistory
+var SELECT_sms_updatehistoriesForDevice = `SELECT sms_updateHistory.updateHistory_id, sms_updateHistory.deviceInstance_id, sms_updateHistory.user, sms_updateHistory.updateType, sms_updateHistory.date, sms_updateHistory.description FROM sms_updateHistory WHERE deviceInstance_id = ? `
+var INSERT_sms_newUpdateHistory = `INSERT INTO sms_updateHistory (deviceInstance_id, user, updateType, date, description) VALUES (?,?,?,?,?);`
+var SELECT_sms_UpdateHistoryInfo = `SELECT sms_updateHistory.updateHistory_id, sms_updateHistory.deviceInstance_id, sms_updateHistory.user, sms_updateHistory.updateType, sms_updateHistory.date, sms_updateHistory.description FROM sms_updateHistory WHERE updateHistory_id = ?`
+
+// SMS_Issue
+var SELECT_sms_issues = `SELECT sms_issue.issue_id, sms_issue.name, sms_issue.date, sms_issue.issueType, sms_issue.reference, sms_issue.criticality, sms_issue.cve, sms_issue.description FROM sms_issue; `
+var SELECT_sms_issueInfo = `SELECT sms_issue.issue_id, sms_issue.name, sms_issue.date, sms_issue.issueType, sms_issue.reference, sms_issue.criticality, sms_issue.cve, sms_issue.description FROM sms_issue WHERE issue_id = ?;`
+var INSERT_sms_newIssue = `INSERT INTO sms_issue (name, date, issueType, reference, criticality, cve, description) VALUES (?,?,?,?,?,?,?);`
+var DELETE_sms_issue = `DELETE FROM sms_issue WHERE issue_id = ?;`
+
+// SMS IssueAffectedDevice
+var INSERT_sms_newIssueAffectedDevice = `INSERT INTO sms_issueAffectedDevice (device_id, issue_id, additionalInfo, confirmed) VALUES (?,?,?,?);`
+var DELETE_sms_IssueAffectedDevice = `DELETE FROM sms_issueAffectedDevice WHERE device_id = ? AND issue_id = ?;`
+var SELECT_sms_IssueAffectedDevicesForIssueID = `SELECT sms_issueAffectedDevice.device_id, sms_issueAffectedDevice.issue_id, sms_issueAffectedDevice.additionalInfo, sms_issueAffectedDevice.confirmed, sms_devicetype.type, sms_device.version FROM sms_issueAffectedDevice LEFT JOIN sms_device ON sms_issueAffectedDevice.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id WHERE sms_issueAffectedDevice.issue_id = ?; `
+var SELECT_sms_IssuesForDevice = `SELECT sms_issueAffectedDevice.device_id, sms_issueAffectedDevice.issue_id, sms_issueAffectedDevice.additionalInfo, sms_issueAffectedDevice.confirmed, sms_issue.name FROM sms_issueAffectedDevice LEFT JOIN sms_issue ON sms_issueAffectedDevice.issue_id = sms_issue.issue_id WHERE sms_issueAffectedDevice.device_id = ?; `
+var SELECT_sms_affectedDeviceInstancesAndProjects = `SELECT deviceInstance_id, type, project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id LEFT JOIN sms_issueAffectedDevice siad ON sdi.device_id = siad.device_id WHERE siad.issue_id = ? UNION ALL Select deviceInstance_id, type, project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id RIGHT JOIN sms_issueAffectedDevice siad ON sdi.device_id = siad.device_id WHERE sdi.device_id IS NULL AND siad.issue_id = ?; `

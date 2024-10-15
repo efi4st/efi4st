@@ -8,6 +8,16 @@
     <script src="/static/js/popper.min.js"></script>
     <script src="/static/js/dropzone.js"></script>
       <script type="text/javascript" src="http://cdn.datatables.net/1.10.2/js/jquery.dataTables.min.js"></script>
+      <script>
+          $(document).ready(function(){
+              $("#myInput").on("keyup", function() {
+                  var value = $(this).val().toLowerCase();
+                  $("#myTable tr").filter(function() {
+                      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                  });
+              });
+          });
+      </script>
     <!-- Custom styles for this template -->
     <link rel="icon" href="/static/images/efi4st_favicon.png" type="image/png">
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
@@ -35,6 +45,9 @@
                </li>
                 <li class="nav-item active">
                     <a class="nav-link" href="/testResults">Modul Results </a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/sms_projects">Product Security Management </a>
                 </li>
             </ul>
 

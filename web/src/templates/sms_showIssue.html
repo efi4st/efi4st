@@ -1,0 +1,180 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+        <div class="row">
+          <h1>{{issue.name}}&nbsp;&nbsp;&nbsp;&nbsp;</h1>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4">
+            <ul class="list-group">
+              <li class="list-group-item">ID: {{issue.issue_id}}</li>
+              <li class="list-group-item">Type: {{issue.issueType}}</li>
+              <li class="list-group-item">Reference: {{issue.reference}}</li>
+              <li class="list-group-item">Crit: {{issue.criticality}}</li>
+              <li class="list-group-item">CVE: {{issue.cve}}</li>
+              <li class="list-group-item">Date: {{issue.date|truncatechars:13}}</li>
+            </ul>
+          </div>
+
+          <div class="col-md-8">
+            <h2>Solutions:</h2>
+              <table class="table">
+                <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Recipient</th>
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for firmware in firmwareList %}
+                <tr>
+                  <td><a href="/firmware/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
+                  <td>{{ firmware.Created|truncatechars:13}}</td>
+                  <td>{{ firmware.Created|truncatechars:13}}</td>
+                  <td>{{ firmware.Created|truncatechars:13}}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            <p><a class="btn btn-primary btn-lg" href="/firmware/show/upload/{{project.project_id}}" role="button">Add</a></p>
+          </div>
+        </div>
+
+        <hr>
+        <div class="row">
+          <h2>Description:&nbsp; &nbsp; </h2>
+          <textarea id="textfeld_01_id" name="textfeld_01" rows="6" cols="85" readonly>{{issue.description}}</textarea>
+        </div>
+        <hr>
+
+        <div class="row">
+          <div class="col-md-4">
+            <h2>Affected Devices:</h2> <p><a class="btn btn-primary btn-lg" href="/sms_issueAffectedDevice/createSMSIssueAffectedDevice/{{issue.issue_id}}" role="button">Add</a></p>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Device</th>
+                <th>Version</th>
+                <th>Part</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for device in affectedDevices %}
+              <tr>
+                <td><a href="/sms_devices/show/{{ device.device_id }}">{{ device.tmp }}</a></td>
+                <td>{{ device.tmp2 }}</td>
+                <td></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-4">
+            <h2>Affected Software:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Software</th>
+                <th>Version</th>
+                <th>Part</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for result in projectResults %}
+              <tr>
+                <td><a href="/results/show/{{ result.result_id }}">{{ result.name }}</a></td>
+                <td>{{ result.date }}</td>
+                <td><a href="/results/remove/{{ result.result_id }}">{{ result.name }}</a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="col-md-4">
+            <h2>Affected Components:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Component</th>
+                <th>Version</th>
+                <th>Part</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for result in projectResults %}
+              <tr>
+                <td><a href="/results/show/{{ result.result_id }}">{{ result.name }}</a></td>
+                <td>{{ result.date }}</td>
+                <td><a href="/results/remove/{{ result.result_id }}">{{ result.name }}</a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+          <div class="col-md-1">
+          </div>
+          <div class="col-md-10">
+            <h2>Affected DeviceInstances and their Projects:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>DeviceID</th>
+                <th>DeviceType</th>
+                <th>Version</th>
+                <th>Project</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for element in affectedDeviceInstancesAndProjects %}
+              <tr>
+                <td><a href="/sms_deviceInstances/show/{{ element.deviceInstance_id }}">{{ element.deviceInstance_id }}</a></td>
+                <td>{{ element.devicetype }}</td>
+                <td>{{ element.version }}</td>
+                <td><a href="/sms_projects/show/{{ element.project_id }}">{{ element.project_id }}</a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="col-md-1">
+
+          </div>
+        </div>
+        <hr>
+
+      </div> <!-- /container -->
+      
+{% endblock %}

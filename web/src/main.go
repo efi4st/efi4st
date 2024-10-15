@@ -1,16 +1,23 @@
+/**
+ * Author:    Admiral Helmut
+ * Created:   12.06.2019
+ *
+ * (C)
+ **/
+
 package main
 
 import (
+	"fmt"
 	"github.com/efi4st/efi4st/dbUtils"
 	"github.com/efi4st/efi4st/routes"
-	"fmt"
+	"github.com/efi4st/efi4st/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/logger"
 	"github.com/kataras/iris/v12/middleware/recover"
 	"log"
-	"github.com/efi4st/efi4st/utils"
 )
 
 func main(){
@@ -123,6 +130,111 @@ func irisMain()() {
 
 	// POST: http://localhost:8144/testResults/addRelevantApp/xxx
 	app.Post("/testResults/addRelevantApp/{project_id:string}", iris.LimitRequestBodySize(10<<20), routes.AddRelevantApp)
+
+	/**
+	 * Security Management System
+	 * Created:   29.09.2024
+	 *
+	 * (C)
+	 **/
+
+	// GET: http://localhost:8144/smsprojects
+	app.Get("/sms_projects", routes.SMSProjects)
+
+	// GET: http://localhost:8144/smsprojects/createSMSProject
+	app.Get("/sms_projects/createSMSProject", routes.CreateSMSProject)
+
+	// POST: http://localhost:8144/smsprojects/createSMSProject
+	app.Post("/sms_projects/addSMSProject", routes.AddSMSProject)
+
+	// GET: http://localhost:8144/smsprojects/show/1
+	app.Get("/sms_projects/show/{id:string}", routes.ShowSMSProject)
+
+	// GET: http://localhost:8144/smsprojects/remove/1
+	app.Get("/sms_projects/remove/{id:string}", routes.RemoveSMSProject)
+
+
+	// GET: http://localhost:8144/smssystems
+	app.Get("/sms_systems", routes.SMSSystems)
+
+	// GET: http://localhost:8144/smssystems/createSMSSystem
+	app.Get("/sms_systems/createSMSSystem", routes.CreateSMSSystem)
+
+	// POST: http://localhost:8144/smssystems/createSMSSystem
+	app.Post("/sms_systems/addSMSSystem", routes.AddSMSSystem)
+
+	// GET: http://localhost:8144/smssystems/show/1
+	app.Get("/sms_systems/show/{id:string}", routes.ShowSMSSystem)
+
+	// GET: http://localhost:8144/smssystems/remove/1
+	app.Get("/sms_systems/remove/{id:string}", routes.RemoveSMSSystem)
+
+
+	// GET: http://localhost:8144/smsdevices
+	app.Get("/sms_devices", routes.SMSDevice)
+
+	// GET: http://localhost:8144/smsdevices/createSMSDevice
+	app.Get("/sms_devices/createSMSDevice", routes.CreateSMSDevice)
+
+	// POST: http://localhost:8144/smsdevices/createSMSDevice
+	app.Post("/sms_devices/addSMSDevice", routes.AddSMSDevice)
+
+	// GET: http://localhost:8144/smsdevices/show/1
+	app.Get("/sms_devices/show/{id:string}", routes.ShowSMSDevice)
+
+	// GET: http://localhost:8144/smsdevices/remove/1
+	app.Get("/sms_devices/remove/{id:string}", routes.RemoveSMSDevice)
+
+	// GET: http://localhost:8144/smsdeviceInstances
+	app.Get("/sms_deviceInstances", routes.SMSDeviceInstance)
+
+	// GET: http://localhost:8144/smsdeviceInstances/createSMSDeviceInstance
+	app.Get("/sms_deviceInstances/createSMSDeviceInstance", routes.CreateSMSDeviceInstance)
+
+	// GET: http://localhost:8144/smsdeviceInstances/createSMSDeviceInstanceForProject/1
+	app.Get("/sms_deviceInstances/createSMSDeviceInstanceForProject/{id:string}", routes.CreateSMSDeviceInstanceForProject)
+
+	// POST: http://localhost:8144/smsdeviceInstances/addSMSDeviceInstance
+	app.Post("/sms_deviceInstances/addSMSDeviceInstance", routes.AddSMSDeviceInstance)
+
+	// GET: http://localhost:8144/smsdeviceInstances/show/1
+	app.Get("/sms_deviceInstances/show/{id:string}", routes.ShowSMSDeviceInstance)
+
+	// GET: http://localhost:8144/smsdeviceInstances/remove/1
+	app.Get("/sms_deviceInstances/remove/{id:string}", routes.RemoveSMSDeviceInstance)
+
+	// GET: http://localhost:8144/smsupdateHistory/createSMSUpdateHistory/1
+	app.Get("/smsupdateHistory/createSMSUpdateHistory/{id:string}", routes.CreateSMSUpdateHistory)
+
+	// POST: http://localhost:8144/smsupdateHistory/addSMSUpdateHistory
+	app.Post("/smsupdateHistory/addSMSUpdateHistory", routes.AddSMSUpdateHistory)
+
+	// GET: http://localhost:8144/sms_updateHistory/show/1
+	app.Get("/sms_updateHistory/show/{id:string}", routes.ShowSMSUpdateHistory)
+
+	// GET: http://localhost:8144/sms_issues
+	app.Get("/sms_issues", routes.SMSIssues)
+
+	// GET: http://localhost:8144/sms_issues/createSMSIssue
+	app.Get("/sms_issues/createSMSIssue", routes.CreateSMSIssue)
+
+	// POST: http://localhost:8144/sms_issues/addSMSIssue
+	app.Post("/sms_issues/addSMSIssue", routes.AddSMSIssue)
+
+	// GET: http://localhost:8144/sms_issues/show/1
+	app.Get("/sms_issues/show/{id:string}", routes.ShowSMSIssue)
+
+	// GET: http://localhost:8144/sms_issues/remove/1
+	app.Get("/sms_issues/remove/{id:string}", routes.RemoveSMSIssue)
+
+	// GET: http://localhost:8144/sms_issueAffectedDevice/createSMSIssueAffectedDevice/1
+	app.Get("/sms_issueAffectedDevice/createSMSIssueAffectedDevice/{id:string}", routes.CreateSMSIssueAffectedDevice)
+
+	// POST: http://localhost:8144/sms_issueAffectedDevice/addSMSIssueAffectedDevice
+	app.Post("/sms_issueAffectedDevice/addSMSIssueAffectedDevice", routes.AddSMSIssueAffectedDevice)
+
+	// GET: http://localhost:8144/sms_issueAffectedDevice/remove/1
+	app.Get("/sms_issueAffectedDevice/remove/{id:string}", routes.RemoveSMSIssueAffectedDevice)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

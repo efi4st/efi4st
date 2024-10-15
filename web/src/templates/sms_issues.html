@@ -1,0 +1,102 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+        <div class="container">
+          {% if error|length > 1 %}
+            <div class="alert alert-warning" role="alert">
+              {{error}}
+            </div>
+          {% endif %}
+        </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_systems" role="button">Systems &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_devices" role="button">Devices &raquo;</a></p>
+      <p><a class="btn btn-info" href="/sms_deviceInstances" role="button">Instances &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_applications" role="button">Applications &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_components" role="button">Components &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_issues" role="button">Issues &raquo;</a></p>
+    </div>
+    <div class="col-md-2">
+      <p><a class="btn btn-secondary" href="/sms_incidents" role="button">Incidents &raquo;</a></p>
+    </div>
+
+  </div>
+</div>
+<hr>
+      <div class="container">
+        <div class="row">
+          <p><a class="btn btn-primary btn-lg" href="/sms_issues/createSMSIssue" role="button">New Issue &raquo;</a></p>
+        </div>
+
+        <div class="row">
+          <div class="col-md-1">
+          </div>
+          <div class="col-md-10">
+            <h2>Issues:</h2>
+            <input class="form-control" id="myInput" type="text" placeholder="Search.."
+            <br>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Reference</th>
+                <th>Criticality</th>
+                <th>CVE</th>
+                <th>Date</th>
+                <th><i class="fa fa-trash-o"></i></th>
+              </tr>
+              </thead>
+              <tbody id="myTable">
+              {% for issue in issueList %}
+              <tr>
+                <td>{{ issue.issue_id }}</td>
+                <td><a href="/sms_issues/show/{{ issue.issue_id }}">{{ issue.name }}</a></td>
+                <td>{{ issue.issueType }}</td>
+                <td>{{ issue.reference }}</td>
+                <td>{{ issue.criticality }}</td>
+                <td>{{ issue.cve }}</td>
+                <td>{{ issue.date|truncatechars:13  }}</td>
+                <td><a href="/sms_projects/remove/{{project.project_id}}" class="button"><i class="fa fa-close"></i></a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-1">
+          </div>
+        </div>
+
+        <hr>
+
+
+      </div> <!-- /container -->
+      
+{% endblock %}
+
+

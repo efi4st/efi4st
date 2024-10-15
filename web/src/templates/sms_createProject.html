@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_projects/addSMSProject" method="POST">
+              <div class="form-group">
+
+                <h3>Add new Project:</h3>
+                <label for="ProjectName">Name:</label>
+                <input type="text" class="form-control" name="ProjectName" id="ProjectName" placeholder="ProjectName">
+                </br>
+                <label for="Customer">Customer:</label>
+                <input type="text" class="form-control" name="Customer" id="Customer" placeholder="Customer">
+                </br>
+                <label for="ProjecttypeId">Type:</label>
+                <input type="text" class="form-control" name="ProjecttypeId" id="ProjecttypeId" placeholder="ProjecttypeId">
+                </br>
+                <label for="Reference">Reference:</label>
+                <input type="text" class="form-control" name="Reference" id="Reference" placeholder="Reference">
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

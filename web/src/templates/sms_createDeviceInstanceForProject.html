@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_deviceInstances/addSMSDeviceInstance" method="POST">
+              <div class="form-group">
+
+                <h3>Add new DeviceInstance for Project {{projectId}}:</h3>
+                </br>
+                <label for="Project_id">Project_id:</label>
+                <input type="text" class="form-control" name="Project_id" id="Project_id" value="{{projectId}}" readonly>
+                </br>
+                <label for="Device_id">Device_id:</label>
+                <select name="Device_id" id="Device_id" class="form-select" aria-label="Default select example">
+                  {% for device in deviceList %}
+                  <option value="{{device.device_id}}">{{device.devicetype_id}} &nbsp; {{device.version}}</option>
+                  {% endfor %}
+
+                </select>
+                </br>
+                <label for="Serialnumber">Serialnumber:</label>
+                <input type="text" class="form-control" name="Serialnumber" id="Serialnumber" placeholder="Serialnumber">
+                </br>
+                <label for="Provisioner">Provisioner:</label>
+                <input type="text" class="form-control" name="Provisioner" id="Provisioner" placeholder="Provisioner">
+                </br>
+                <label for="Configuration">Configuration:</label>
+                <input type="text" class="form-control" name="Configuration" id="Configuration" placeholder="Configuration">
+                </br>
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

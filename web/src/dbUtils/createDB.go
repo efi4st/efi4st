@@ -19,4 +19,14 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(appContentSchema)
 	db.MustExec(analysisToolSchema)
 	db.MustExec(binaryAnalysisSchema)
+	db.MustExec(sms_projecttype_schema) 		// SMS
+	db.MustExec(sms_project_schema)     		// SMS
+	db.MustExec(sms_systemtype_schema)  		// SMS
+	db.MustExec(sms_system_schema)				// SMS
+	db.MustExec(sms_devicetype_schema)  		// SMS
+	db.MustExec(sms_device_schema)				// SMS
+	db.MustExec(sms_deviceInstance_schema)		// SMS
+	db.MustExec(sms_updateHistory_schema)   	// SMS
+	db.MustExec(sms_issue_schema)				// SMS
+	db.MustExec(sms_issueAffectedDevice_schema)	// SMS
 }

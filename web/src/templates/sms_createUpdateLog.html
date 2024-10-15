@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/smsupdateHistory/addSMSUpdateHistory" method="POST">
+              <div class="form-group">
+
+                <h3>Add new Update Log Entry:</h3>
+
+                </br>
+                <label for="DeviceInstance_id">DeviceInstance_id:</label>
+                <input type="text" class="form-control" name="DeviceInstance_id" id="DeviceInstance_id" value="{{deviceInstanceId}}" readonly>
+                </br>
+                <label for="User">User:</label>
+                <input type="text" class="form-control" name="User" id="User" placeholder="User">
+                </br>
+
+                <label for="UpdateType">UpdateType:</label>
+                <select name="UpdateType" id="UpdateType" class="form-select" aria-label="Default select example">
+                  <option value="Feature Upgrade">Feature Upgrade</option>
+                  <option value="System Upgrade">System Upgrade</option>
+                  <option value="Vulnerability Fix">Vulnerability Fix</option>
+                  <option value="System Change">System Change</option>
+                </select>
+                </br>
+                <label for="Description">Description:</label>
+                <input type="text" class="form-control" name="Description" id="Description" placeholder="Description">
+                </br>
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

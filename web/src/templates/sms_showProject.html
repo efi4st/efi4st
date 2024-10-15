@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+        <div class="row">
+          <h1>{{project.name}}&nbsp;&nbsp;&nbsp;&nbsp;</h1> <h3>Customer: &nbsp;{{project.customer}}</h3>
+        </div>
+
+        <div class="row">
+          <div class="col-md-3">
+            <ul class="list-group">
+              <li class="list-group-item">Name: {{project.name}}</li>
+              <li class="list-group-item">Customer: {{project.customer}}</li>
+              <li class="list-group-item">Date: {{project.date|truncatechars:13}}</li>
+              <li class="list-group-item">Type: {{project.projecttype}}</li>
+              <li class="list-group-item">Reference: {{project.reference}}</li>
+              <li class="list-group-item">Active: {{project.active}}</li>
+            </ul>
+          </div>
+
+          <div class="col-md-9">
+            <h2>Based on System:</h2>
+              <table class="table">
+                <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for firmware in firmwareList %}
+                <tr>
+                  <td><a href="/firmware/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
+                  <td>{{ firmware.Created|truncatechars:13}}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            <p><a class="btn btn-primary btn-lg" href="/firmware/show/upload/{{project.project_id}}" role="button">Upload</a></p>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+          <div class="col-md-8">
+            <h2>DeviceInstances:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="btn btn-primary btn-lg" href="/sms_deviceInstances/createSMSDeviceInstanceForProject/{{project.project_id}}" role="button" align=right>Add</a></h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Device</th>
+                <th>Version</th>
+                <th>belongsTo</th>
+                <th>Serial</th>
+                <th>Issues</th>
+                <th>Status</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for projectDeviceInstance in deviceInstanceList %}
+              <tr>
+                <td><a href="/sms_deviceInstances/show/{{ projectDeviceInstance.deviceInstance_id }}">{{ projectDeviceInstance.deviceType }}</a></td>
+                <td>{{ projectDeviceInstance.deviceVersion }}</td>
+                <td></td>
+                <td>{{ projectDeviceInstance.serialnumber }}</td>
+                <td></td>
+                <td></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-4">
+            <h2>Issues:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Ref</th>
+                <th>Severity</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for result in projectResults %}
+              <tr>
+                <td><a href="/results/show/{{ result.result_id }}">{{ result.name }}</a></td>
+                <td>{{ result.date }}</td>
+                <td><a href="/results/remove/{{ result.result_id }}">{{ result.name }}</a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}

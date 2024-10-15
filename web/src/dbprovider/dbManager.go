@@ -64,6 +64,36 @@ type Manager interface {
 	RemoveBinaryAnalysis(id int) error
 	RemoveBinaryAnalysisByRelevantApp(id int) error
 	UpdateBinaryAnalysis(id int, output string) error
+	GetSMSProjects() []classes.Sms_Project
+	AddSMSProject(projectName string, customer string, projecttypeId int, reference string) (err error)
+	GetSMSProjectInfo(id int) *classes.Sms_Project
+	UpdateSMSProjectsActive(id int, active bool) error
+	RemoveSMSProject(id int) error
+	AddSMSSystem(systemtypeId int, version string, date string) error
+	GetSMSSystems() []classes.Sms_System
+	GetSMSSystemInfo(id int) *classes.Sms_System
+	RemoveSMSSystem(id int) error
+	AddSMSDevice(devicetypeId int, version string, date string) error
+	GetSMSDevice() []classes.Sms_Device
+	GetSMSDeviceInfo(id int) *classes.Sms_Device
+	RemoveSMSDevice(id int) error
+	AddSMSDeviceInstance(project_id int, device_id int, serialnumber string, provisioner string, configuration string) error
+	GetSMSDeviceInstances() []classes.Sms_DeviceInstance
+	GetSMSDeviceInstanceInfo(id int) *classes.Sms_DeviceInstance
+	RemoveSMSDeviceInstances(id int) error
+	GetDeviceInstanceListForProject(id int) []classes.Sms_DeviceInstance
+	GetSMSUpdateHistoryForDevice(id int) []classes.Sms_UpdateHistory
+	AddSMSUpdateHistory(deviceInstance_id int, user string, updateType string, description string) error
+	GetSMSUdateHistoryInfo(id int) *classes.Sms_UpdateHistory
+	AddSMSIssue(name string, issueType string, reference string, criticality int, cve string, description string) error
+	GetSMSIssues() []classes.Sms_Issue
+	GetSMSIssueInfo(id int) *classes.Sms_Issue
+	RemoveSMSIssue(id int) error
+	AddSMSIssueAffectedDevice(device_id int, issue_id int, additionalInfo string, confirmed bool) error
+	GetSMSIssueAffectedDevicesForIssueID(issue_id int) []classes.Sms_IssueAffectedDevice
+	GetSMSIssuesForDevice(device_id int) []classes.Sms_IssueAffectedDevice
+	RemoveSMSIssueAffectedDevice(id int) error
+	GetSMSAffectedDeviceInstancesAndProjects(issue_id int) []classes.Sms_AffectedDeviceInstancesAndProjects
 }
 
 type manager struct {
@@ -1023,6 +1053,626 @@ func (mgr *manager) UpdateBinaryAnalysis(id int, output string) (err error) {
 	if rows == nil{
 		fmt.Print(err)
 	}
+
+	return err
+}
+
+
+/**
+ * Security Management System
+ * Created:   29.09.2024
+ *
+ * (C)
+ **/
+
+/////////////////////////////////////////
+////	SMS Project
+////////////////////////////////////////
+func (mgr *manager) AddSMSProject(projectName string, customer string, projecttypeId int, reference string) (err error) {
+	dt := time.Now()
+	act := false
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newProject)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(projectName, customer, projecttypeId, reference, dt, act)
+
+	if rows == nil{
+		fmt.Println("rows should be null")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSProjects() (projects []classes.Sms_Project) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_projects)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbId int
+		dbName string
+		dbCustomer string
+		dbProjectType string
+		dbReference string
+		dbDate time.Time
+		dbActive bool)
+
+	for rows.Next() {
+		err := rows.Scan(&dbId, &dbName, &dbCustomer, &dbProjectType, &dbReference, &dbDate, &dbActive)
+
+		var project = classes.NewSms_ProjectFromDB(dbId, dbName, dbCustomer, dbProjectType, dbReference, dbDate.String(), dbActive)
+		projects=append(projects, *project)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return projects
+}
+
+func (mgr *manager) GetSMSProjectInfo(id int) (*classes.Sms_Project) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_projectInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbId int
+		dbName string
+		dbCustomer string
+		dbProjectType string
+		dbReference string
+		dbDate time.Time
+		dbActive bool)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbId, &dbName, &dbCustomer, &dbProjectType, &dbReference, &dbDate, &dbActive)
+
+	var project = classes.NewSms_ProjectFromDB(dbId, dbName, dbCustomer, dbProjectType, dbReference, dbDate.String(), dbActive)
+
+	return project
+}
+
+func (mgr *manager) UpdateSMSProjectsActive(id int, active bool) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_sms_projectActive)
+
+	stmt.QueryRow(active, id)
+
+	return err
+}
+
+func (mgr *manager) RemoveSMSProject(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_project)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+func (mgr *manager) GetDeviceInstanceListForProject(id int) (deviceInstances []classes.Sms_DeviceInstance){
+
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_deviceInstancesForProject)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(id)
+
+	var (	dbId int
+		dbProject_id int
+		dbDevice_id int
+		dbSerialnumber string
+		dbProvisioner string
+		dbConfiguration string
+		dbDate time.Time
+		dbprojectName string
+		dbdevicetypeId int
+		dbdeviceVersion string
+		dbdeviceType string	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbId, &dbProject_id, &dbDevice_id, &dbSerialnumber, &dbProvisioner, &dbConfiguration, &dbDate, &dbprojectName, &dbdevicetypeId, &dbdeviceVersion, &dbdeviceType)
+
+		var deviceInstance = classes.NewSms_DeviceInstanceFromDB(dbId, dbProject_id, dbDevice_id, dbSerialnumber, dbProvisioner, dbConfiguration, dbDate.String(), dbprojectName, dbdeviceType, dbdeviceVersion)
+		deviceInstances=append(deviceInstances, *deviceInstance)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return deviceInstances
+}
+
+/////////////////////////////////////////
+////	SMS System
+////////////////////////////////////////
+func (mgr *manager) AddSMSSystem(systemtypeId int, version string, date string) (err error) {
+	dt := time.Now()
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newSystem)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(systemtypeId, version, dt)
+
+	if rows == nil{
+		fmt.Println("rows should be null")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSSystems() (systems []classes.Sms_System) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_systems)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbId int
+		dbSystemType string
+		dbVersion string
+		dbDate time.Time)
+
+	for rows.Next() {
+		err := rows.Scan(&dbId, &dbVersion, &dbDate, &dbSystemType)
+
+		var system = classes.NewSms_SystemFromDB(dbId, dbSystemType, dbVersion, dbDate.String())
+		systems=append(systems, *system)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return systems
+}
+
+func (mgr *manager) GetSMSSystemInfo(id int) (*classes.Sms_System) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_systemInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbId int
+		dbSystemType string
+		dbVersion string
+		dbDate time.Time)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbId, &dbVersion, &dbDate, &dbSystemType)
+
+	var system = classes.NewSms_SystemFromDB(dbId, dbSystemType, dbVersion, dbDate.String())
+
+	return system
+}
+
+func (mgr *manager) RemoveSMSSystem(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_system)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+
+/////////////////////////////////////////
+////	SMS Device
+////////////////////////////////////////
+func (mgr *manager) AddSMSDevice(devicetypeId int, version string, date string) (err error) {
+	dt := time.Now()
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(devicetypeId, version, dt)
+
+	if rows == nil{
+		fmt.Println("rows should be null")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSDevice() (devices []classes.Sms_Device) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_devices)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbId int
+		dbDeviceType string
+		dbVersion string
+		dbDate time.Time)
+
+	for rows.Next() {
+		err := rows.Scan(&dbId, &dbVersion, &dbDate, &dbDeviceType)
+
+		var device = classes.NewSms_DeviceFromDB(dbId, dbDeviceType, dbVersion, dbDate.String())
+		devices=append(devices, *device)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return devices
+}
+
+func (mgr *manager) GetSMSDeviceInfo(id int) (*classes.Sms_Device) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_deviceInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbId int
+		dbDeviceType string
+		dbVersion string
+		dbDate time.Time)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbId, &dbVersion, &dbDate, &dbDeviceType)
+
+	var device = classes.NewSms_DeviceFromDB(dbId, dbDeviceType, dbVersion, dbDate.String())
+
+	return device
+}
+
+func (mgr *manager) RemoveSMSDevice(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_device)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS DeviceInstance
+////////////////////////////////////////
+func (mgr *manager) AddSMSDeviceInstance(project_id int, device_id int, serialnumber string, provisioner string, configuration string) (err error) {
+	dt := time.Now()
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newDeviceInstance)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(project_id, device_id, serialnumber, provisioner, configuration, dt)
+
+	if rows == nil{
+		fmt.Println("rows should be null")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSDeviceInstances() (deviceInstances []classes.Sms_DeviceInstance) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_deviceInstances)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbId int
+		dbProject_id int
+		dbDevice_id int
+		dbSerialnumber string
+		dbProvisioner string
+		dbConfiguration string
+		dbDate time.Time
+		dbprojectName string
+		dbdevicetypeId int
+		dbdeviceVersion string
+		dbdeviceType string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbId, &dbProject_id, &dbDevice_id, &dbSerialnumber, &dbProvisioner, &dbConfiguration, &dbDate, &dbprojectName, &dbdevicetypeId, &dbdeviceVersion, &dbdeviceType)
+
+		var deviceInstance = classes.NewSms_DeviceInstanceFromDB(dbId, dbProject_id, dbDevice_id, dbSerialnumber, dbProvisioner, dbConfiguration, dbDate.String(), dbprojectName, dbdeviceType, dbdeviceVersion)
+		deviceInstances=append(deviceInstances, *deviceInstance)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return deviceInstances
+}
+
+func (mgr *manager) GetSMSDeviceInstanceInfo(id int) (*classes.Sms_DeviceInstance) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_deviceInstanceInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbId int
+		dbProject_id int
+		dbDevice_id int
+		dbSerialnumber string
+		dbProvisioner string
+		dbConfiguration string
+		dbDate time.Time
+		dbprojectName string
+		dbdevicetypeId int
+		dbdeviceVersion string
+		dbdeviceType string)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbId, &dbProject_id, &dbDevice_id, &dbSerialnumber, &dbProvisioner, &dbConfiguration, &dbDate, &dbprojectName, &dbdevicetypeId, &dbdeviceVersion, &dbdeviceType)
+
+	var deviceInstance = classes.NewSms_DeviceInstanceFromDB(dbId, dbProject_id, dbDevice_id, dbSerialnumber, dbProvisioner, dbConfiguration, dbDate.String(), dbprojectName, dbdeviceType, dbdeviceVersion)
+
+	return deviceInstance
+}
+
+func (mgr *manager) RemoveSMSDeviceInstances(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_deviceInstance)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+
+/////////////////////////////////////////
+////	SMS UpdateHistory
+////////////////////////////////////////
+func (mgr *manager) GetSMSUpdateHistoryForDevice(id int) (updateHistories []classes.Sms_UpdateHistory) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_updatehistoriesForDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(id)
+
+	var ( 	dbUpdateHistory_id int
+		dbDeviceInstance_id int
+		dbUser string
+		dbUpdateType string
+		dbDate time.Time
+		dbDescription string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbUpdateHistory_id,&dbDeviceInstance_id,&dbUser,&dbUpdateType,&dbDate,&dbDescription)
+
+		var updateHistory = classes.NewSms_UpdateHistoryFromDB(dbUpdateHistory_id, dbDeviceInstance_id, "", dbUser, dbUpdateType, dbDate.String(), dbDescription)
+		updateHistories=append(updateHistories, *updateHistory)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return updateHistories
+}
+
+func (mgr *manager) AddSMSUpdateHistory(deviceInstance_id int, user string, updateType string, description string) (err error) {
+	dt := time.Now()
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newUpdateHistory)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(deviceInstance_id, user, updateType, dt, description)
+
+	if rows == nil{
+		fmt.Println("rows should be null")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSUdateHistoryInfo(id int) (*classes.Sms_UpdateHistory) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_UpdateHistoryInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbId int
+		dbDeviceInstance_id int
+		dbUser string
+		dbUpdateType string
+		dbDate time.Time
+		dbDescription string
+	)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbId,&dbDeviceInstance_id,&dbUser,&dbUpdateType,&dbDate,&dbDescription)
+
+	var updateHistory = classes.NewSms_UpdateHistoryFromDB(dbId, dbDeviceInstance_id, "", dbUser, dbUpdateType, dbDate.String(), dbDescription)
+
+	return updateHistory
+}
+
+/////////////////////////////////////////
+////	SMS Issue
+////////////////////////////////////////
+func (mgr *manager) AddSMSIssue(name string, issueType string, reference string, criticality int, cve string, description string) (err error) {
+	dt := time.Now()
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newIssue)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(name, dt, issueType, reference, criticality, cve, description)
+
+	if rows == nil{
+		fmt.Println("rows should be null")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSIssues() (issues []classes.Sms_Issue) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_issues)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbId int
+		dbName string
+		dbDate time.Time
+		dbIssueType string
+		dbReference string
+		dbCriticality int
+		dbCve string
+		dbDescription string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbId, &dbName, &dbDate, &dbIssueType, &dbReference, &dbCriticality, &dbCve, &dbDescription)
+		var issue = classes.NewSms_IssueFromDB(dbId, dbName, dbDate.String(), dbIssueType, dbReference, dbCriticality, dbCve, dbDescription)
+		issues=append(issues, *issue)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return issues
+}
+
+func (mgr *manager) GetSMSIssueInfo(id int) (*classes.Sms_Issue) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_issueInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbId int
+		dbName string
+		dbDate time.Time
+		dbIssueType string
+		dbReference string
+		dbCriticality int
+		dbCve string
+		dbDescription string
+	)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbId, &dbName, &dbDate, &dbIssueType, &dbReference, &dbCriticality, &dbCve, &dbDescription)
+
+	var issue = classes.NewSms_IssueFromDB(dbId, dbName, dbDate.String(), dbIssueType, dbReference, dbCriticality, dbCve, dbDescription)
+
+	return issue
+}
+
+func (mgr *manager) RemoveSMSIssue(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_issue)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS IssueAffectedDevice
+////////////////////////////////////////
+func (mgr *manager) AddSMSIssueAffectedDevice(device_id int, issue_id int, additionalInfo string, confirmed bool) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newIssueAffectedDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(device_id, issue_id, additionalInfo, confirmed)
+
+	if rows == nil{
+		fmt.Println("rows should be null")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSIssueAffectedDevicesForIssueID(issue_id int) (issueAffectedDevices []classes.Sms_IssueAffectedDevice) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssueAffectedDevicesForIssueID)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(issue_id)
+
+	var ( 	dbDevice_id int
+			dbIssue_id int
+			dbAdditionalInfo string
+			dbConfirmed bool
+			dbTmp string
+			dbTmp2 string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbDevice_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbTmp, &dbTmp2)
+
+		var affectedDevice = classes.NewSms_IssueAffectedDevice(dbDevice_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbTmp, dbTmp2)
+		issueAffectedDevices=append(issueAffectedDevices, *affectedDevice)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return issueAffectedDevices
+}
+
+func (mgr *manager) GetSMSAffectedDeviceInstancesAndProjects(issue_id int) (affectedDevicInstancessAndProjects []classes.Sms_AffectedDeviceInstancesAndProjects) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_affectedDeviceInstancesAndProjects)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(issue_id, issue_id)
+
+	var ( 	dbDeviceInstance_id int
+		dbDevicetype string
+		dbProject_id int
+		dbVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbDeviceInstance_id, &dbDevicetype, &dbProject_id, &dbVersion)
+
+		var affectedDeviceInstancesAndProject = classes.NewSms_AffectedDeviceInstancesAndProjects(dbDeviceInstance_id, dbDevicetype, dbProject_id, dbVersion)
+		affectedDevicInstancessAndProjects=append(affectedDevicInstancessAndProjects, *affectedDeviceInstancesAndProject)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return affectedDevicInstancessAndProjects
+}
+
+func (mgr *manager) GetSMSIssuesForDevice(device_id int) (issueAffectedDevices []classes.Sms_IssueAffectedDevice) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssuesForDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(device_id)
+
+	var ( 	dbDevice_id int
+		dbIssue_id int
+		dbAdditionalInfo string
+		dbConfirmed bool
+		dbTmp string
+		dbTmp2 string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbDevice_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbTmp)
+		dbTmp2 = ""
+		var issueList = classes.NewSms_IssueAffectedDevice(dbDevice_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbTmp, dbTmp2)
+		issueAffectedDevices=append(issueAffectedDevices, *issueList)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return issueAffectedDevices
+}
+
+
+func (mgr *manager) RemoveSMSIssueAffectedDevice(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_IssueAffectedDevice)
+
+	stmt.QueryRow(id)
 
 	return err
 }
