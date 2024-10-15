@@ -236,6 +236,15 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_issueAffectedDevice/remove/1
 	app.Get("/sms_issueAffectedDevice/remove/{id:string}", routes.RemoveSMSIssueAffectedDevice)
 
+	// POST: http://localhost:8144/sms_solutions/addSMSSolution
+	app.Post("/sms_solutions/addSMSSolution", routes.AddSMSSolution)
+
+	// GET: http://localhost:8144/sms_solutions/show/1
+	app.Get("/sms_solutions/show/{id:string}", routes.ShowSMSSolution)
+
+	// GET: http://localhost:8144/sms_solutions/createSMSSolution/1
+	app.Get("/sms_solutions/createSMSSolution/{id:string}", routes.CreateSMSSolution)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

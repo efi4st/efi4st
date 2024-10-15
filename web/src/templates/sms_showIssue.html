@@ -40,29 +40,29 @@
           </div>
 
           <div class="col-md-8">
-            <h2>Solutions:</h2>
+            <h2>Solutions:</h2> <p><a class="btn btn-primary btn-lg" href="/sms_solutions/createSMSSolution/{{issue.issue_id}}" role="button">Add</a></p>
               <table class="table">
                 <thead>
                 <tr>
                   <th>Date</th>
                   <th>Name</th>
-                  <th>Type</th>
-                  <th>Recipient</th>
-
+                  <th>Devices</th>
+                  <th>Description</th>
+                  <th>Ref.</th>
                 </tr>
                 </thead>
                 <tbody>
-                {% for firmware in firmwareList %}
+                {% for solution in solutionsForThisIssue %}
                 <tr>
-                  <td><a href="/firmware/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
-                  <td>{{ firmware.Created|truncatechars:13}}</td>
-                  <td>{{ firmware.Created|truncatechars:13}}</td>
-                  <td>{{ firmware.Created|truncatechars:13}}</td>
+                  <td>{{ solution.date|truncatechars:13}}</td>
+                  <td><a href="/sms_solutions/show/{{ solution.solution_id }}">{{ solution.name }}</a></td>
+                  <td>{{ solution.deviceTypeJoined}}</td>
+                  <td>{{ solution.description|truncatechars:13}}</td>
+                  <td><a href="{{ solution.reference }}"><i class="fa fa-chevron-right"></i></a></td>
                 </tr>
                 {% endfor %}
                 </tbody>
               </table>
-            <p><a class="btn btn-primary btn-lg" href="/firmware/show/upload/{{project.project_id}}" role="button">Add</a></p>
           </div>
         </div>
 

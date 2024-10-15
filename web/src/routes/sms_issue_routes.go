@@ -73,7 +73,9 @@ func ShowSMSIssue(ctx iris.Context) {
 	issue := dbprovider.GetDBManager().GetSMSIssueInfo(i)
 	affectedDevices := dbprovider.GetDBManager().GetSMSIssueAffectedDevicesForIssueID(i)
 	affectedDeviceInstancesAndProjects := dbprovider.GetDBManager().GetSMSAffectedDeviceInstancesAndProjects(i)
+	solutionsForThisIssue := dbprovider.GetDBManager().GetSMSSolutionsForIssue(i)
 
+	ctx.ViewData("solutionsForThisIssue", solutionsForThisIssue)
 	ctx.ViewData("affectedDeviceInstancesAndProjects", affectedDeviceInstancesAndProjects)
 	ctx.ViewData("affectedDevices", affectedDevices)
 	ctx.ViewData("issue", issue)

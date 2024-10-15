@@ -30,9 +30,11 @@ func SMSDevice(ctx iris.Context) {
 // GET
 func CreateSMSDevice(ctx iris.Context) {
 
+	deviceTypes := dbprovider.GetDBManager().GetSMSDeviceTypes()
+
+	ctx.ViewData("typeList", deviceTypes)
 	ctx.View("sms_createDevice.html")
 }
-
 
 // POST
 func AddSMSDevice(ctx iris.Context) {

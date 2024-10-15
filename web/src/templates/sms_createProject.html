@@ -40,7 +40,12 @@
                 <input type="text" class="form-control" name="Customer" id="Customer" placeholder="Customer">
                 </br>
                 <label for="ProjecttypeId">Type:</label>
-                <input type="text" class="form-control" name="ProjecttypeId" id="ProjecttypeId" placeholder="ProjecttypeId">
+                <select name="ProjecttypeId" id="ProjecttypeId" class="form-select" aria-label="Default select example">
+                  {% for type in typeList %}
+                  <option value="{{type.projecttype_id}}">{{type.projectType}}</option>
+                  {% endfor %}
+
+                </select>
                 </br>
                 <label for="Reference">Reference:</label>
                 <input type="text" class="form-control" name="Reference" id="Reference" placeholder="Reference">

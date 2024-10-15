@@ -38,7 +38,12 @@
                 <input type="text" class="form-control" name="Version" id="Version" placeholder="Version">
                 </br>
                 <label for="SystemtypeId">Type:</label>
-                <input type="text" class="form-control" name="SystemtypeId" id="SystemtypeId" placeholder="SystemtypeId">
+                <select name="SystemtypeId" id="SystemtypeId" class="form-select" aria-label="Default select example">
+                  {% for type in typeList %}
+                  <option value="{{type.systemtype_id}}">{{type.systemType}}</option>
+                  {% endfor %}
+
+                </select>
                 </br>
                 </br>
 

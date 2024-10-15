@@ -29,4 +29,5 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(sms_updateHistory_schema)   	// SMS
 	db.MustExec(sms_issue_schema)				// SMS
 	db.MustExec(sms_issueAffectedDevice_schema)	// SMS
+	db.MustExec(sms_solution_schema)			// SMS
 }

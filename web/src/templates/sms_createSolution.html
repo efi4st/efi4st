@@ -29,21 +29,28 @@
           </div>
 
           <div class="col-md-8">
-            <form action="/sms_devices/addSMSDevice" method="POST">
+            <form action="/sms_solutions/addSMSSolution" method="POST">
               <div class="form-group">
 
-                <h3>Add new Device:</h3>
+                <h3>Add new Solution:</h3>
+                <label for="Issue_id">Issue_id:</label>
+                <input type="text" class="form-control" name="Issue_id" id="Issue_id" value="{{issueId}}" readonly>
                 </br>
-                <label for="Version">Version:</label>
-                <input type="text" class="form-control" name="Version" id="Version" placeholder="Version">
-                </br>
-                <label for="DevicetypeId">Type:</label>
-                <select name="DevicetypeId" id="DevicetypeId" class="form-select" aria-label="Default select example">
+                <label for="Devicetype_id">Type:</label>
+                <select name="Devicetype_id" id="Devicetype_id" class="form-select" aria-label="Default select example">
                   {% for type in typeList %}
                   <option value="{{type.devicetype_id}}">{{type.deviceType}}</option>
                   {% endfor %}
                 </select>
                 </br>
+                <label for="Name">Name:</label>
+                <input type="text" class="form-control" name="Name" id="Name" placeholder="Name">
+                </br>
+                <label for="Description">Description:</label>
+                <input type="text" class="form-control" name="Description" id="Description" placeholder="Description">
+                </br>
+                <label for="Reference">Reference:</label>
+                <input type="text" class="form-control" name="Reference" id="Reference" placeholder="Reference">
                 </br>
 
               </div>

@@ -30,6 +30,9 @@ func SMSSystems(ctx iris.Context) {
 // GET
 func CreateSMSSystem(ctx iris.Context) {
 
+	systemTypes := dbprovider.GetDBManager().GetSMSSystemTypes()
+
+	ctx.ViewData("typeList", systemTypes)
 	ctx.View("sms_createSystem.html")
 }
 

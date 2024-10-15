@@ -33,6 +33,9 @@ func SMSProjects(ctx iris.Context) {
 // GET
 func CreateSMSProject(ctx iris.Context) {
 
+	projectTypes := dbprovider.GetDBManager().GetSMSProjectTypes()
+
+	ctx.ViewData("typeList", projectTypes)
 	ctx.View("sms_createProject.html")
 }
 

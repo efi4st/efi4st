@@ -312,3 +312,18 @@ CREATE TABLE IF NOT EXISTS sms_issueAffectedDevice (
 	CONSTRAINT sms_issueAffectedDevice_ibfk_2 FOREIGN KEY (issue_id) REFERENCES sms_issue (issue_id) ON UPDATE CASCADE ON DELETE NO ACTION
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_solution_schema = `
+CREATE TABLE IF NOT EXISTS sms_solution (
+    solution_id INT(11) NOT NULL AUTO_INCREMENT,
+	issue_id INT(11) NOT NULL,
+	devicetype_id INT(11) NOT NULL,
+	date DATE NOT NULL,
+	name VARCHAR(60) NOT NULL,
+	description VARCHAR(150) DEFAULT NULL,
+	reference VARCHAR(150) DEFAULT NULL,
+	PRIMARY KEY (solution_id),
+	CONSTRAINT sms_solution_ibfk_1 FOREIGN KEY (issue_id) REFERENCES sms_issue (issue_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	CONSTRAINT sms_solution_ibfk_2 FOREIGN KEY (devicetype_id) REFERENCES sms_devicetype (devicetype_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
