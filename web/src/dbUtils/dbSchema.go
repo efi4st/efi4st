@@ -227,9 +227,9 @@ var sms_releasenote_schema = `
 CREATE TABLE IF NOT EXISTS sms_releasenote (
 	releasenote_id INT(11) NOT NULL AUTO_INCREMENT,
 	device_id INT(11) NOT NULL,
-	type VARCHAR(150) NOT NULL,
+	type VARCHAR(80) NOT NULL,
 	date DATE NOT NULL,
-	details VARCHAR(150) NOT NULL,
+	details VARCHAR(300) NOT NULL,
 	PRIMARY KEY (releasenote_id),
 	CONSTRAINT sms_releasenote_ibfk_1 FOREIGN KEY (device_id) REFERENCES sms_device (device_id) ON UPDATE CASCADE ON DELETE NO ACTION
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -264,16 +264,6 @@ CREATE TABLE IF NOT EXISTS sms_applicationPartOfDevice (
 	PRIMARY KEY (application_id, device_id),
 	CONSTRAINT sms_applicationPartOfDevice_ibfk_1 FOREIGN KEY (application_id) REFERENCES sms_application (application_id) ON UPDATE CASCADE ON DELETE NO ACTION,
 	CONSTRAINT sms_applicationPartOfDevice_ibfk_2 FOREIGN KEY (device_id) REFERENCES sms_device (device_id) ON UPDATE CASCADE ON DELETE NO ACTION
-)ENGINE=InnoDB DEFAULT CHARSET=latin1;
-`
-
-var sms_component_schema = `
-CREATE TABLE IF NOT EXISTS sms_component (
-	component_id INT(11) NOT NULL AUTO_INCREMENT,
-	version VARCHAR(150) NOT NULL,
-	name VARCHAR(150) NOT NULL,
-	date DATE NOT NULL,
-	PRIMARY KEY (component_id)
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
 
@@ -325,5 +315,70 @@ CREATE TABLE IF NOT EXISTS sms_solution (
 	PRIMARY KEY (solution_id),
 	CONSTRAINT sms_solution_ibfk_1 FOREIGN KEY (issue_id) REFERENCES sms_issue (issue_id) ON UPDATE CASCADE ON DELETE NO ACTION,
 	CONSTRAINT sms_solution_ibfk_2 FOREIGN KEY (devicetype_id) REFERENCES sms_devicetype (devicetype_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_artefacttype_schema = `
+CREATE TABLE IF NOT EXISTS sms_artefacttype (
+	artefacttype_id INT(11) NOT NULL AUTO_INCREMENT,
+	artefactType VARCHAR(150) NOT NULL,
+	PRIMARY KEY (artefacttype_id)
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_artefact_schema = `
+CREATE TABLE IF NOT EXISTS sms_artefact (
+	artefact_id INT(11) NOT NULL AUTO_INCREMENT,
+	artefacttype_id INT(11) NOT NULL,
+	name VARCHAR(150) NOT NULL,
+	version VARCHAR(50) NOT NULL,
+	PRIMARY KEY (artefact_id),
+	CONSTRAINT sms_artefact_ibfk_1 FOREIGN KEY (artefacttype_id) REFERENCES sms_artefacttype (artefacttype_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_softwaretype_schema = `
+CREATE TABLE IF NOT EXISTS sms_softwaretype (
+	softwaretype_id INT(11) NOT NULL AUTO_INCREMENT,
+	typeName VARCHAR(150) NOT NULL,
+	PRIMARY KEY (softwaretype_id)
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_software_schema = `
+CREATE TABLE IF NOT EXISTS sms_software (
+	software_id INT(11) NOT NULL AUTO_INCREMENT,
+	softwaretype_id INT(11) NOT NULL,
+	version VARCHAR(80) NOT NULL,
+	date DATE NOT NULL,
+	license VARCHAR(50) DEFAULT NULL,
+	thirdParty BOOLEAN NOT NULL,
+	releaseNote VARCHAR(300) DEFAULT NULL,
+	PRIMARY KEY (software_id),
+	CONSTRAINT sms_software_ibfk_1 FOREIGN KEY (softwaretype_id) REFERENCES sms_softwaretype (softwaretype_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_component_schema = `
+CREATE TABLE IF NOT EXISTS sms_component (
+	component_id INT(11) NOT NULL AUTO_INCREMENT,
+	name VARCHAR(100) NOT NULL,
+	componentType VARCHAR(80) NOT NULL,
+	version VARCHAR(80) NOT NULL,
+	date DATE NOT NULL,
+	license VARCHAR(50) DEFAULT NULL,
+	thirdParty BOOLEAN NOT NULL,
+	releaseNote VARCHAR(300) DEFAULT NULL,
+	PRIMARY KEY (component_id)
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+var sms_componentPartOfSoftware_schema = `
+CREATE TABLE IF NOT EXISTS sms_componentPartOfSoftware (
+	software_id INT(11) NOT NULL,
+	component_id INT(11) NOT NULL,
+	additionalInfo VARCHAR(150) DEFAULT NULL,
+	PRIMARY KEY (software_id, component_id),
+	CONSTRAINT sms_componentPartOfSoftware_ibfk_1 FOREIGN KEY (software_id) REFERENCES sms_software (software_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	CONSTRAINT sms_componentPartOfSoftware_ibfk_2 FOREIGN KEY (component_id) REFERENCES sms_component (component_id) ON UPDATE CASCADE ON DELETE NO ACTION
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `

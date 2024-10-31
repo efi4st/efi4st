@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-3">
+            <ul class="list-group">
+              <li class="list-group-item">ID: {{component.component_id}}</li>
+              <li class="list-group-item">Name: {{component.name}}</li>
+              <li class="list-group-item">Version: {{component.version}}</li>
+              <li class="list-group-item">Type: {{component.componentType}}</li>
+              <li class="list-group-item">Date: {{component.date|truncatechars:13}}</li>
+              <li class="list-group-item">License: {{component.license}}</li>
+              <li class="list-group-item">3rdParty: {{component.thirdParty}}</li>
+            </ul>
+          </div>
+
+          <div class="col-md-9">
+            <h2>Used in Software:</h2>
+
+          </div>
+        </div>
+
+        <hr>
+        <hr>
+
+        <div class="row">
+          <div class="col-md-12">
+            <h2>Release Notes:</h2>
+            <textarea id="textfeld_01_id" name="textfeld_01" rows="6" cols="85" readonly>{{component.releaseNote}}</textarea>
+          </div>
+        </div>
+
+        <hr>
+        <hr>
+        <div class="row">
+          <div class="col-md-6">
+            <h2>Issues:</h2>
+
+          </div>
+          <div class="col-md-6">
+            <h2>Subscriber:</h2>
+
+          </div>
+        </div>
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}

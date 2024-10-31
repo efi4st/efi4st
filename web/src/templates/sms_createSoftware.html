@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_softwares/addSMSSoftware" method="POST">
+              <div class="form-group">
+
+                <h3>Add new Software:</h3>
+                </br>
+                <label for="Version">Version:</label>
+                <input type="text" class="form-control" name="Version" id="Version" placeholder="Version">
+                </br>
+                <label for="SoftwaretypeId">Type:</label>
+                <select name="SoftwaretypeId" id="SoftwaretypeId" class="form-select" aria-label="Default select example">
+                  {% for type in typeList %}
+                  <option value="{{type.softwaretype_id}}">{{type.typeName}}</option>
+                  {% endfor %}
+                </select>
+                </br>
+                <label for="License">License:</label>
+                <input type="text" class="form-control" name="License" id="License" placeholder="License">
+                </br>
+                <label for="ThirdParty">ThirdParty:</label>
+                <input type="checkbox" class="form-control" id="ThirdParty" name="ThirdParty" />
+                </br>
+                <label for="ReleaseNote">ReleaseNote:</label>
+                <textarea class="form-control" name="ReleaseNote" id="ReleaseNote" placeholder="ReleaseNote" cols="40" rows="5"></textarea>
+                </br>
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

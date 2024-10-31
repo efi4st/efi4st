@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+        <div class="container">
+          {% if error|length > 1 %}
+            <div class="alert alert-warning" role="alert">
+              {{error}}
+            </div>
+          {% endif %}
+        </div>
+
+      <div class="container">
+        <div class="row">
+          <p><a class="btn btn-primary btn-lg" href="/sms_artefacts/createSMSArtefact" role="button">New Artefact &raquo;</a></p>
+        </div>
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+          <div class="col-md-8">
+            <h2>Artefacts:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Version</th>
+                <th>Type</th>
+                <th><i class="fa fa-trash-o"></i></th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for artefact in artefactList %}
+              <tr>
+                <td>{{ artefact.artefact_id }}</td>
+                <td><a href="/sms_artefacts/show/{{ artefact.artefact_id }}">{{ artefact.name }}</a></td>
+                <td>{{ artefact.version }}</td>
+                <td>{{ artefact.artefactype_join }}</td>
+                <td><a href="/sms_artefacts/remove/{{artefact.artefact_id}}" class="button"><i class="fa fa-close"></i></a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+
+
+      </div> <!-- /container -->
+      
+{% endblock %}
+
+

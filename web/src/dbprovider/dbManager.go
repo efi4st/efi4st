@@ -101,6 +101,27 @@ type Manager interface {
 	RemoveSMSSolution(id int) error
 	AddSMSSolution(issue_id int, devicetype_id int, name string, description string, reference string) error
 	GetSMSSolutionInfo(id int) *classes.Sms_Solution
+	AddSMSArtefact(artefactype_id int, name string, version string) error
+	GetSMSArtefact() []classes.Sms_Artefact
+	GetSMSArtefactTypes() []classes.Sms_ArtefactType
+	GetSMSArtefactInfo(id int) *classes.Sms_Artefact
+	RemoveSMSArtefact(id int) error
+	GetSMSReleaseNoteForDevice(id int) []classes.Sms_ReleaseNote
+	AddSMSReleaseNote(device_id int, releaseNoteType string, details string) error
+	GetSMSReleaseNoteInfo(id int) *classes.Sms_ReleaseNote
+	AddSMSSoftware(softwaretype_id int, version string, license string, thirdParty bool, releaseNote string) error
+	GetSMSSoftware() []classes.Sms_Software
+	GetSMSSoftwareTypes() []classes.Sms_SoftwareType
+	GetSMSSoftwareInfo(id int) *classes.Sms_Software
+	RemoveSMSSoftware(id int) error
+	AddSMSComponent(name string, componentType string, version string, license string, thirdParty bool, releaseNote string) error
+	GetSMSComponent() []classes.Sms_Component
+	GetSMSComponentInfo(id int) *classes.Sms_Component
+	RemoveSMSComponent(id int) error
+	AddSMSComponentPartOfSoftware(software_id int, component_id int, additionalInfo string) error
+	GetSMSComponentPartOfSoftwareForSoftware(software_id int) []classes.Sms_ComponentPartOfSoftware
+	GetSMSComponentPartOfSoftwareForComponent(component_id int) []classes.Sms_ComponentPartOfSoftware
+	RemoveSMSComponentPartOfSoftware(id int) error
 }
 
 type manager struct {
@@ -1834,4 +1855,432 @@ func (mgr *manager) GetSMSSolutionInfo(id int) (*classes.Sms_Solution) {
 	var solution = classes.NewSms_SolutionFromDB(dbSolution_id, dbIssue_id, dbDevicetype_id, dbDate.String(), dbName, dbDescription, dbReference, dbDeviceType)
 
 	return solution
+}
+
+/////////////////////////////////////////
+////	SMS Artefact
+////////////////////////////////////////
+func (mgr *manager) AddSMSArtefact(artefactype_id int, name string, version string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newArtefact)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(artefactype_id, name, version)
+
+	if rows == nil{
+		fmt.Println("rows should be null")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSArtefact() (artefacts []classes.Sms_Artefact) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_artefact)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbArtefact_id int
+		dbArtefactype_id int
+		dbName string
+		dbVersion string
+		dbArtefactype_join string)
+
+	for rows.Next() {
+		err := rows.Scan(&dbArtefact_id, &dbArtefactype_id, &dbName, &dbVersion, &dbArtefactype_join)
+
+		var artefact = classes.NewSms_ArtefactFromDB(dbArtefact_id, dbArtefactype_id, dbName, dbVersion, dbArtefactype_join)
+		artefacts=append(artefacts, *artefact)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return artefacts
+}
+
+func (mgr *manager) GetSMSArtefactTypes() (artefactTypes []classes.Sms_ArtefactType) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_artefactTypes)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbArtefacttype_id int
+		dbArtefactType string)
+
+	for rows.Next() {
+		err := rows.Scan(&dbArtefacttype_id, &dbArtefactType)
+
+		var artefactType = classes.NewSms_ArtefactTypeFromDB(dbArtefacttype_id, dbArtefactType)
+		artefactTypes=append(artefactTypes, *artefactType)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return artefactTypes
+}
+
+func (mgr *manager) GetSMSArtefactInfo(id int) (*classes.Sms_Artefact) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_artefactInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbArtefact_id int
+		dbArtefactype_id int
+		dbName string
+		dbVersion string
+		dbArtefactype_join string)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbArtefact_id, &dbArtefactype_id, &dbName, &dbVersion, &dbArtefactype_join)
+
+	var artefact = classes.NewSms_ArtefactFromDB(dbArtefact_id, dbArtefactype_id, dbName, dbVersion,dbArtefactype_join)
+
+	return artefact
+}
+
+func (mgr *manager) RemoveSMSArtefact(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_artefact)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS ReleaseNotes
+////////////////////////////////////////
+func (mgr *manager) GetSMSReleaseNoteForDevice(id int) (releaseNotes []classes.Sms_ReleaseNote) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_releaseNoteForDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(id)
+
+	var ( 	dbReleasenote_id int
+		dbDevice_id int
+		dbReleaseNoteType string
+		dbDate time.Time
+		dbDetails string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbReleasenote_id,&dbDevice_id,&dbReleaseNoteType,&dbDate,&dbDetails)
+
+		var releaseNote = classes.NewSms_ReleaseNoteFromDB(dbReleasenote_id, dbDevice_id, dbReleaseNoteType, dbDate.String(), dbDetails)
+		releaseNotes=append(releaseNotes, *releaseNote)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return releaseNotes
+}
+
+func (mgr *manager) AddSMSReleaseNote(device_id int, releaseNoteType string, details string) (err error) {
+	dt := time.Now()
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newReleaseNote)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(device_id, releaseNoteType, dt, details)
+
+	if rows == nil{
+		fmt.Println("rows should be null, releaseNoteInsert")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSReleaseNoteInfo(id int) (*classes.Sms_ReleaseNote) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ReleaseNoteInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbReleasenote_id int
+		dbDevice_id int
+		dbReleaseNoteType string
+		dbDate time.Time
+		dbDetails string
+	)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbReleasenote_id,&dbDevice_id,&dbReleaseNoteType,&dbDate,&dbDetails)
+
+	var releaseNote = classes.NewSms_ReleaseNoteFromDB(dbReleasenote_id, dbDevice_id, dbReleaseNoteType, dbDate.String(), dbDetails)
+
+	return releaseNote
+}
+
+/////////////////////////////////////////
+////	SMS Software
+////////////////////////////////////////
+func (mgr *manager) AddSMSSoftware(softwaretype_id int, version string, license string, thirdParty bool, releaseNote string) (err error) {
+	dt := time.Now()
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newSoftware)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(softwaretype_id, version, dt, license, thirdParty, releaseNote)
+
+	if rows == nil{
+		fmt.Println("rows should be null, Add Software")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSSoftware() (softwares []classes.Sms_Software) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_softwares)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbSoftware_id int
+		dbSoftwaretype_id int
+		dbVersion string
+		dbDate time.Time
+		dbTypeName string
+		dbLicense string
+		dbThirdParty bool
+		dbReleaseNote string)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSoftware_id, &dbSoftwaretype_id, &dbVersion, &dbDate, &dbTypeName, &dbLicense, &dbThirdParty, &dbReleaseNote)
+
+		var software = classes.NewSms_SoftwareFromDB(dbSoftware_id, dbSoftwaretype_id, dbVersion, dbDate.String(), dbLicense, dbThirdParty, dbReleaseNote, dbTypeName)
+		softwares=append(softwares, *software)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return softwares
+}
+
+func (mgr *manager) GetSMSSoftwareTypes() (softwareTypes []classes.Sms_SoftwareType) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_softwareTypes)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbSoftwaretype_id int
+		dbTypeName string)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSoftwaretype_id, &dbTypeName)
+
+		var softwareType = classes.NewSms_SoftwareTypeFromDB(dbSoftwaretype_id, dbTypeName)
+		softwareTypes=append(softwareTypes, *softwareType)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return softwareTypes
+}
+
+func (mgr *manager) GetSMSSoftwareInfo(id int) (*classes.Sms_Software) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_softwareInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbSoftware_id int
+		dbSoftwaretype_id int
+		dbVersion string
+		dbDate time.Time
+		dbTypeName string
+		dbLicense string
+		dbThirdParty bool
+		dbReleaseNote string)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbSoftware_id, &dbSoftwaretype_id, &dbVersion, &dbDate, &dbTypeName, &dbLicense, &dbThirdParty, &dbReleaseNote)
+
+	var software = classes.NewSms_SoftwareFromDB(dbSoftware_id, dbSoftwaretype_id, dbVersion, dbDate.String(), dbLicense, dbThirdParty, dbReleaseNote, dbTypeName)
+
+	return software
+}
+
+func (mgr *manager) RemoveSMSSoftware(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_software)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS Component
+////////////////////////////////////////
+func (mgr *manager) AddSMSComponent(name string, componentType string, version string, license string, thirdParty bool, releaseNote string) (err error) {
+
+	dt := time.Now()
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newComponent)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(name, componentType, version, dt, license, thirdParty, releaseNote)
+
+	if rows == nil{
+		fmt.Println("rows should be null, Add Component")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSComponent() (components []classes.Sms_Component) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_components)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbComponent_id int
+		dbName string
+		dbComponentType string
+		dbVersion string
+		dbDate time.Time
+		dbLicense string
+		dbThirdParty bool
+		dbReleaseNote string)
+
+	for rows.Next() {
+		err := rows.Scan(&dbComponent_id, &dbName, &dbComponentType, &dbVersion, &dbDate, &dbLicense, &dbThirdParty, &dbReleaseNote)
+
+		var component = classes.NewSms_ComponentFromDB(dbComponent_id, dbName, dbComponentType, dbVersion, dbDate.String(), dbLicense, dbThirdParty, dbReleaseNote)
+		components=append(components, *component)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return components
+}
+
+func (mgr *manager) GetSMSComponentInfo(id int) (*classes.Sms_Component) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_componentInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbComponent_id int
+		dbName string
+		dbComponentType string
+		dbVersion string
+		dbDate time.Time
+		dbLicense string
+		dbThirdParty bool
+		dbReleaseNote string)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbComponent_id, &dbName, &dbComponentType, &dbVersion, &dbDate, &dbLicense, &dbThirdParty, &dbReleaseNote)
+
+	var component = classes.NewSms_ComponentFromDB(dbComponent_id, dbName, dbComponentType, dbVersion, dbDate.String(), dbLicense, dbThirdParty, dbReleaseNote)
+
+	return component
+}
+
+func (mgr *manager) RemoveSMSComponent(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_component)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS ComponentPartOfSoftware
+////////////////////////////////////////
+func (mgr *manager) AddSMSComponentPartOfSoftware(software_id int, component_id int, additionalInfo string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newComponentPartOfSoftware)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(software_id, component_id, additionalInfo)
+
+	if rows == nil{
+		fmt.Println("rows should be null AddSMSComponentPartOfSoftware")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSComponentPartOfSoftwareForSoftware(software_id int) (componentsPartOfSoftware []classes.Sms_ComponentPartOfSoftware) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ComponentPartOfSoftwareForSoftware)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(software_id)
+
+	var ( 	dbSoftware_id int
+		dbComponent_id int
+		dbAdditionalInfo string
+		dbName string
+		dbVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSoftware_id, &dbComponent_id, &dbAdditionalInfo, &dbName, &dbVersion)
+
+		var component = classes.NewSms_ComponentPartOfSoftwareFromDB(dbSoftware_id, dbComponent_id, dbAdditionalInfo, dbName, dbVersion)
+		componentsPartOfSoftware=append(componentsPartOfSoftware, *component)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return componentsPartOfSoftware
+}
+
+
+func (mgr *manager) GetSMSComponentPartOfSoftwareForComponent(component_id int) (softwaresParentOfComponent []classes.Sms_ComponentPartOfSoftware) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ComponentPartOfSoftwareForComponent)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(component_id)
+
+	var ( 	dbSoftware_id int
+		dbComponent_id int
+		dbAdditionalInfo string
+		dbName string
+		dbVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSoftware_id, &dbComponent_id, &dbAdditionalInfo, &dbName, &dbVersion)
+		var software = classes.NewSms_ComponentPartOfSoftwareFromDB(dbSoftware_id, dbComponent_id, dbAdditionalInfo, dbName, dbVersion)
+		softwaresParentOfComponent=append(softwaresParentOfComponent, *software)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return softwaresParentOfComponent
+}
+
+
+func (mgr *manager) RemoveSMSComponentPartOfSoftware(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_ComponentPartOfSoftware)
+
+	stmt.QueryRow(id)
+
+	return err
 }

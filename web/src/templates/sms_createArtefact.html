@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_artefacts/addSMSArtefact" method="POST">
+              <div class="form-group">
+
+                <h3>Add new Artefact:</h3>
+                </br>
+                <label for="Name">Name:</label>
+                <input type="text" class="form-control" name="Name" id="Name" placeholder="Name">
+                </br>
+                <label for="Version">Version:</label>
+                <input type="text" class="form-control" name="Version" id="Version" placeholder="Version">
+                </br>
+                <label for="ArtefacttypeId">Type:</label>
+                <select name="ArtefacttypeId" id="ArtefacttypeId" class="form-select" aria-label="Default select example">
+                  {% for artefact in artefactList %}
+                  <option value="{{artefact.artefacttype_id}}">{{artefact.artefactType}}</option>
+                  {% endfor %}
+                </select>
+                </br>
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

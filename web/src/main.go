@@ -169,7 +169,6 @@ func irisMain()() {
 	// GET: http://localhost:8144/smssystems/remove/1
 	app.Get("/sms_systems/remove/{id:string}", routes.RemoveSMSSystem)
 
-
 	// GET: http://localhost:8144/smsdevices
 	app.Get("/sms_devices", routes.SMSDevice)
 
@@ -244,6 +243,69 @@ func irisMain()() {
 
 	// GET: http://localhost:8144/sms_solutions/createSMSSolution/1
 	app.Get("/sms_solutions/createSMSSolution/{id:string}", routes.CreateSMSSolution)
+
+	// GET: http://localhost:8144/sms_artefacts
+	app.Get("/sms_artefacts", routes.SMSArtefact)
+
+	// GET: http://localhost:8144/sms_artefacts/createSMSArtefact
+	app.Get("/sms_artefacts/createSMSArtefact", routes.CreateSMSArtefact)
+
+	// POST: http://localhost:8144/sms_artefacts/addSMSArtefact
+	app.Post("/sms_artefacts/addSMSArtefact", routes.AddSMSArtefact)
+
+	// GET: http://localhost:8144/sms_artefacts/show/1
+	app.Get("/sms_artefacts/show/{id:string}", routes.ShowSMSArtefact)
+
+	// GET: http://localhost:8144/sms_artefacts/remove/1
+	app.Get("/sms_artefacts/remove/{id:string}", routes.RemoveSMSArtefact)
+
+	// GET: http://localhost:8144/sms_releaseNote/createSMSReleaseNote/1
+	app.Get("/sms_releaseNote/createSMSReleaseNote/{id:string}", routes.CreateSMSReleaseNote)
+
+	// POST: http://localhost:8144/sms_releaseNote/addSMSReleaseNote
+	app.Post("/sms_releaseNote/addSMSReleaseNote", routes.AddSMSReleaseNote)
+
+	// GET: http://localhost:8144/sms_releaseNote/show/1
+	app.Get("/sms_releaseNote/show/{id:string}", routes.ShowSMSReleaseNote)
+
+	// GET: http://localhost:8144/sms_softwares
+	app.Get("/sms_softwares", routes.SMSSoftware)
+
+	// GET: http://localhost:8144/sms_softwares/createSMSSoftware
+	app.Get("/sms_softwares/createSMSSoftware", routes.CreateSMSSoftware)
+
+	// POST: http://localhost:8144/sms_softwares/addSMSSoftware
+	app.Post("/sms_softwares/addSMSSoftware", routes.AddSMSSoftware)
+
+	// GET: http://localhost:8144/sms_softwares/show/1
+	app.Get("/sms_softwares/show/{id:string}", routes.ShowSMSSoftware)
+
+	// GET: http://localhost:8144/sms_softwares/remove/1
+	app.Get("/sms_softwares/remove/{id:string}", routes.RemoveSMSSoftware)
+
+	// GET: http://localhost:8144/sms_components
+	app.Get("/sms_components", routes.SMSComponent)
+
+	// GET: http://localhost:8144/sms_components/createSMSComponent
+	app.Get("/sms_components/createSMSComponent", routes.CreateSMSComponent)
+
+	// POST: http://localhost:8144/sms_components/addSMSComponent
+	app.Post("/sms_components/addSMSComponent", routes.AddSMSComponent)
+
+	// GET: http://localhost:8144/sms_components/show/1
+	app.Get("/sms_components/show/{id:string}", routes.ShowSMSComponent)
+
+	// GET: http://localhost:8144/sms_components/remove/1
+	app.Get("/sms_components/remove/{id:string}", routes.RemoveSMSComponent)
+
+	// GET: http://localhost:8144/sms_componentPartOfSoftware/createSMSComponentPartOfSoftware/1
+	app.Get("/sms_componentPartOfSoftware/createSMSComponentPartOfSoftware/{id:string}", routes.CreateSMSComponentPartOfSoftware)
+
+	// POST: http://localhost:8144/sms_componentPartOfSoftware/addSMSComponentPartOfSoftware
+	app.Post("/sms_componentPartOfSoftware/addSMSComponentPartOfSoftware", routes.AddSMSComponentPartOfSoftware)
+
+	// GET: http://localhost:8144/sms_componentPartOfSoftware/remove/1
+	app.Get("/sms_componentPartOfSoftware/remove/{id:string}", routes.RemoveSMSComponentPartOfSoftware)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

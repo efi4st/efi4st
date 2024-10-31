@@ -70,7 +70,9 @@ func ShowSMSDevice(ctx iris.Context) {
 	}
 
 	device := dbprovider.GetDBManager().GetSMSDeviceInfo(i)
+	deviceReleaseNotes := dbprovider.GetDBManager().GetSMSReleaseNoteForDevice(i)
 
+	ctx.ViewData("deviceReleaseNotes", deviceReleaseNotes)
 	ctx.ViewData("device", device)
 	ctx.View("sms_showDevice.html")
 }

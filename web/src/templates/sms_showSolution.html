@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+        <div class="row">
+          <h1>Solution:{{solution.name}}&nbsp;&nbsp;&nbsp;&nbsp;</h1>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4">
+            <ul class="list-group">
+              <li class="list-group-item">ID: {{solution.solution_id}}</li>
+              <li class="list-group-item">Issue:<a href="/sms_issues/show/{{solution.issue_id}}">{{solution.issue_id}}</a></li>
+              <li class="list-group-item">DeviceType:{{solution.deviceTypeJoined}}</li>
+              <li class="list-group-item">Date: {{solution.date|truncatechars:13}}</li>
+              <li class="list-group-item">Reference: {{solution.reference}}</li>
+            </ul>
+          </div>
+        </div>
+
+        <hr>
+        <div class="row">
+          <h2>Description:&nbsp; &nbsp; </h2>
+          <textarea id="textfeld_01_id" name="textfeld_01" rows="6" cols="85" readonly>{{solution.description}}</textarea>
+        </div>
+        <hr>
+
+      </div> <!-- /container -->
+      
+{% endblock %}

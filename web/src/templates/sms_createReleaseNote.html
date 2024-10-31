@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_releaseNote/addSMSReleaseNote" method="POST">
+              <div class="form-group">
+
+                <h3>Add new Release Note Entry:</h3>
+
+                </br>
+                <label for="Device_id">Device_id:</label>
+                <input type="text" class="form-control" name="Device_id" id="Device_id" value="{{deviceId}}" readonly>
+                </br>
+
+                <label for="ReleaseNoteType">ReleaseNoteType:</label>
+                <select name="ReleaseNoteType" id="ReleaseNoteType" class="form-select" aria-label="Default select example">
+                  <option value="Planned Release">Planned Release</option>
+                  <option value="Quick Fix">Quick Fix</option>
+                </select>
+                </br>
+                <label for="Details">Details:</label>
+                <textarea class="form-control" name="Details" id="Details" placeholder="Details" cols="40" rows="5"></textarea>
+                </br>
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

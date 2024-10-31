@@ -117,14 +117,12 @@ var INSERT_sms_newSystem = `INSERT INTO sms_system (systemtype_id, version, date
 var DELETE_sms_system = `DELETE FROM sms_system WHERE system_id = ?;`
 var SELECT_sms_systemTypes = `SELECT sms_systemtype.systemtype_id, sms_systemtype.type FROM sms_systemtype;`
 
-
 // SMS Device
 var SELECT_sms_devices = `SELECT sms_device.device_id, sms_device.version, sms_device.date, sms_devicetype.type FROM sms_device LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id `
 var SELECT_sms_deviceInfo = `SELECT sms_device.device_id, sms_device.version, sms_device.date, sms_devicetype.type FROM sms_device LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id WHERE device_id = ?;`
 var INSERT_sms_newDevice = `INSERT INTO sms_device (devicetype_id, version, date) VALUES (?,?,?);`
 var DELETE_sms_device = `DELETE FROM sms_device WHERE device_id = ?;`
 var SELECT_sms_deviceTypes = `SELECT sms_devicetype.devicetype_id, sms_devicetype.type FROM sms_devicetype;`
-
 
 // SMS DeviceInstance
 var SELECT_sms_deviceInstances = `SELECT sms_deviceInstance.deviceInstance_id, sms_deviceInstance.project_id, sms_deviceInstance.device_id, sms_deviceInstance.serialnumber, sms_deviceInstance.provisioner, sms_deviceInstance.configuration, sms_deviceInstance.date, sms_project.name, sms_device.devicetype_id, sms_device.version, sms_devicetype.type FROM sms_deviceInstance LEFT JOIN sms_project ON sms_deviceInstance.project_id = sms_project.project_id LEFT JOIN sms_device ON sms_deviceInstance.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id ; `
@@ -156,3 +154,34 @@ var INSERT_sms_newSolution = `INSERT INTO sms_solution (issue_id, devicetype_id,
 var DELETE_sms_Solution = `DELETE FROM sms_solution WHERE solution_id = ?;`
 var SELECT_sms_solutionsForIssue = `SELECT sms_solution.solution_id, sms_solution.issue_id, sms_solution.devicetype_id, sms_solution.date, sms_solution.name, sms_solution.description, sms_solution.reference, sms_devicetype.type FROM sms_solution LEFT JOIN sms_devicetype ON sms_solution.devicetype_id = sms_devicetype.devicetype_id WHERE issue_id = ?;`
 var SELECT_sms_solutionInfo = `SELECT sms_solution.solution_id, sms_solution.issue_id, sms_solution.devicetype_id, sms_solution.date, sms_solution.name, sms_solution.description, sms_solution.reference, sms_devicetype.type FROM sms_solution LEFT JOIN sms_devicetype ON sms_solution.devicetype_id = sms_devicetype.devicetype_id WHERE solution_id = ?;`
+
+// SMS Artefact
+var SELECT_sms_artefact = `SELECT sms_artefact.artefact_id, sms_artefact.artefacttype_id, sms_artefact.name, sms_artefact.version, sms_artefacttype.artefactType FROM sms_artefact LEFT JOIN sms_artefacttype ON sms_artefact.artefacttype_id = sms_artefacttype.artefacttype_id `
+var SELECT_sms_artefactInfo = `SELECT sms_artefact.artefact_id, sms_artefact.artefacttype_id, sms_artefact.name, sms_artefact.version, sms_artefacttype.artefactType FROM sms_artefact LEFT JOIN sms_artefacttype ON sms_artefact.artefacttype_id = sms_artefacttype.artefacttype_id WHERE artefact_id = ?;`
+var INSERT_sms_newArtefact = `INSERT INTO sms_artefact (artefacttype_id, name, version) VALUES (?,?,?);`
+var DELETE_sms_artefact = `DELETE FROM sms_artefact WHERE artefact_id = ?;`
+var SELECT_sms_artefactTypes = `SELECT sms_artefacttype.artefacttype_id, sms_artefacttype.artefactType FROM sms_artefacttype;`
+
+// SMS_UpdateHistory
+var SELECT_sms_releaseNoteForDevice = `SELECT sms_releasenote.releasenote_id, sms_releasenote.device_id, sms_releasenote.type, sms_releasenote.date, sms_releasenote.details FROM sms_releasenote WHERE device_id = ? `
+var INSERT_sms_newReleaseNote = `INSERT INTO sms_releasenote (device_id, type, date, details) VALUES (?,?,?,?);`
+var SELECT_sms_ReleaseNoteInfo = `SELECT sms_releasenote.releasenote_id, sms_releasenote.device_id, sms_releasenote.type, sms_releasenote.date, sms_releasenote.details FROM sms_releasenote WHERE releasenote_id = ?`
+
+// SMS Software
+var SELECT_sms_softwares = `SELECT sms_software.software_id, sms_software.softwaretype_id, sms_software.version, sms_software.date, sms_softwaretype.typeName, sms_software.license, sms_software.thirdParty, sms_software.releaseNote FROM sms_software LEFT JOIN sms_softwaretype ON sms_software.softwaretype_id = sms_softwaretype.softwaretype_id `
+var SELECT_sms_softwareInfo = `SELECT sms_software.software_id, sms_software.softwaretype_id, sms_software.version, sms_software.date, sms_softwaretype.typeName, sms_software.license, sms_software.thirdParty, sms_software.releaseNote FROM sms_software LEFT JOIN sms_softwaretype ON sms_software.softwaretype_id = sms_softwaretype.softwaretype_id WHERE software_id = ?;`
+var INSERT_sms_newSoftware = `INSERT INTO sms_software (softwaretype_id, version, date, license, thirdParty, releaseNote) VALUES (?,?,?,?,?,?);`
+var DELETE_sms_software = `DELETE FROM sms_software WHERE software_id = ?;`
+var SELECT_sms_softwareTypes = `SELECT sms_softwaretype.softwaretype_id, sms_softwaretype.typeName FROM sms_softwaretype;`
+
+// SMS Component
+var SELECT_sms_components = `SELECT sms_component.component_id, sms_component.name, sms_component.componentType, sms_component.version, sms_component.date, sms_component.license, sms_component.thirdParty, sms_component.releaseNote FROM sms_component;`
+var SELECT_sms_componentInfo = `SELECT sms_component.component_id, sms_component.name, sms_component.componentType, sms_component.version, sms_component.date, sms_component.license, sms_component.thirdParty, sms_component.releaseNote FROM sms_component WHERE component_id = ?;`
+var INSERT_sms_newComponent = `INSERT INTO sms_component (name, componentType, version, date, license, thirdParty, releaseNote) VALUES (?,?,?,?,?,?,?);`
+var DELETE_sms_component = `DELETE FROM sms_component WHERE component_id = ?;`
+
+// SMS ComponentPartOfSoftware
+var INSERT_sms_newComponentPartOfSoftware = `INSERT INTO sms_componentPartOfSoftware (software_id, component_id, additionalInfo) VALUES (?,?,?);`
+var DELETE_sms_ComponentPartOfSoftware = `DELETE FROM sms_componentPartOfSoftware WHERE software_id = ? AND component_id = ?;`
+var SELECT_sms_ComponentPartOfSoftwareForSoftware = `SELECT sms_componentPartOfSoftware.software_id, sms_componentPartOfSoftware.component_id, sms_componentPartOfSoftware.additionalInfo, sms_component.name, sms_component.version FROM sms_componentPartOfSoftware LEFT JOIN sms_component ON sms_componentPartOfSoftware.component_id = sms_component.component_id WHERE sms_componentPartOfSoftware.software_id = ?; `
+var SELECT_sms_ComponentPartOfSoftwareForComponent = `SELECT sms_componentPartOfSoftware.software_id, sms_componentPartOfSoftware.component_id, sms_componentPartOfSoftware.additionalInfo, sms_softwaretype.typeName, sms_software.version FROM sms_componentPartOfSoftware LEFT JOIN sms_software ON sms_componentPartOfSoftware.software_id = sms_software.software_id LEFT JOIN sms_softwaretype ON sms_software.softwaretype_id = sms_softwaretype.softwaretype_id WHERE sms_componentPartOfSoftware.component_id = ?; `

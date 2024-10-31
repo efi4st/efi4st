@@ -19,15 +19,22 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(appContentSchema)
 	db.MustExec(analysisToolSchema)
 	db.MustExec(binaryAnalysisSchema)
-	db.MustExec(sms_projecttype_schema) 		// SMS
-	db.MustExec(sms_project_schema)     		// SMS
-	db.MustExec(sms_systemtype_schema)  		// SMS
-	db.MustExec(sms_system_schema)				// SMS
-	db.MustExec(sms_devicetype_schema)  		// SMS
-	db.MustExec(sms_device_schema)				// SMS
-	db.MustExec(sms_deviceInstance_schema)		// SMS
-	db.MustExec(sms_updateHistory_schema)   	// SMS
-	db.MustExec(sms_issue_schema)				// SMS
-	db.MustExec(sms_issueAffectedDevice_schema)	// SMS
-	db.MustExec(sms_solution_schema)			// SMS
+	db.MustExec(sms_projecttype_schema) 			// SMS
+	db.MustExec(sms_project_schema)     			// SMS
+	db.MustExec(sms_systemtype_schema)  			// SMS
+	db.MustExec(sms_system_schema)					// SMS
+	db.MustExec(sms_devicetype_schema)  			// SMS
+	db.MustExec(sms_device_schema)					// SMS
+	db.MustExec(sms_deviceInstance_schema)			// SMS
+	db.MustExec(sms_updateHistory_schema)   		// SMS
+	db.MustExec(sms_issue_schema)					// SMS
+	db.MustExec(sms_issueAffectedDevice_schema)		// SMS
+	db.MustExec(sms_solution_schema)				// SMS
+	db.MustExec(sms_artefacttype_schema)			// SMS
+	db.MustExec(sms_artefact_schema)				// SMS
+	db.MustExec(sms_releasenote_schema)				// SMS
+	db.MustExec(sms_softwaretype_schema)			// SMS
+	db.MustExec(sms_software_schema)				// SMS
+	db.MustExec(sms_component_schema)				// SMS
+	db.MustExec(sms_componentPartOfSoftware_schema) //SMS
 }
