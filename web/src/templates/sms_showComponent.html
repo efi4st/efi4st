@@ -23,13 +23,13 @@
       </div>
 
       <div class="container">
-
+        <h1>Component:</h1>
         <div class="row">
-          <div class="col-md-3">
+          <div class="col-md-5">
             <ul class="list-group">
               <li class="list-group-item">ID: {{component.component_id}}</li>
-              <li class="list-group-item">Name: {{component.name}}</li>
-              <li class="list-group-item">Version: {{component.version}}</li>
+              <li class="list-group-item"><h2>Name: {{component.name}}</h2></li>
+              <li class="list-group-item">Version: <h3>{{component.version}}</h3></li>
               <li class="list-group-item">Type: {{component.componentType}}</li>
               <li class="list-group-item">Date: {{component.date|truncatechars:13}}</li>
               <li class="list-group-item">License: {{component.license}}</li>
@@ -37,9 +37,26 @@
             </ul>
           </div>
 
-          <div class="col-md-9">
-            <h2>Used in Software:</h2>
-
+          <div class="col-md-7">
+            <h2>Used in following Applications:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Version</th>
+                <th>Del</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for app in applicationsParentsOfComponent %}
+              <tr>
+                <td><a href="/sms_softwares/show/{{ app.software_id }}">{{ app.name }}</a></td>
+                <td>{{ app.version }}</td>
+                <td></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
 

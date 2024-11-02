@@ -382,3 +382,14 @@ CREATE TABLE IF NOT EXISTS sms_componentPartOfSoftware (
 	CONSTRAINT sms_componentPartOfSoftware_ibfk_2 FOREIGN KEY (component_id) REFERENCES sms_component (component_id) ON UPDATE CASCADE ON DELETE NO ACTION
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_softwarePartOfDevice_schema = `
+CREATE TABLE IF NOT EXISTS sms_softwarePartOfDevice (
+	device_id INT(11) NOT NULL,
+	software_id INT(11) NOT NULL,
+	additionalInfo VARCHAR(150) DEFAULT NULL,
+	PRIMARY KEY (device_id, software_id),
+	CONSTRAINT sms_softwarePartOfDevice_ibfk_1 FOREIGN KEY (device_id) REFERENCES sms_device (device_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	CONSTRAINT sms_softwarePartOfDevice_ibfk_2 FOREIGN KEY (software_id) REFERENCES sms_software (software_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`

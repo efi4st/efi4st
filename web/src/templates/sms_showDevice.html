@@ -25,15 +25,15 @@
       <div class="container">
         <h1>Device (Model)</h1>
         <div class="row">
-          <div class="col-md-3">
+          <div class="col-md-5">
             <ul class="list-group">
-              <li class="list-group-item"><h3>Name: {{device.devicetype_id}}</h3></li>
+              <li class="list-group-item"><h2>Name: {{device.devicetype_id}}</h2></li>
               <li class="list-group-item">Date: {{device.date|truncatechars:13}}</li>
-              <li class="list-group-item">Type: {{device.version}}</li>
+              <li class="list-group-item">Version: <h3>{{device.version}}</h3></li>
             </ul>
           </div>
 
-          <div class="col-md-9">
+          <div class="col-md-7">
             <h2>Based on System:</h2>
 
           </div>
@@ -71,7 +71,25 @@
         <hr>
         <div class="row">
           <div class="col-md-6">
-            <h2>Applications:</h2>
+            <h2>Applications:</h2> <p><a class="btn btn-primary btn-lg" href="/sms_softwarePartOfDevice/createSMSSoftwarePartOfDevice/{{device.device_id}}" role="button">Add</a></p>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Version</th>
+                <th>Del</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for app in applicationsUnderDevice %}
+              <tr>
+                <td><a href="/sms_softwares/show/{{ app.software_id }}">{{ app.name }}</a></td>
+                <td>{{ app.version }}</td>
+                <td></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
 
           </div>
           <div class="col-md-6">

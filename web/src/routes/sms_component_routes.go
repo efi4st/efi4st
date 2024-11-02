@@ -69,7 +69,9 @@ func ShowSMSComponent(ctx iris.Context) {
 	}
 
 	component := dbprovider.GetDBManager().GetSMSComponentInfo(i)
+	applicationsParentsOfComponent := dbprovider.GetDBManager().GetSMSComponentPartOfSoftwareForComponent(i)
 
+	ctx.ViewData("applicationsParentsOfComponent", applicationsParentsOfComponent)
 	ctx.ViewData("component", component)
 	ctx.View("sms_showComponent.html")
 }

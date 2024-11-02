@@ -122,6 +122,10 @@ type Manager interface {
 	GetSMSComponentPartOfSoftwareForSoftware(software_id int) []classes.Sms_ComponentPartOfSoftware
 	GetSMSComponentPartOfSoftwareForComponent(component_id int) []classes.Sms_ComponentPartOfSoftware
 	RemoveSMSComponentPartOfSoftware(id int) error
+	AddSMSSoftwarePartOfDevice(device_id int, software_id int, additionalInfo string) error
+	GetSMSSoftwarePartOfDeviceForDevice(device_id int) []classes.Sms_SoftwarePartOfDevice
+	GetSMSSoftwarePartOfDeviceForSoftware(software_id int) []classes.Sms_SoftwarePartOfDevice
+	RemoveSMSSoftwarePartOfDevice(id int) error
 }
 
 type manager struct {
@@ -2279,6 +2283,89 @@ func (mgr *manager) GetSMSComponentPartOfSoftwareForComponent(component_id int) 
 
 func (mgr *manager) RemoveSMSComponentPartOfSoftware(id int) (err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_ComponentPartOfSoftware)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+
+/////////////////////////////////////////
+////	SMS SoftwarePartOfDevice
+////////////////////////////////////////
+func (mgr *manager) AddSMSSoftwarePartOfDevice(device_id int, software_id int, additionalInfo string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newSoftwarePartOfDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(device_id, software_id, additionalInfo)
+
+	if rows == nil{
+		fmt.Println("rows should be null AddSMSSoftwarePartOfDevice -> insert query")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSSoftwarePartOfDeviceForDevice(device_id int) (sofwaresPartOfDevice []classes.Sms_SoftwarePartOfDevice) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_SoftwarePartOfDeviceForDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(device_id)
+
+	var ( 	dbDevice_id int
+		dbSoftware_id int
+		dbAdditionalInfo string
+		dbName string
+		dbVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbDevice_id, &dbSoftware_id, &dbAdditionalInfo, &dbName, &dbVersion)
+
+		var software = classes.NewSms_SoftwarePartOfDevice(dbDevice_id, dbSoftware_id, dbAdditionalInfo, dbName, dbVersion)
+		sofwaresPartOfDevice=append(sofwaresPartOfDevice, *software)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return sofwaresPartOfDevice
+}
+
+
+func (mgr *manager) GetSMSSoftwarePartOfDeviceForSoftware(software_id int) (devicesParentOfSoftware []classes.Sms_SoftwarePartOfDevice) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_SoftwarePartOfDeviceForSoftware)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(software_id)
+
+	var ( 	dbDevice_id int
+		dbSoftware_id int
+		dbAdditionalInfo string
+		dbName string
+		dbVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbDevice_id, &dbSoftware_id, &dbAdditionalInfo, &dbName, &dbVersion)
+		var device = classes.NewSms_SoftwarePartOfDevice(dbDevice_id, dbSoftware_id, dbAdditionalInfo, dbName, dbVersion)
+		devicesParentOfSoftware=append(devicesParentOfSoftware, *device)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return devicesParentOfSoftware
+}
+
+
+func (mgr *manager) RemoveSMSSoftwarePartOfDevice(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_SoftwarePartOfDevice)
 
 	stmt.QueryRow(id)
 

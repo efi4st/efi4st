@@ -307,6 +307,15 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_componentPartOfSoftware/remove/1
 	app.Get("/sms_componentPartOfSoftware/remove/{id:string}", routes.RemoveSMSComponentPartOfSoftware)
 
+	// GET: http://localhost:8144/sms_softwarePartOfDevice/createSMSSoftwarePartOfDevice/1
+	app.Get("/sms_softwarePartOfDevice/createSMSSoftwarePartOfDevice/{id:string}", routes.CreateSMSSoftwarePartOfDevice)
+
+	// POST: http://localhost:8144/sms_softwarePartOfDevice/addSMSSoftwarePartOfDevice
+	app.Post("/sms_softwarePartOfDevice/addSMSSoftwarePartOfDevice", routes.AddSMSSoftwarePartOfDevice)
+
+	// GET: http://localhost:8144/sms_softwarePartOfDevice/remove/1
+	app.Get("/sms_softwarePartOfDevice/remove/{id:string}", routes.RemoveSMSSoftwarePartOfDevice)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

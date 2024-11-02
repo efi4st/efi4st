@@ -77,7 +77,9 @@ func ShowSMSSoftware(ctx iris.Context) {
 
 	software := dbprovider.GetDBManager().GetSMSSoftwareInfo(i)
 	componentsUnderSoftware := dbprovider.GetDBManager().GetSMSComponentPartOfSoftwareForSoftware(i)
+	devicesParentsOfSoftware := dbprovider.GetDBManager().GetSMSSoftwarePartOfDeviceForSoftware(i)
 
+	ctx.ViewData("devicesParentsOfSoftware", devicesParentsOfSoftware)
 	ctx.ViewData("componentsUnderSoftware", componentsUnderSoftware)
 	ctx.ViewData("software", software)
 	ctx.View("sms_showSoftware.html")
