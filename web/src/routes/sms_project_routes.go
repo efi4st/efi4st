@@ -77,8 +77,10 @@ func ShowSMSProject(ctx iris.Context) {
 
 	project := dbprovider.GetDBManager().GetSMSProjectInfo(i)
 	deviceInstanceList := dbprovider.GetDBManager().GetDeviceInstanceListForProject(i)
+	systemList := dbprovider.GetDBManager().GetSMSProjectBOMForProject(i)
 
 	ctx.ViewData("deviceInstanceList", deviceInstanceList)
+	ctx.ViewData("systemList", systemList)
 	ctx.ViewData("project", project)
 	ctx.View("sms_showProject.html")
 }

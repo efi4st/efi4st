@@ -34,8 +34,25 @@
           </div>
 
           <div class="col-md-7">
-            <h2>Based on System:</h2>
-
+            <h2>Used in following Systems:</h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Version</th>
+                <th>Del</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for system in systemsParentsOfDevice %}
+              <tr>
+                <td><a href="/sms_systems/show/{{ system.system_id }}">{{ system.name }}</a></td>
+                <td>{{ system.version }}</td>
+                <td></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
 

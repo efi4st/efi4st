@@ -38,4 +38,6 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(sms_component_schema)				// SMS
 	db.MustExec(sms_componentPartOfSoftware_schema) //SMS
 	db.MustExec(sms_softwarePartOfDevice_schema)	//SMS
+	db.MustExec(sms_devicePartOfSystem_schema)		//SMS
+	db.MustExec(sms_projectBOM_schema)				//SMS
 }

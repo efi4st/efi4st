@@ -71,7 +71,9 @@ func ShowSMSSystem(ctx iris.Context) {
 	}
 
 	system := dbprovider.GetDBManager().GetSMSSystemInfo(i)
+	devicesUnderSystem := dbprovider.GetDBManager().GetSMSDevicePartOfSystemForSystem(i)
 
+	ctx.ViewData("devicesUnderSystem", devicesUnderSystem)
 	ctx.ViewData("system", system)
 	ctx.View("sms_showSystem.html")
 }

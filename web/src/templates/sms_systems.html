@@ -44,7 +44,7 @@
               <tbody>
               {% for system in systemList %}
               <tr>
-                <td>{{ system.date }}</td>
+                <td>{{ system.date|truncatechars:13 }}</td>
                 <td><a href="/sms_systems/show/{{ system.system_id }}">{{ system.systemtype_id }}</a></td>
                 <td>{{ system.version }}</td>
                 <td><a href="/sms_systems/remove/{{system.system_id}}" class="button"><i class="fa fa-close"></i></a></td>

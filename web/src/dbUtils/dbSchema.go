@@ -154,17 +154,6 @@ CREATE TABLE IF NOT EXISTS sms_system (
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
 
-var sms_projectBOMSystemInventory_schema = `
-CREATE TABLE IF NOT EXISTS sms_projectBOMSystemInventory (
-	project_id INT(11) NOT NULL,
-	system_id INT(11) NOT NULL,
-	amount INT(11) NOT NULL,
-	PRIMARY KEY (project_id, system_id),
-	CONSTRAINT sms_projectBOMSystemInventory_ibfk_1 FOREIGN KEY (project_id) REFERENCES sms_project (project_id) ON UPDATE CASCADE ON DELETE NO ACTION,
-	CONSTRAINT sms_projectBOMSystemInventory_ibfk_2 FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION
-)ENGINE=InnoDB DEFAULT CHARSET=latin1;
-`
-
 var sms_devicetype_schema = `
 CREATE TABLE IF NOT EXISTS sms_devicetype (
 	devicetype_id INT(11) NOT NULL AUTO_INCREMENT,
@@ -209,17 +198,6 @@ CREATE TABLE IF NOT EXISTS sms_updateHistory (
 	description VARCHAR(150) NOT NULL,
 	PRIMARY KEY (updateHistory_id),
 	CONSTRAINT sms_updateHistory_ibfk_1 FOREIGN KEY (deviceInstance_id) REFERENCES sms_deviceInstance (deviceInstance_id) ON UPDATE CASCADE ON DELETE NO ACTION
-)ENGINE=InnoDB DEFAULT CHARSET=latin1;
-`
-
-var sms_devicePartOfSystem_schema = `
-CREATE TABLE IF NOT EXISTS sms_devicePartOfSystem (
-	device_id INT(11) NOT NULL,
-	system_id INT(11) NOT NULL,
-	amount INT(11) NOT NULL,
-	PRIMARY KEY (device_id, system_id),
-	CONSTRAINT sms_devicePartOfSystem_ibfk_1 FOREIGN KEY (device_id) REFERENCES sms_device (device_id) ON UPDATE CASCADE ON DELETE NO ACTION,
-	CONSTRAINT sms_devicePartOfSystem_ibfk_2 FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
 
@@ -391,5 +369,29 @@ CREATE TABLE IF NOT EXISTS sms_softwarePartOfDevice (
 	PRIMARY KEY (device_id, software_id),
 	CONSTRAINT sms_softwarePartOfDevice_ibfk_1 FOREIGN KEY (device_id) REFERENCES sms_device (device_id) ON UPDATE CASCADE ON DELETE NO ACTION,
 	CONSTRAINT sms_softwarePartOfDevice_ibfk_2 FOREIGN KEY (software_id) REFERENCES sms_software (software_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_devicePartOfSystem_schema = `
+CREATE TABLE IF NOT EXISTS sms_devicePartOfSystem (
+	system_id INT(11) NOT NULL,
+	device_id INT(11) NOT NULL,
+	additionalInfo VARCHAR(150) DEFAULT NULL,
+	PRIMARY KEY (system_id, device_id),
+	CONSTRAINT sms_devicePartOfSystem_ibfk_1 FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	CONSTRAINT sms_devicePartOfSystem_ibfk_2 FOREIGN KEY (device_id) REFERENCES sms_device (device_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_projectBOM_schema = `
+CREATE TABLE IF NOT EXISTS sms_projectBOM (
+	projectBOM_id INT(11) NOT NULL AUTO_INCREMENT,
+	project_id INT(11) NOT NULL,
+	system_id INT(11) NOT NULL,
+	orderNumber VARCHAR(80) DEFAULT NULL,
+	additionalInfo VARCHAR(150) DEFAULT NULL,
+	PRIMARY KEY (projectBOM_id),
+	CONSTRAINT sms_projectBOM_ibfk_1 FOREIGN KEY (project_id) REFERENCES sms_project (project_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	CONSTRAINT sms_projectBOM_ibfk_2 FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `

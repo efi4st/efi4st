@@ -40,24 +40,27 @@
           </div>
 
           <div class="col-md-9">
-            <h2>Based on System:</h2>
-              <table class="table">
-                <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Date</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for firmware in firmwareList %}
-                <tr>
-                  <td><a href="/firmware/show/{{ firmware.firmware_id }}">{{ firmware.name }}</a></td>
-                  <td>{{ firmware.Created|truncatechars:13}}</td>
-                </tr>
-                {% endfor %}
-                </tbody>
-              </table>
-            <p><a class="btn btn-primary btn-lg" href="/firmware/show/upload/{{project.project_id}}" role="button">Upload</a></p>
+            <h2>Included Systems:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="btn btn-primary btn-lg" href="/sms_projectBOM/createSMSProjectBOMForProject/{{project.project_id}}" role="button" align=right>Add</a></h2>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>System</th>
+                <th>Version</th>
+                <th>orderNumber</th>
+                <th>Info</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for system in systemList %}
+              <tr>
+                <td><a href="/sms_systems/show/{{ system.system_id }}">{{ system.name }}</a></td>
+                <td>{{ system.tmp }}</td>
+                <td>{{ system.orderNumber }}</td>
+                <td>{{ system.additionalInfo }}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
 

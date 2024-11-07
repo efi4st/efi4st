@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_projectBOM/addSMSProjectBOM" method="POST">
+              <div class="form-group">
+                project_id := ctx.PostValue("Project_id")
+                system_id := ctx.PostValue("System_id")
+                orderNumber := ctx.PostValue("OrderNumber")
+                additionalInfo := ctx.PostValue("AdditionalInfo")
+
+                <h3>Add new System to Project {{projectId}}:</h3>
+                </br>
+                <label for="Project_id">Project_id:</label>
+                <input type="text" class="form-control" name="Project_id" id="Project_id" value="{{projectId}}" readonly>
+                </br>
+                <label for="System_id">System_id:</label>
+                <select name="System_id" id="System_id" class="form-select" aria-label="Default select example">
+                  {% for system in systemList %}
+                  <option value="{{system.system_id}}">{{system.systemtype_id}} &nbsp; {{system.version}}</option>
+                  {% endfor %}
+                </select>
+                </br>
+                <label for="OrderNumber">OrderNumber:</label>
+                <input type="text" class="form-control" name="OrderNumber" id="OrderNumber" placeholder="OrderNumber">
+                </br>
+                <label for="AdditionalInfo">AdditionalInfo:</label>
+                <input type="text" class="form-control" name="AdditionalInfo" id="AdditionalInfo" placeholder="AdditionalInfo">
+                </br>
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

@@ -31,7 +31,9 @@
           <div class="col-md-2">
           </div>
           <div class="col-md-8">
-            <h2>Systems:</h2>
+            <h2>Devices:</h2>
+            <input class="form-control" id="myInput" type="text" placeholder="Search..">
+            <br>
             <table class="table">
               <thead>
               <tr>
@@ -41,10 +43,10 @@
                 <th><i class="fa fa-trash-o"></i></th>
               </tr>
               </thead>
-              <tbody>
+              <tbody id="myTable">
               {% for device in deviceList %}
               <tr>
-                <td>{{ device.date }}</td>
+                <td>{{ device.date|truncatechars:13 }}</td>
                 <td><a href="/sms_devices/show/{{ device.device_id }}">{{ device.devicetype_id }}</a></td>
                 <td>{{ device.version }}</td>
                 <td><a href="/sms_devices/remove/{{device.device_id}}" class="button"><i class="fa fa-close"></i></a></td>

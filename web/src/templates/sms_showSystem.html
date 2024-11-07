@@ -25,16 +25,17 @@
       <div class="container">
 
         <div class="row">
-          <div class="col-md-3">
+          <div class="col-md-5">
             <ul class="list-group">
-              <li class="list-group-item">Name: {{system.type}}</li>
+              <li class="list-group-item"><h1>Name: {{system.systemtype_id}}</h1></li>
+              <li class="list-group-item">Version: <h2>{{system.version}}</h2></li>
               <li class="list-group-item">Date: {{system.date|truncatechars:13}}</li>
-              <li class="list-group-item">Type: {{system.version}}</li>
+
             </ul>
           </div>
 
-          <div class="col-md-9">
-            <h2>Based on System:</h2>
+          <div class="col-md-7">
+            <h2>Certificates:</h2>
 
           </div>
         </div>
@@ -43,16 +44,44 @@
 
         <div class="row">
           <div class="col-md-6">
-            <h2>Results:</h2>
+            <h2>Devices:</h2> <p><a class="btn btn-primary btn-lg" href="/sms_devicePartOfSystem/createSMSDevicePartOfSystem/{{system.system_id}}" role="button">Add</a></p>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Version</th>
+                <th>Del</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for device in devicesUnderSystem %}
+              <tr>
+                <td><a href="/sms_devices/show/{{ device.device_id }}">{{ device.name }}</a></td>
+                <td>{{ device.version }}</td>
+                <td></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
 
           </div>
           <div class="col-md-6">
-            <h2>Results:</h2>
+            <h2>Issues:</h2>
 
           </div>
         </div>
-
         <hr>
+        <hr>
+        <div class="row">
+          <div class="col-md-6">
+
+
+          </div>
+          <div class="col-md-6">
+
+          </div>
+        </div>
       </div> <!-- /container -->
-      
+<hr>
+
 {% endblock %}

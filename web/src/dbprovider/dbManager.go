@@ -126,6 +126,14 @@ type Manager interface {
 	GetSMSSoftwarePartOfDeviceForDevice(device_id int) []classes.Sms_SoftwarePartOfDevice
 	GetSMSSoftwarePartOfDeviceForSoftware(software_id int) []classes.Sms_SoftwarePartOfDevice
 	RemoveSMSSoftwarePartOfDevice(id int) error
+	AddSMSDevicePartOfSystem(system_id int, device_id int, additionalInfo string) error
+	GetSMSDevicePartOfSystemForSystem(system_id int) []classes.Sms_DevicePartOfSystem
+	GetSMSDevicePartOfSystemForDevice(device_id int) []classes.Sms_DevicePartOfSystem
+	RemoveSMSDevicePartOfSystem(id int) error
+	AddSMSProjectBOM(project_id int, system_id int, orderNumber string, additionalInfo string) error
+	GetSMSProjectBOMForProject(project_id int) []classes.Sms_ProjectBOM
+	GetSMSProjectBOMForSystem(system_id int) []classes.Sms_ProjectBOM
+	RemoveSMSProjectBOM(id int) error
 }
 
 type manager struct {
@@ -2366,6 +2374,174 @@ func (mgr *manager) GetSMSSoftwarePartOfDeviceForSoftware(software_id int) (devi
 
 func (mgr *manager) RemoveSMSSoftwarePartOfDevice(id int) (err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_SoftwarePartOfDevice)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS DevicePartOfSystem
+////////////////////////////////////////
+func (mgr *manager) AddSMSDevicePartOfSystem(system_id int, device_id int, additionalInfo string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newDevicePartOfSystem)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(system_id, device_id, additionalInfo)
+
+	if rows == nil{
+		fmt.Println("rows should be null AddSMSDevicePartOfSystem -> insert query")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSDevicePartOfSystemForSystem(system_id int) (devicesPartOfSystem []classes.Sms_DevicePartOfSystem) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_DevicePartOfSystemForSystem)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(system_id)
+
+	var ( 	dbSystem_id int
+		dbDevice_id int
+		dbAdditionalInfo string
+		dbName string
+		dbVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSystem_id, &dbDevice_id, &dbAdditionalInfo, &dbName, &dbVersion)
+
+		var device = classes.NewSms_DevicePartOfSystem(dbSystem_id, dbDevice_id, dbAdditionalInfo, dbName, dbVersion)
+		devicesPartOfSystem=append(devicesPartOfSystem, *device)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return devicesPartOfSystem
+}
+
+
+func (mgr *manager) GetSMSDevicePartOfSystemForDevice(device_id int) (systemsParentOfDevice []classes.Sms_DevicePartOfSystem) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_DevicePartOfSystemForDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(device_id)
+
+	var ( 	dbSystem_id int
+		dbDevice_id int
+		dbAdditionalInfo string
+		dbName string
+		dbVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSystem_id, &dbDevice_id, &dbAdditionalInfo, &dbName, &dbVersion)
+		var system = classes.NewSms_DevicePartOfSystem(dbSystem_id, dbDevice_id, dbAdditionalInfo, dbName, dbVersion)
+		systemsParentOfDevice=append(systemsParentOfDevice, *system)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return systemsParentOfDevice
+}
+
+
+func (mgr *manager) RemoveSMSDevicePartOfSystem(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_DevicePartOfSystem)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+
+/////////////////////////////////////////
+////	SMS DeviceInstance
+////////////////////////////////////////
+func (mgr *manager) AddSMSProjectBOM(project_id int, system_id int, orderNumber string, additionalInfo string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newProjectBOM)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(project_id, system_id, orderNumber, additionalInfo)
+
+	if rows == nil{
+		fmt.Println("rows should be null -> AddSMSprojectBOM")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSProjectBOMForProject(project_id int) (soldSystemsPartOfProject []classes.Sms_ProjectBOM) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ProjectBOMForProject)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(project_id)
+
+	var ( 	dbProjectBOM_id int
+		dbProject_id int
+		dbSystem_id int
+		dbOrderNumber string
+		dbAdditionalInfo string
+		dbName string
+		dbTmp string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbProjectBOM_id, &dbProject_id, &dbSystem_id, &dbOrderNumber, &dbAdditionalInfo, &dbName, &dbTmp)
+
+		var system = classes.NewSms_ProjectBOMFromDB(dbProjectBOM_id, dbProject_id, dbSystem_id, dbOrderNumber, dbAdditionalInfo, dbName, dbTmp)
+		soldSystemsPartOfProject=append(soldSystemsPartOfProject, *system)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return soldSystemsPartOfProject
+}
+
+
+func (mgr *manager) GetSMSProjectBOMForSystem(system_id int) (projectsUsingSystem []classes.Sms_ProjectBOM) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ProjectBOMForSystem)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(system_id)
+
+	var ( 	dbProjectBOM_id int
+		dbProject_id int
+		dbSystem_id int
+		dbOrderNumber string
+		dbAdditionalInfo string
+		dbName string
+		dbTmp string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbProjectBOM_id, &dbProject_id, &dbSystem_id, &dbOrderNumber, &dbAdditionalInfo, &dbName, &dbTmp)
+		var project = classes.NewSms_ProjectBOMFromDB(dbProjectBOM_id, dbProject_id, dbSystem_id, dbOrderNumber, dbAdditionalInfo, dbName, dbTmp)
+		projectsUsingSystem=append(projectsUsingSystem, *project)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return projectsUsingSystem
+}
+
+func (mgr *manager) RemoveSMSProjectBOM(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_ProjectBOM)
 
 	stmt.QueryRow(id)
 

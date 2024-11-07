@@ -316,6 +316,24 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_softwarePartOfDevice/remove/1
 	app.Get("/sms_softwarePartOfDevice/remove/{id:string}", routes.RemoveSMSSoftwarePartOfDevice)
 
+	// GET: http://localhost:8144/sms_devicePartOfSystem/createSMSDevicePartOfSystem/1
+	app.Get("/sms_devicePartOfSystem/createSMSDevicePartOfSystem/{id:string}", routes.CreateSMSDevicePartOfSystem)
+
+	// POST: http://localhost:8144/sms_devicePartOfSystem/addSMSDevicePartOfSystem
+	app.Post("/sms_devicePartOfSystem/addSMSDevicePartOfSystem", routes.AddSMSDevicePartOfSystem)
+
+	// GET: http://localhost:8144/sms_devicePartOfSystem/remove/1
+	app.Get("/sms_devicePartOfSystem/remove/{id:string}", routes.RemoveSMSDevicePartOfSystem)
+
+	// GET: http://localhost:8144/sms_projectBOM/createSMSProjectBOMForProject/1
+	app.Get("/sms_projectBOM/createSMSProjectBOMForProject/{id:string}", routes.CreateSMSProjectBOMForProject)
+
+	// POST: http://localhost:8144/sms_projectBOM/addSMSProjectBOM
+	app.Post("/sms_projectBOM/addSMSProjectBOM", routes.AddSMSProjectBOM)
+
+	// GET: http://localhost:8144/sms_projectBOM/remove/1
+	app.Get("/sms_projectBOM/remove/{id:string}", routes.RemoveSMSProjectBOM)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }
