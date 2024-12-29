@@ -92,8 +92,9 @@ type Manager interface {
 	AddSMSIssueAffectedDevice(device_id int, issue_id int, additionalInfo string, confirmed bool) error
 	GetSMSIssueAffectedDevicesForIssueID(issue_id int) []classes.Sms_IssueAffectedDevice
 	GetSMSIssuesForDevice(device_id int) []classes.Sms_IssueAffectedDevice
-	RemoveSMSIssueAffectedDevice(id int) error
+	RemoveSMSIssueAffectedDevice(device_id int, issue_id int) error
 	GetSMSAffectedDeviceInstancesAndProjects(issue_id int) []classes.Sms_AffectedDeviceInstancesAndProjects
+	GetIssueAffectedStats(issue_id int) (*classes.Sms_IssueAffectedStats, error)
 	GetSMSProjectTypes() []classes.Sms_ProjectType
 	GetSMSSystemTypes() []classes.Sms_SystemType
 	GetSMSDeviceTypes() []classes.Sms_DeviceType
@@ -134,6 +135,40 @@ type Manager interface {
 	GetSMSProjectBOMForProject(project_id int) []classes.Sms_ProjectBOM
 	GetSMSProjectBOMForSystem(system_id int) []classes.Sms_ProjectBOM
 	RemoveSMSProjectBOM(id int) error
+	AddSMSIssueAffectedSoftware(software_id int, issue_id int, additionalInfo string, confirmed bool) error
+	GetSMSIssueAffectedSoftwareForIssueID(issue_id int) []classes.Sms_IssueAffectedSoftware
+	GetSMSIssuesForSoftware(software_id int) []classes.Sms_IssueAffectedSoftware
+	RemoveSMSIssueAffectedSoftware(software_id int, issue_id int) (err error)
+	AddSMSArtefactPartOfDevice(device_id int, artefact_id int, additionalInfo string) error
+	GetSMSArtefactPartOfDeviceForDevice(device_id int) []classes.Sms_ArtefactPartOfDevice
+	GetSMSArtefactPartOfDeviceForArtefact(artefact_id int) []classes.Sms_ArtefactPartOfDevice
+	RemoveSMSArtefactPartOfDevice(id int) error
+	GetSMSManufactoringOrderForSystem(id int) []classes.Sms_ManufacturingOrder
+	AddSMSManufacturingOrder(system_id int, packageReference string, description string) error
+	GetSMSManufacturingOrderInfo(id int) *classes.Sms_ManufacturingOrder
+	GetSMSSystemTreeForSystem(id int) *classes.Sms_Tree_System
+	// Certification
+	AddSMSCertification(name string, description string) error
+	GetSMSCertification() []classes.Sms_Certification
+	GetSMSCertificationInfo(id int) *classes.Sms_Certification
+	RemoveSMSCertification(id int) error
+	ComponentExists(name string, componentType string, version string) (bool, int, error)
+	ProcessComponents(components []classes.Sms_Component, softwareID int) error
+	// SystemHasCertification
+	AddSystemHasCertification(system_id int, certification_id int, additionalInfo string) error
+	GetCertificationsForSystem(systemID int) (certifications []classes.Sms_SystemHasCertification, err error)
+	GetSystemsForCertification(certificationID int) (systems []classes.Sms_SystemHasCertification, err error)
+	RemoveSystemHasCertification(systemID int, certificationID int) error
+	//IssueAffectedComponent
+	AddSMSIssueAffectedComponent(component_id int, issue_id int, additionalInfo string, confirmed bool) error
+	GetSMSIssueAffectedComponentsForIssueID(issue_id int) (issueAffectedComponents []classes.Sms_IssueAffectedComponent, err error)
+	GetSMSIssuesForComponent(component_id int) (issueAffectedComponents []classes.Sms_IssueAffectedComponent, err error)
+	RemoveSMSIssueAffectedComponent(component_id int, issue_id int) error
+	//IssueAffectedArtefact
+	AddSMSIssueAffectedArtefact(artefact_id int, issue_id int, additionalInfo string, confirmed bool) error
+	GetSMSIssueAffectedArtefactsForIssueID(issue_id int) (issueAffectedArtefacts []classes.Sms_IssueAffectedArtefact, err error)
+	GetSMSIssuesForArtefact(artefact_id int) (issueAffectedArtefacts []classes.Sms_IssueAffectedArtefact, err error)
+	RemoveSMSIssueAffectedArtefact(artefact_id int, issue_id int) error
 }
 
 type manager struct {
@@ -1344,6 +1379,80 @@ func (mgr *manager) RemoveSMSSystem(id int) (err error) {
 	return err
 }
 
+func (mgr *manager) GetSMSSystemTreeForSystem(id int) (*classes.Sms_Tree_System){
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_DevicePartOfSystemForSystem)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(id)
+
+	var ( 	db1System_id int
+		db1Device_id int
+		db1AdditionalInfo string
+		db1Name string
+		db1Version string
+	)
+
+	var deviceList []classes.Sms_Tree_Device
+	for rows.Next() {
+		err := rows.Scan(&db1System_id, &db1Device_id, &db1AdditionalInfo, &db1Name, &db1Version)
+
+		stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_SoftwarePartOfDeviceForDevice)
+		if err != nil{
+			fmt.Print(err)
+		}
+		rows, err := stmt.Query(db1Device_id)
+
+		var ( 	db2Device_id int
+			db2Software_id int
+			db2AdditionalInfo string
+			db2Name string
+			db2Version string
+		)
+
+		var applicationList []classes.Sms_Tree_Application
+		for rows.Next() {
+			err := rows.Scan(&db2Device_id, &db2Software_id, &db2AdditionalInfo, &db2Name, &db2Version)
+
+			stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ComponentPartOfSoftwareForSoftware)
+			if err != nil{
+				fmt.Print(err)
+			}
+			rows, err := stmt.Query(db2Software_id)
+
+			var ( 	db3Software_id int
+				db3Component_id int
+				db3AdditionalInfo string
+				db3Name string
+				db3Version string
+			)
+			var componentList []classes.Sms_Tree_Component
+			for rows.Next() {
+				err := rows.Scan(&db3Software_id, &db3Component_id, &db3AdditionalInfo, &db3Name, &db3Version)
+
+				var treeComp = classes.NewSms_Tree_Component(db3Name, db3Version)
+				componentList=append(componentList, *treeComp)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+			var treeSoft = classes.NewSms_Tree_Application(db2Name, db2Version, componentList)
+			applicationList=append(applicationList, *treeSoft)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		var treeDev = classes.NewSms_Tree_Device(db1Name, db1Version, applicationList)
+		deviceList=append(deviceList, *treeDev)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	var systemTree = classes.NewSms_Tree_System("System:", strconv.Itoa(id), deviceList)
+	return systemTree
+}
+
 
 /////////////////////////////////////////
 ////	SMS Device
@@ -1725,29 +1834,113 @@ func (mgr *manager) GetSMSIssueAffectedDevicesForIssueID(issue_id int) (issueAff
 }
 
 func (mgr *manager) GetSMSAffectedDeviceInstancesAndProjects(issue_id int) (affectedDevicInstancessAndProjects []classes.Sms_AffectedDeviceInstancesAndProjects) {
+	// Prepare the statement
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_affectedDeviceInstancesAndProjects)
-	if err != nil{
-		fmt.Print(err)
+	if err != nil {
+		log.Fatalf("Error preparing statement: %v", err)
 	}
-	rows, err := stmt.Query(issue_id, issue_id)
+	defer stmt.Close() // Ensure the statement is closed
 
-	var ( 	dbDeviceInstance_id int
-		dbDevicetype string
-		dbProject_id int
-		dbVersion string
+	// Execute the query
+	rows, err := stmt.Query(issue_id, issue_id, issue_id, issue_id, issue_id, issue_id, issue_id, issue_id)
+	if err != nil {
+		log.Fatalf("Error executing query: %v", err)
+	}
+	defer rows.Close() // Ensure rows are closed
+
+	// Variables for scanning
+	var (
+		dbDeviceInstance_id sql.NullInt32
+		dbDevicetype        sql.NullString
+		dbProject_id        sql.NullInt32
+		dbVersion           sql.NullString
 	)
 
+	// Iterate over rows
 	for rows.Next() {
 		err := rows.Scan(&dbDeviceInstance_id, &dbDevicetype, &dbProject_id, &dbVersion)
-
-		var affectedDeviceInstancesAndProject = classes.NewSms_AffectedDeviceInstancesAndProjects(dbDeviceInstance_id, dbDevicetype, dbProject_id, dbVersion)
-		affectedDevicInstancessAndProjects=append(affectedDevicInstancessAndProjects, *affectedDeviceInstancesAndProject)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Error scanning row: %v", err)
 		}
+
+		// Check for NULL values in important fields
+		if !dbDeviceInstance_id.Valid || !dbDevicetype.Valid || !dbProject_id.Valid || !dbVersion.Valid {
+			log.Printf("Skipping row with NULL values: DeviceInstanceID=%v, DeviceType=%v, ProjectID=%v, Version=%v",
+				dbDeviceInstance_id, dbDevicetype, dbProject_id, dbVersion)
+			continue
+		}
+
+		// Create the object only if all fields are valid
+		affectedDeviceInstancesAndProject := classes.NewSms_AffectedDeviceInstancesAndProjects(
+			int(dbDeviceInstance_id.Int32),
+			dbDevicetype.String,
+			int(dbProject_id.Int32),
+			dbVersion.String,
+		)
+		affectedDevicInstancessAndProjects = append(affectedDevicInstancessAndProjects, *affectedDeviceInstancesAndProject)
+	}
+
+	// Check for errors after iteration
+	if err = rows.Err(); err != nil {
+		log.Fatalf("Error during row iteration: %v", err)
 	}
 
 	return affectedDevicInstancessAndProjects
+}
+
+func (mgr *manager) GetIssueAffectedStats(issue_id int) (*classes.Sms_IssueAffectedStats, error) {
+	// Prepare the statement
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_statisticsForaffectedDeviceInstancesAndProjects)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing statement: %w", err)
+	}
+	defer stmt.Close() // Ensure the statement is closed
+
+	// Execute the query
+	row := stmt.QueryRow(issue_id, issue_id, issue_id, issue_id, issue_id, issue_id, issue_id, issue_id)
+
+	// Variables for scanning
+	var (
+		affectedDeviceInstances         	sql.NullInt32
+		affectedDevicesWithoutInstances 	sql.NullInt32
+		affectedProjects                	sql.NullInt32
+		distinctDeviceVersionCombinations   sql.NullInt32
+	)
+
+	// Scan the single row of results
+	err = row.Scan(
+		&affectedDeviceInstances,
+		&affectedDevicesWithoutInstances,
+		&affectedProjects,
+		&distinctDeviceVersionCombinations,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error scanning row: %w", err)
+	}
+
+	// Create and return the Sms_IssueAffectedStats object
+	stats := &classes.Sms_IssueAffectedStats{
+		AffectedDeviceInstances:        	0, // default values
+		AffectedDevicesWithoutInstances: 	0,
+		AffectedProjects:                	0,
+		DistinctDeviceVersionCombinations:  0,
+	}
+
+	// Populate fields only if they are valid
+	if affectedDeviceInstances.Valid {
+		stats.AffectedDeviceInstances = int(affectedDeviceInstances.Int32)
+	}
+	if affectedDevicesWithoutInstances.Valid {
+		stats.AffectedDevicesWithoutInstances = int(affectedDevicesWithoutInstances.Int32)
+	}
+	if affectedProjects.Valid {
+		stats.AffectedProjects = int(affectedProjects.Int32)
+	}
+	if distinctDeviceVersionCombinations.Valid {
+		stats.DistinctDeviceVersionCombinations = int(distinctDeviceVersionCombinations.Int32)
+	}
+
+	return stats, nil
 }
 
 func (mgr *manager) GetSMSIssuesForDevice(device_id int) (issueAffectedDevices []classes.Sms_IssueAffectedDevice) {
@@ -1779,12 +1972,21 @@ func (mgr *manager) GetSMSIssuesForDevice(device_id int) (issueAffectedDevices [
 }
 
 
-func (mgr *manager) RemoveSMSIssueAffectedDevice(id int) (err error) {
+func (mgr *manager) RemoveSMSIssueAffectedDevice(device_id int, issue_id int) (err error) {
+	// Bereite die SQL-Anweisung vor
 	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_IssueAffectedDevice)
+	if err != nil {
+		return fmt.Errorf("failed to prepare DELETE statement: %w", err)
+	}
+	defer stmt.Close()
 
-	stmt.QueryRow(id)
+	// Führe die SQL-Abfrage mit den richtigen Parametern aus
+	_, err = stmt.Exec(device_id, issue_id)
+	if err != nil {
+		return fmt.Errorf("failed to execute DELETE statement: %w", err)
+	}
 
-	return err
+	return nil
 }
 
 /////////////////////////////////////////
@@ -2215,6 +2417,77 @@ func (mgr *manager) RemoveSMSComponent(id int) (err error) {
 	return err
 }
 
+func (mgr *manager) ComponentExists(name string, componentType string, version string) (bool, int, error) {
+	var componentID int
+	stmt, err := mgr.db.Prepare(dbUtils.Check_sms_component)
+	if err != nil{
+		fmt.Print(err)
+	}
+	err = stmt.QueryRow(name, componentType, version).Scan(&componentID)
+
+	if err == sql.ErrNoRows {
+		fmt.Print("Component not found in Database!")
+		// Komponente nicht gefunden
+		return false, 0, nil
+	} else if err != nil {
+		// Ein anderer Fehler ist aufgetreten
+		return false, 0, err
+	}
+
+	// Komponente gefunden, Rückgabe der ID
+	return true, componentID, nil
+}
+
+// übergibt Liste der eingelesenen Subkomponenten
+// checkt ob diese schon in der DB enthalten sind
+// wenn nein -> eintragen
+func (mgr *manager) ProcessComponents(components []classes.Sms_Component,  softwareID int) error {
+	for _, comp := range components {
+
+		exists, id, err := GetDBManager().ComponentExists(comp.Name(), comp.ComponentType(), comp.Version())
+		if err != nil {
+			return fmt.Errorf("error checking component existence: %w", err)
+		}
+
+		if exists {
+			log.Printf("Component already exists in database with ID %d: %s", id, comp.Name)
+			GetDBManager().AddSMSComponentPartOfSoftware(softwareID, id, "inserted by SBOM upload")
+			continue
+		}
+
+		// Komponente hinzufügen
+		dt := time.Now()
+		stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newComponent)
+		if err != nil{
+			fmt.Print(err)
+		}
+
+		rows, err := stmt.Query(comp.Name(), comp.ComponentType(), comp.Version(), dt, comp.License(), comp.ThirdParty(), comp.ReleaseNote())
+
+		insertSuccess := true
+		if rows == nil{
+			fmt.Println("rows should be null, Add Component")
+			insertSuccess = false
+		}
+
+		if err != nil {
+			return fmt.Errorf("error inserting component: %w", err)
+			insertSuccess = false
+		}
+
+		exists, id, err = GetDBManager().ComponentExists(comp.Name(), comp.ComponentType(), comp.Version())
+		if err != nil {
+			return fmt.Errorf("error checking component existence: %w", err)
+		}
+
+		if insertSuccess == true && exists{
+			GetDBManager().AddSMSComponentPartOfSoftware(softwareID, id, "inserted by SBOM upload")
+			log.Printf("Inserted new component: %s", comp.Name())
+		}
+	}
+	return nil
+}
+
 /////////////////////////////////////////
 ////	SMS ComponentPartOfSoftware
 ////////////////////////////////////////
@@ -2544,6 +2817,688 @@ func (mgr *manager) RemoveSMSProjectBOM(id int) (err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_ProjectBOM)
 
 	stmt.QueryRow(id)
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS IssueAffectedSoftware
+////////////////////////////////////////
+func (mgr *manager) AddSMSIssueAffectedSoftware(software_id int, issue_id int, additionalInfo string, confirmed bool) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newIssueAffectedSoftware)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(software_id, issue_id, additionalInfo, confirmed)
+
+	if rows == nil{
+		fmt.Println("rows should be null AddSMSIssueAffectedSoftware")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSIssueAffectedSoftwareForIssueID(issue_id int) (issueAffectedSoftwares []classes.Sms_IssueAffectedSoftware) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssueAffectedSoftwaresForIssueID)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(issue_id)
+
+	var ( 	dbSoftware_id int
+		dbIssue_id int
+		dbAdditionalInfo string
+		dbConfirmed bool
+		dbTmp string
+		dbTmp2 string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSoftware_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbTmp, &dbTmp2)
+
+		var affectedSoftware = classes.NewSms_IssueAffectedSoftware(dbSoftware_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbTmp, dbTmp2)
+		issueAffectedSoftwares=append(issueAffectedSoftwares, *affectedSoftware)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return issueAffectedSoftwares
+}
+
+
+func (mgr *manager) GetSMSIssuesForSoftware(software_id int) (issueAffectedSoftwares []classes.Sms_IssueAffectedSoftware) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssuesForSoftware)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(software_id)
+
+	var ( 	dbSoftware_id int
+		dbIssue_id int
+		dbAdditionalInfo string
+		dbConfirmed bool
+		dbTmp string
+		dbTmp2 string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSoftware_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbTmp)
+		dbTmp2 = ""
+		var issueList = classes.NewSms_IssueAffectedSoftware(dbSoftware_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbTmp, dbTmp2)
+		issueAffectedSoftwares=append(issueAffectedSoftwares, *issueList)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return issueAffectedSoftwares
+}
+
+
+func (mgr *manager) RemoveSMSIssueAffectedSoftware(software_id int, issue_id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_IssueAffectedSoftware)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return err
+	}
+	defer stmt.Close() // Sicherstellen, dass die Ressource freigegeben wird
+
+	_, err = stmt.Exec(software_id, issue_id)
+	if err != nil {
+		fmt.Println("Error executing DELETE statement:", err)
+	}
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS ArtefactPartOfDevice
+////////////////////////////////////////
+func (mgr *manager) AddSMSArtefactPartOfDevice(device_id int, artefact_id int, additionalInfo string) (err error) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newArtefactPartOfDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(device_id, artefact_id, additionalInfo)
+
+	if rows == nil{
+		fmt.Println("rows should be null AddSMSArtefactPartOfDevice -> insert query")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSArtefactPartOfDeviceForDevice(device_id int) (artefactsPartOfDevice []classes.Sms_ArtefactPartOfDevice) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ArtefactPartOfDeviceForDevice)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(device_id)
+
+	var ( 	dbDevice_id int
+		dbArtefact_id int
+		dbAdditionalInfo string
+		dbName string
+		dbVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbDevice_id, &dbArtefact_id, &dbAdditionalInfo, &dbName, &dbVersion)
+
+		var artefact = classes.NewSms_ArtefactPartOfDevice(dbDevice_id, dbArtefact_id, dbAdditionalInfo, dbName, dbVersion)
+		artefactsPartOfDevice=append(artefactsPartOfDevice, *artefact)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return artefactsPartOfDevice
+}
+
+
+func (mgr *manager) GetSMSArtefactPartOfDeviceForArtefact(artefact_id int) (devicesParentOfArtefact []classes.Sms_ArtefactPartOfDevice) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ArtefactPartOfDeviceForArtefact)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(artefact_id)
+
+	var ( 	dbDevice_id int
+		dbArtefact_id int
+		dbAdditionalInfo string
+		dbName string
+		dbVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbDevice_id, &dbArtefact_id, &dbAdditionalInfo, &dbName, &dbVersion)
+		var device = classes.NewSms_ArtefactPartOfDevice(dbDevice_id, dbArtefact_id, dbAdditionalInfo, dbName, dbVersion)
+		devicesParentOfArtefact=append(devicesParentOfArtefact, *device)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return devicesParentOfArtefact
+}
+
+
+func (mgr *manager) RemoveSMSArtefactPartOfDevice(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_ArtefactPartOfDevice)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+
+/////////////////////////////////////////
+////	SMS ManufactoringOrder
+////////////////////////////////////////
+func (mgr *manager) GetSMSManufactoringOrderForSystem(id int) (manufactoringOrders []classes.Sms_ManufacturingOrder) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ManufacturingOrdersForSystem)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(id)
+
+	var ( 	dbManufacturingOrder_id int
+		dbSystem_id int
+		dbPackageReference string
+		dbStart time.Time
+		dbEnd sql.NullTime
+		dbDescription string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbManufacturingOrder_id,&dbSystem_id,&dbPackageReference,&dbStart,&dbEnd,&dbDescription)
+
+		var manufactoringOrder *classes.Sms_ManufacturingOrder
+		if dbEnd.Valid == true{
+			manufactoringOrder = classes.NewSms_ManufacturingOrderFromDB(dbManufacturingOrder_id, dbSystem_id, dbPackageReference, dbStart.String(), dbEnd.Time.String(), dbDescription)
+		} else{
+			manufactoringOrder = classes.NewSms_ManufacturingOrderFromDB(dbManufacturingOrder_id, dbSystem_id, dbPackageReference, dbStart.String(), "", dbDescription)
+		}
+		manufactoringOrders=append(manufactoringOrders, *manufactoringOrder)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return manufactoringOrders
+}
+
+func (mgr *manager) AddSMSManufacturingOrder(system_id int, packageReference string, description string) (err error) {
+	dt := time.Now()
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newManufacturingOrder)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(system_id, packageReference, dt, description)
+
+	if rows == nil{
+		fmt.Println("rows should be null, AddSMSManufacturingOrder")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSManufacturingOrderInfo(id int) (*classes.Sms_ManufacturingOrder) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ManufacturingOrderInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbManufacturingOrder_id int
+		dbSystem_id int
+		dbPackageReference string
+		dbStart time.Time
+		dbEnd sql.NullTime
+		dbDescription string
+	)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbManufacturingOrder_id,&dbSystem_id,&dbPackageReference,&dbStart,&dbEnd,&dbDescription)
+
+	var manufactoringOrder *classes.Sms_ManufacturingOrder
+	if dbEnd.Valid == true{
+		manufactoringOrder = classes.NewSms_ManufacturingOrderFromDB(dbManufacturingOrder_id, dbSystem_id, dbPackageReference, dbStart.String(), dbEnd.Time.String(), dbDescription)
+	} else{
+		manufactoringOrder = classes.NewSms_ManufacturingOrderFromDB(dbManufacturingOrder_id, dbSystem_id, dbPackageReference, dbStart.String(), "", dbDescription)
+	}
+
+	return manufactoringOrder
+}
+
+
+/////////////////////////////////////////
+////	SMS Certification
+////////////////////////////////////////
+func (mgr *manager) AddSMSCertification(name string, description string) (err error) {
+
+	dt := time.Now()
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newCertification)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	rows, err := stmt.Query(name, dt, description)
+
+	if rows == nil{
+		fmt.Println("rows should be null, Add Certification")
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSCertification() (certifications []classes.Sms_Certification) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_certification)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query()
+
+	var ( 	dbCertification_id int
+		dbName string
+		dbDate time.Time
+		dbDescription string)
+
+	for rows.Next() {
+		err := rows.Scan(&dbCertification_id, &dbName, &dbDate, &dbDescription)
+
+		var certification = classes.NewSms_CertificationFromDB(dbCertification_id, dbName, dbDate.String(), dbDescription)
+		certifications=append(certifications, *certification)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return certifications
+}
+
+func (mgr *manager) GetSMSCertificationInfo(id int) (*classes.Sms_Certification) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_certificationInfo)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var ( 	dbCertification_id int
+		dbName string
+		dbDate time.Time
+		dbDescription string)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbCertification_id, &dbName, &dbDate, &dbDescription)
+
+	var certification = classes.NewSms_CertificationFromDB(dbCertification_id, dbName, dbDate.String(), dbDescription)
+
+	return certification
+}
+
+func (mgr *manager) RemoveSMSCertification(id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_certification)
+
+	stmt.QueryRow(id)
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS SystemHasCertification
+////////////////////////////////////////
+func (mgr *manager) AddSystemHasCertification(system_id int, certification_id int, additionalInfo string) (err error) {
+	// Vorbereiten des Statements
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_systemHasCertification)
+	if err != nil {
+		fmt.Printf("Error preparing statement: %v\n", err)
+		return err
+	}
+	defer stmt.Close() // Sicherstellen, dass das Statement geschlossen wird
+
+	// Ausführen des Statements
+	_, err = stmt.Exec(system_id, certification_id, additionalInfo)
+	if err != nil {
+		fmt.Printf("Error executing statement: %v\n", err)
+		return err
+	}
+
+	return nil
+}
+
+func (mgr *manager) GetCertificationsForSystem(systemID int) (certifications []classes.Sms_SystemHasCertification, err error) {
+	// Bereite das SELECT-Statement vor
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_systemHasCertificationForSystem)
+	if err != nil {
+		fmt.Printf("Error preparing statement: %v\n", err)
+		return nil, err
+	}
+	defer stmt.Close() // Schließe das Statement nach der Nutzung
+
+	// Führe die Abfrage aus
+	rows, err := stmt.Query(systemID)
+	if err != nil {
+		fmt.Printf("Error executing query: %v\n", err)
+		return nil, err
+	}
+	defer rows.Close() // Schließe die Rows nach der Nutzung
+
+	// Variablen zum Speichern der abgerufenen Daten
+	var (
+		dbSystemID          int
+		dbCertificationID   int
+		dbAdditionalInfo    string
+		dbCertificationName string
+	)
+
+	// Iteriere durch die Ergebnisse und baue die Liste der Zertifizierungen
+	for rows.Next() {
+		err := rows.Scan(&dbSystemID, &dbCertificationID, &dbAdditionalInfo, &dbCertificationName)
+		if err != nil {
+			fmt.Printf("Error scanning row: %v\n", err)
+			return nil, err
+		}
+
+		// Erstelle eine Instanz der Datenklasse
+		certification := classes.NewSms_SystemHasCertification(dbSystemID, dbCertificationID, dbAdditionalInfo, dbCertificationName, "", "")
+
+		// Füge die Zertifizierung zur Liste hinzu
+		certifications = append(certifications, *certification)
+	}
+
+	// Prüfe auf Fehler beim Durchlaufen der Zeilen
+	if err := rows.Err(); err != nil {
+		fmt.Printf("Error iterating rows: %v\n", err)
+		return nil, err
+	}
+
+	return certifications, nil
+}
+
+func (mgr *manager) GetSystemsForCertification(certificationID int) (systems []classes.Sms_SystemHasCertification, err error) {
+	// Bereite das SELECT-Statement vor
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_systemHasCertificationForCertification)
+	if err != nil {
+		fmt.Printf("Error preparing statement: %v\n", err)
+		return nil, err
+	}
+	defer stmt.Close() // Schließe das Statement nach der Nutzung
+
+	// Führe die Abfrage aus
+	rows, err := stmt.Query(certificationID)
+	if err != nil {
+		fmt.Printf("Error executing query: %v\n", err)
+		return nil, err
+	}
+	defer rows.Close() // Schließe die Rows nach der Nutzung
+
+	// Variablen zum Speichern der abgerufenen Daten
+	var (
+		dbSystemID       int
+		dbCertificationID int
+		dbAdditionalInfo string
+		dbSystemName     string
+		dbSystemVersion  string
+	)
+
+	// Iteriere durch die Ergebnisse und baue die Liste der Systeme
+	for rows.Next() {
+		err := rows.Scan(&dbSystemID, &dbCertificationID, &dbAdditionalInfo, &dbSystemName, &dbSystemVersion)
+		if err != nil {
+			fmt.Printf("Error scanning row: %v\n", err)
+			return nil, err
+		}
+
+		// Erstelle eine Instanz der Datenklasse
+		system := classes.NewSms_SystemHasCertification(dbSystemID, dbCertificationID, dbAdditionalInfo, "", dbSystemName, dbSystemVersion)
+
+		// Füge das System zur Liste hinzu
+		systems = append(systems, *system)
+	}
+
+	// Prüfe auf Fehler beim Durchlaufen der Zeilen
+	if err := rows.Err(); err != nil {
+		fmt.Printf("Error iterating rows: %v\n", err)
+		return nil, err
+	}
+
+	return systems, nil
+}
+
+func (mgr *manager) RemoveSystemHasCertification(systemID int, certificationID int) (err error) {
+	// Bereite das DELETE-Statement vor
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_systemHasCertification)
+	if err != nil {
+		fmt.Printf("Error preparing statement: %v\n", err)
+		return err
+	}
+	defer stmt.Close() // Schließe das Statement nach der Ausführung
+
+	// Führt die Abfrage aus und übergibt die Parameter
+	_, err = stmt.Exec(systemID, certificationID)
+	if err != nil {
+		fmt.Printf("Error executing statement: %v\n", err)
+		return err
+	}
+
+	return nil
+}
+
+
+/////////////////////////////////////////
+////	SMS IssueAffectedComponent
+////////////////////////////////////////
+func (mgr *manager) AddSMSIssueAffectedComponent(component_id int, issue_id int, additionalInfo string, confirmed bool) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newIssueAffectedComponent)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return err
+	}
+	defer stmt.Close() // Sicherstellen, dass das Statement geschlossen wird
+
+	_, err = stmt.Exec(component_id, issue_id, additionalInfo, confirmed)
+	if err != nil {
+		fmt.Println("Error executing statement:", err)
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSIssueAffectedComponentsForIssueID(issue_id int) (issueAffectedComponents []classes.Sms_IssueAffectedComponent, err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssueAffectedComponentsForIssueID)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(issue_id)
+	if err != nil {
+		fmt.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var dbComponent_id int
+		var dbIssue_id int
+		var dbAdditionalInfo string
+		var dbConfirmed bool
+		var dbComponent_name string
+		var dbComponent_version string
+
+		err := rows.Scan(&dbComponent_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbComponent_name, &dbComponent_version)
+		if err != nil {
+			fmt.Println("Error scanning row:", err)
+			return nil, err
+		}
+
+		affectedComponent := classes.NewSms_IssueAffectedComponent(dbComponent_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbComponent_name, dbComponent_version)
+		issueAffectedComponents = append(issueAffectedComponents, *affectedComponent)
+	}
+
+	return issueAffectedComponents, nil
+}
+
+
+func (mgr *manager) GetSMSIssuesForComponent(component_id int) (issueAffectedComponents []classes.Sms_IssueAffectedComponent, err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssuesForComponent)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(component_id)
+	if err != nil {
+		fmt.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var dbComponent_id int
+		var dbIssue_id int
+		var dbAdditionalInfo string
+		var dbConfirmed bool
+		var dbIssue_name string
+
+		err := rows.Scan(&dbComponent_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbIssue_name)
+		if err != nil {
+			fmt.Println("Error scanning row:", err)
+			return nil, err
+		}
+
+		issueList := classes.NewSms_IssueAffectedComponent(dbComponent_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbIssue_name, "")
+		issueAffectedComponents = append(issueAffectedComponents, *issueList)
+	}
+
+	return issueAffectedComponents, nil
+}
+
+func (mgr *manager) RemoveSMSIssueAffectedComponent(component_id int, issue_id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_IssueAffectedComponent)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(component_id, issue_id)
+	if err != nil {
+		fmt.Println("Error executing DELETE statement:", err)
+	}
+
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS IssueAffectedArtefact
+////////////////////////////////////////
+func (mgr *manager) AddSMSIssueAffectedArtefact(artefact_id int, issue_id int, additionalInfo string, confirmed bool) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newIssueAffectedArtefact)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return err
+	}
+	defer stmt.Close() // Sicherstellen, dass das Statement geschlossen wird
+
+	_, err = stmt.Exec(artefact_id, issue_id, additionalInfo, confirmed)
+	if err != nil {
+		fmt.Println("Error executing statement:", err)
+	}
+
+	return err
+}
+
+func (mgr *manager) GetSMSIssueAffectedArtefactsForIssueID(issue_id int) (issueAffectedArtefacts []classes.Sms_IssueAffectedArtefact, err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssueAffectedArtefactsForIssueID)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(issue_id)
+	if err != nil {
+		fmt.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var dbArtefact_id int
+		var dbIssue_id int
+		var dbAdditionalInfo string
+		var dbConfirmed bool
+		var dbArtefact_name string
+		var dbArtefact_version string
+
+		err := rows.Scan(&dbArtefact_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbArtefact_name, &dbArtefact_version)
+		if err != nil {
+			fmt.Println("Error scanning row:", err)
+			return nil, err
+		}
+
+		affectedArtefact := classes.NewSms_IssueAffectedArtefact(dbArtefact_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbArtefact_name, dbArtefact_version)
+		issueAffectedArtefacts = append(issueAffectedArtefacts, *affectedArtefact)
+	}
+
+	return issueAffectedArtefacts, nil
+}
+
+func (mgr *manager) GetSMSIssuesForArtefact(artefact_id int) (issueAffectedArtefacts []classes.Sms_IssueAffectedArtefact, err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssuesForArtefact)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(artefact_id)
+	if err != nil {
+		fmt.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var dbArtefact_id int
+		var dbIssue_id int
+		var dbAdditionalInfo string
+		var dbConfirmed bool
+		var dbArtefact_name string
+
+		err := rows.Scan(&dbArtefact_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbArtefact_name)
+		if err != nil {
+			fmt.Println("Error scanning row:", err)
+			return nil, err
+		}
+
+		issueList := classes.NewSms_IssueAffectedArtefact(dbArtefact_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbArtefact_name, "")
+		issueAffectedArtefacts = append(issueAffectedArtefacts, *issueList)
+	}
+
+	return issueAffectedArtefacts, nil
+}
+
+func (mgr *manager) RemoveSMSIssueAffectedArtefact(artefact_id int, issue_id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_IssueAffectedArtefact)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(artefact_id, issue_id)
+	if err != nil {
+		fmt.Println("Error executing DELETE statement:", err)
+	}
 
 	return err
 }

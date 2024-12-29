@@ -70,7 +70,9 @@ func ShowSMSArtefact(ctx iris.Context) {
 	}
 
 	artefact := dbprovider.GetDBManager().GetSMSArtefactInfo(i)
+	devicesParentsOfArtefact := dbprovider.GetDBManager().GetSMSArtefactPartOfDeviceForArtefact(i)
 
+	ctx.ViewData("devicesParentsOfArtefact", devicesParentsOfArtefact)
 	ctx.ViewData("artefact", artefact)
 	ctx.View("sms_showArtefact.html")
 }

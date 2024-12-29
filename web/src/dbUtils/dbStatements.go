@@ -147,7 +147,56 @@ var INSERT_sms_newIssueAffectedDevice = `INSERT INTO sms_issueAffectedDevice (de
 var DELETE_sms_IssueAffectedDevice = `DELETE FROM sms_issueAffectedDevice WHERE device_id = ? AND issue_id = ?;`
 var SELECT_sms_IssueAffectedDevicesForIssueID = `SELECT sms_issueAffectedDevice.device_id, sms_issueAffectedDevice.issue_id, sms_issueAffectedDevice.additionalInfo, sms_issueAffectedDevice.confirmed, sms_devicetype.type, sms_device.version FROM sms_issueAffectedDevice LEFT JOIN sms_device ON sms_issueAffectedDevice.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id WHERE sms_issueAffectedDevice.issue_id = ?; `
 var SELECT_sms_IssuesForDevice = `SELECT sms_issueAffectedDevice.device_id, sms_issueAffectedDevice.issue_id, sms_issueAffectedDevice.additionalInfo, sms_issueAffectedDevice.confirmed, sms_issue.name FROM sms_issueAffectedDevice LEFT JOIN sms_issue ON sms_issueAffectedDevice.issue_id = sms_issue.issue_id WHERE sms_issueAffectedDevice.device_id = ?; `
-var SELECT_sms_affectedDeviceInstancesAndProjects = `SELECT deviceInstance_id, type, project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id LEFT JOIN sms_issueAffectedDevice siad ON sdi.device_id = siad.device_id WHERE siad.issue_id = ? UNION ALL Select deviceInstance_id, type, project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id RIGHT JOIN sms_issueAffectedDevice siad ON sdi.device_id = siad.device_id WHERE sdi.device_id IS NULL AND siad.issue_id = ?; `
+// Komplexe Abfrage für alle betroffenen Instanzen, (rekursiv auch über die betroffenen Software, componenten, Artefakte...., liefert auch die Devices ohne Instanzen, die werden aber erstmal rausgefiltert
+// Teil 1: Geräte mit Instanzen, die direkt durch ein Issue betroffen sind
+// Teil 2: Geräte ohne Instanzen, die direkt durch ein Issue betroffen sind
+// Teil 3: Geräteinstanzen, die über ihre Software-Komponenten von einem Issue betroffen sind
+// Teil 4: Geräte ohne Instanzen, die eine betroffene Software haben
+// Teil 5: Geräteinstanzen, die über ihre Software-Komponenten durch betroffene Komponenten betroffen sind
+// Teil 6: Geräte ohne Instanzen, die über betroffene Komponenten innerhalb ihrer Software betroffen sind
+// Teil 7: Geräteinstanzen, die durch betroffene Artefakte innerhalb des Geräts betroffen sind
+// Teil 8: Geräte ohne Instanzen, die durch betroffene Artefakte innerhalb des Geräts betroffen sind
+var SELECT_sms_affectedDeviceInstancesAndProjects = `SELECT DISTINCT deviceInstance_id, type, project_id, version FROM (SELECT sdi.deviceInstance_id, sd2.type, sdi.project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id LEFT JOIN sms_issueAffectedDevice siad ON sdi.device_id = siad.device_id WHERE siad.issue_id = ?
+UNION ALL
+SELECT NULL AS deviceInstance_id, sd2.type, NULL AS project_id, COALESCE(sd1.version, 'Unknown') AS version FROM sms_issueAffectedDevice siad LEFT JOIN sms_device sd1 ON siad.device_id = sd1.device_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siad.device_id NOT IN (SELECT device_id FROM sms_deviceInstance) AND siad.issue_id = ?
+UNION ALL
+SELECT sdi.deviceInstance_id, sd2.type, sdi.project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_issueAffectedSoftware sias ON ssod.software_id = sias.software_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE sias.issue_id = ?
+UNION ALL
+SELECT NULL AS deviceInstance_id, sd2.type, NULL AS project_id, COALESCE(sd1.version, 'Unknown') AS version FROM sms_device sd1 LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_issueAffectedSoftware sias ON ssod.software_id = sias.software_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE sias.issue_id = ? AND sd1.device_id NOT IN (SELECT device_id FROM sms_deviceInstance) AND sias.software_id IS NOT NULL
+UNION ALL
+SELECT sdi.deviceInstance_id, sd2.type, sdi.project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_componentPartOfSoftware scps ON ssod.software_id = scps.software_id LEFT JOIN sms_issueAffectedComponent siac ON scps.component_id = siac.component_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siac.issue_id = ?
+UNION ALL
+SELECT NULL AS deviceInstance_id, sd2.type, NULL AS project_id, COALESCE(sd1.version, 'Unknown') AS version FROM sms_device sd1 LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_componentPartOfSoftware scps ON ssod.software_id = scps.software_id LEFT JOIN sms_issueAffectedComponent siac ON scps.component_id = siac.component_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siac.issue_id = ? AND sd1.device_id NOT IN (SELECT device_id FROM sms_deviceInstance)
+UNION ALL
+SELECT sdi.deviceInstance_id, sd2.type, sdi.project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_artefactPartOfDevice sapd ON sd1.device_id = sapd.device_id LEFT JOIN sms_issueAffectedArtefact siaa ON sapd.artefact_id = siaa.artefact_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siaa.issue_id = ?
+UNION ALL
+SELECT NULL AS deviceInstance_id, sd2.type, NULL AS project_id, COALESCE(sd1.version, 'Unknown') AS version FROM sms_device sd1 LEFT JOIN sms_artefactPartOfDevice sapd ON sd1.device_id = sapd.device_id LEFT JOIN sms_issueAffectedArtefact siaa ON sapd.artefact_id = siaa.artefact_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siaa.issue_id = ? AND sd1.device_id NOT IN (SELECT device_id FROM sms_deviceInstance)
+)AS combined_result;`
+// Statistics for above Query
+var SELECT_sms_statisticsForaffectedDeviceInstancesAndProjects = `WITH combined_result AS (SELECT DISTINCT deviceInstance_id, type, project_id, version FROM 
+(SELECT sdi.deviceInstance_id, sd2.type, sdi.project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id LEFT JOIN sms_issueAffectedDevice siad ON sdi.device_id = siad.device_id WHERE siad.issue_id = ?
+UNION ALL
+SELECT NULL AS deviceInstance_id, sd2.type, NULL AS project_id, COALESCE(sd1.version, 'Unknown') AS version FROM sms_issueAffectedDevice siad LEFT JOIN sms_device sd1 ON siad.device_id = sd1.device_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siad.device_id NOT IN (SELECT device_id FROM sms_deviceInstance) AND siad.issue_id = ?
+UNION ALL
+SELECT sdi.deviceInstance_id, sd2.type, sdi.project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_issueAffectedSoftware sias ON ssod.software_id = sias.software_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE sias.issue_id = ?
+UNION ALL
+SELECT NULL AS deviceInstance_id, sd2.type, NULL AS project_id, COALESCE(sd1.version, 'Unknown') AS version FROM sms_device sd1 LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_issueAffectedSoftware sias ON ssod.software_id = sias.software_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE sias.issue_id = ? AND sd1.device_id NOT IN (SELECT device_id FROM sms_deviceInstance) AND sias.software_id IS NOT NULL
+UNION ALL
+SELECT sdi.deviceInstance_id, sd2.type, sdi.project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_componentPartOfSoftware scps ON ssod.software_id = scps.software_id LEFT JOIN sms_issueAffectedComponent siac ON scps.component_id = siac.component_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siac.issue_id = ?
+UNION ALL
+SELECT NULL AS deviceInstance_id, sd2.type, NULL AS project_id, COALESCE(sd1.version, 'Unknown') AS version FROM sms_device sd1 LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_componentPartOfSoftware scps ON ssod.software_id = scps.software_id LEFT JOIN sms_issueAffectedComponent siac ON scps.component_id = siac.component_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siac.issue_id = ? AND sd1.device_id NOT IN (SELECT device_id FROM sms_deviceInstance)
+UNION ALL
+SELECT sdi.deviceInstance_id, sd2.type, sdi.project_id, version FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_artefactPartOfDevice sapd ON sd1.device_id = sapd.device_id LEFT JOIN sms_issueAffectedArtefact siaa ON sapd.artefact_id = siaa.artefact_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siaa.issue_id = ?
+UNION ALL
+SELECT NULL AS deviceInstance_id, sd2.type, NULL AS project_id, COALESCE(sd1.version, 'Unknown') AS version FROM sms_device sd1 LEFT JOIN sms_artefactPartOfDevice sapd ON sd1.device_id = sapd.device_id LEFT JOIN sms_issueAffectedArtefact siaa ON sapd.artefact_id = siaa.artefact_id LEFT JOIN sms_devicetype sd2 ON sd1.devicetype_id = sd2.devicetype_id WHERE siaa.issue_id = ? AND sd1.device_id NOT IN (SELECT device_id FROM sms_deviceInstance)
+)AS subquery
+)
+SELECT
+    COUNT(DISTINCT deviceInstance_id) AS affected_device_instances,
+    COUNT(DISTINCT CASE WHEN deviceInstance_id IS NULL THEN CONCAT(type, version) ELSE NULL END) AS affected_devices_without_instances,
+    COUNT(DISTINCT project_id) AS affected_projects,
+    COUNT(DISTINCT CONCAT(type, version)) AS distinct_device_version_combinations
+FROM combined_result;`
 
 // SMS Solution
 var INSERT_sms_newSolution = `INSERT INTO sms_solution (issue_id, devicetype_id, date, name, description, reference) VALUES (?,?,?,?,?,?);`
@@ -179,6 +228,7 @@ var SELECT_sms_components = `SELECT sms_component.component_id, sms_component.na
 var SELECT_sms_componentInfo = `SELECT sms_component.component_id, sms_component.name, sms_component.componentType, sms_component.version, sms_component.date, sms_component.license, sms_component.thirdParty, sms_component.releaseNote FROM sms_component WHERE component_id = ?;`
 var INSERT_sms_newComponent = `INSERT INTO sms_component (name, componentType, version, date, license, thirdParty, releaseNote) VALUES (?,?,?,?,?,?,?);`
 var DELETE_sms_component = `DELETE FROM sms_component WHERE component_id = ?;`
+var Check_sms_component = `SELECT sms_component.component_id FROM sms_component WHERE sms_component.name = ? AND sms_component.componentType = ? AND sms_component.version = ? LIMIT 1;`
 
 // SMS ComponentPartOfSoftware
 var INSERT_sms_newComponentPartOfSoftware = `INSERT INTO sms_componentPartOfSoftware (software_id, component_id, additionalInfo) VALUES (?,?,?);`
@@ -203,3 +253,45 @@ var INSERT_sms_newProjectBOM = `INSERT INTO sms_projectBOM (project_id, system_i
 var DELETE_sms_ProjectBOM = `DELETE FROM sms_projectBOM WHERE projectBOM_id = ?;`
 var SELECT_sms_ProjectBOMForProject = `SELECT sms_projectBOM.projectBOM_id, sms_projectBOM.project_id, sms_projectBOM.system_id, sms_projectBOM.orderNumber, sms_projectBOM.additionalInfo, sms_systemtype.type, sms_system.version FROM sms_projectBOM LEFT JOIN sms_system ON sms_projectBOM.system_id = sms_system.system_id LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id WHERE sms_projectBOM.project_id = ?; `
 var SELECT_sms_ProjectBOMForSystem = `SELECT sms_projectBOM.projectBOM_id, sms_projectBOM.project_id, sms_projectBOM.system_id, sms_projectBOM.orderNumber, sms_projectBOM.additionalInfo, sms_project.name, sms_project.customer FROM sms_projectBOM LEFT JOIN sms_project ON sms_projectBOM.project_id = sms_project.project_id WHERE sms_projectBOM.system_id = ?; `
+
+// SMS IssueAffectedSoftware
+var INSERT_sms_newIssueAffectedSoftware = `INSERT INTO sms_issueAffectedSoftware (software_id, issue_id, additionalInfo, confirmed) VALUES (?,?,?,?);`
+var DELETE_sms_IssueAffectedSoftware = `DELETE FROM sms_issueAffectedSoftware WHERE software_id = ? AND issue_id = ?;`
+var SELECT_sms_IssueAffectedSoftwaresForIssueID = `SELECT sms_issueAffectedSoftware.software_id, sms_issueAffectedSoftware.issue_id, sms_issueAffectedSoftware.additionalInfo, sms_issueAffectedSoftware.confirmed, sms_softwaretype.typeName, sms_software.version FROM sms_issueAffectedSoftware LEFT JOIN sms_software ON sms_issueAffectedSoftware.software_id = sms_software.software_id LEFT JOIN sms_softwaretype ON sms_software.softwaretype_id = sms_softwaretype.softwaretype_id WHERE sms_issueAffectedSoftware.issue_id = ?; `
+var SELECT_sms_IssuesForSoftware = `SELECT sms_issueAffectedSoftware.software_id, sms_issueAffectedSoftware.issue_id, sms_issueAffectedSoftware.additionalInfo, sms_issueAffectedSoftware.confirmed, sms_issue.name FROM sms_issueAffectedSoftware LEFT JOIN sms_issue ON sms_issueAffectedSoftware.issue_id = sms_issue.issue_id WHERE sms_issueAffectedSoftware.software_id = ?; `
+
+// SMS ArtefactPartOfDevice
+var INSERT_sms_newArtefactPartOfDevice = `INSERT INTO sms_artefactPartOfDevice (device_id, artefact_id, additionalInfo) VALUES (?,?,?);`
+var DELETE_sms_ArtefactPartOfDevice = `DELETE FROM sms_artefactPartOfDevice WHERE device_id = ? AND artefact_id = ?;`
+var SELECT_sms_ArtefactPartOfDeviceForDevice = `SELECT sms_artefactPartOfDevice.device_id, sms_artefactPartOfDevice.artefact_id, sms_artefactPartOfDevice.additionalInfo, sms_artefacttype.artefactType, sms_artefact.version FROM sms_artefactPartOfDevice LEFT JOIN sms_artefact ON sms_artefactPartOfDevice.artefact_id = sms_artefact.artefact_id LEFT JOIN sms_artefacttype ON sms_artefact.artefacttype_id = sms_artefacttype.artefacttype_id WHERE sms_artefactPartOfDevice.device_id =  ?; `
+var SELECT_sms_ArtefactPartOfDeviceForArtefact = `SELECT sms_artefactPartOfDevice.device_id, sms_artefactPartOfDevice.artefact_id, sms_artefactPartOfDevice.additionalInfo, sms_devicetype.type, sms_device.version FROM sms_artefactPartOfDevice LEFT JOIN sms_device ON sms_artefactPartOfDevice.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id WHERE sms_artefactPartOfDevice.artefact_id = ?; `
+
+// SMS_ManufacturingOrder
+var SELECT_sms_ManufacturingOrdersForSystem = `SELECT sms_manufacturingOrder.manufacturingOrder_id, sms_manufacturingOrder.system_id, sms_manufacturingOrder.packageReference, sms_manufacturingOrder.start, sms_manufacturingOrder.end, sms_manufacturingOrder.description FROM sms_manufacturingOrder WHERE system_id = ? `
+var INSERT_sms_newManufacturingOrder = `INSERT INTO sms_manufacturingOrder (system_id, packageReference, start, description) VALUES (?,?,?,?);`
+var SELECT_sms_ManufacturingOrderInfo = `SELECT sms_manufacturingOrder.manufacturingOrder_id, sms_manufacturingOrder.system_id, sms_manufacturingOrder.packageReference, sms_manufacturingOrder.start, sms_manufacturingOrder.end, sms_manufacturingOrder.description FROM sms_manufacturingOrder WHERE manufacturingOrder_id = ?`
+
+// SMS Certification
+var SELECT_sms_certification = `SELECT sms_certification.certification_id, sms_certification.name, sms_certification.date, sms_certification.description FROM sms_certification;`
+var SELECT_sms_certificationInfo = `SELECT sms_certification.certification_id, sms_certification.name, sms_certification.date, sms_certification.description FROM sms_certification WHERE certification_id = ?;`
+var INSERT_sms_newCertification = `INSERT INTO sms_certification (name, date, description) VALUES (?,?,?);`
+var DELETE_sms_certification = `DELETE FROM sms_certification WHERE certification_id = ?;`
+
+// SMS_SystemHasCertification
+var SELECT_sms_systemHasCertification = `SELECT sms_systemHasCertification.system_id, sms_systemHasCertification.certification_id, sms_systemHasCertification.additionalInfo FROM sms_systemHasCertification;`
+var DELETE_sms_systemHasCertification = `DELETE FROM sms_systemHasCertification WHERE system_id = ? AND certification_id = ?;`
+var INSERT_sms_systemHasCertification = `INSERT INTO sms_systemHasCertification (system_id, certification_id, additionalInfo) VALUES (?, ?, ?);`
+var SELECT_sms_systemHasCertificationForSystem = `SELECT sms_systemHasCertification.system_id, sms_systemHasCertification.certification_id, sms_systemHasCertification.additionalInfo, sms_certification.name AS certification_name FROM sms_systemHasCertification LEFT JOIN sms_certification ON sms_systemHasCertification.certification_id = sms_certification.certification_id WHERE sms_systemHasCertification.system_id = ?;`
+var SELECT_sms_systemHasCertificationForCertification = `SELECT sms_systemHasCertification.system_id, sms_systemHasCertification.certification_id, sms_systemHasCertification.additionalInfo, sms_systemtype.type AS system_name, sms_system.version AS system_version FROM sms_systemHasCertification LEFT JOIN sms_system ON sms_systemHasCertification.system_id = sms_system.system_id LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id WHERE sms_systemHasCertification.certification_id = ?;`
+
+// SMS IssueAffectedComponents
+var INSERT_sms_newIssueAffectedComponent = `INSERT INTO sms_issueAffectedComponent (component_id, issue_id, additionalInfo, confirmed) VALUES (?,?,?,?);`
+var DELETE_sms_IssueAffectedComponent = `DELETE FROM sms_issueAffectedComponent WHERE component_id = ? AND issue_id = ?;`
+var SELECT_sms_IssueAffectedComponentsForIssueID = `SELECT sms_issueAffectedComponent.component_id, sms_issueAffectedComponent.issue_id, sms_issueAffectedComponent.additionalInfo, sms_issueAffectedComponent.confirmed, sms_component.name AS component_name, sms_component.version AS component_version FROM sms_issueAffectedComponent LEFT JOIN sms_component ON sms_issueAffectedComponent.component_id = sms_component.component_id WHERE sms_issueAffectedComponent.issue_id = ?;`
+var SELECT_sms_IssuesForComponent = ` SELECT sms_issueAffectedComponent.component_id, sms_issueAffectedComponent.issue_id, sms_issueAffectedComponent.additionalInfo, sms_issueAffectedComponent.confirmed, sms_issue.name FROM sms_issueAffectedComponent LEFT JOIN sms_issue ON sms_issueAffectedComponent.issue_id = sms_issue.issue_id WHERE sms_issueAffectedComponent.component_id = ?;`
+
+// SMS IssueAffectedArtefacts
+var INSERT_sms_newIssueAffectedArtefact = `INSERT INTO sms_issueAffectedArtefact (artefact_id, issue_id, additionalInfo, confirmed) VALUES (?,?,?,?);`
+var DELETE_sms_IssueAffectedArtefact = `DELETE FROM sms_issueAffectedArtefact WHERE artefact_id = ? AND issue_id = ?;`
+var SELECT_sms_IssueAffectedArtefactsForIssueID = `SELECT sms_issueAffectedArtefact.artefact_id, sms_issueAffectedArtefact.issue_id, sms_issueAffectedArtefact.additionalInfo, sms_issueAffectedArtefact.confirmed, sms_artefact.name AS artefact_name, sms_artefact.version AS artefact_version FROM sms_issueAffectedArtefact LEFT JOIN sms_artefact ON sms_issueAffectedArtefact.artefact_id = sms_artefact.artefact_id WHERE sms_issueAffectedArtefact.issue_id = ?;`
+var SELECT_sms_IssuesForArtefact = `SELECT sms_issueAffectedArtefact.artefact_id, sms_issueAffectedArtefact.issue_id, sms_issueAffectedArtefact.additionalInfo, sms_issueAffectedArtefact.confirmed, sms_issue.name FROM sms_issueAffectedArtefact LEFT JOIN sms_issue ON sms_issueAffectedArtefact.issue_id = sms_issue.issue_id WHERE sms_issueAffectedArtefact.artefact_id = ?;`

@@ -73,7 +73,7 @@
         <hr>
         <div class="row">
           <div class="col-md-6">
-            <h2>Sub Components:</h2> <p><a class="btn btn-primary btn-lg" href="/sms_componentPartOfSoftware/createSMSComponentPartOfSoftware/{{software.software_id}}" role="button">Add</a>&nbsp<a class="btn btn-primary btn-lg" href="/sms_componentPartOfSoftware/importSCAreportToComponentPartOfSoftware/{{software.software_id}}" role="button">Import SCA report</a></p>
+            <h2>Sub Components:</h2> <p><a class="btn btn-primary btn-lg" href="/sms_componentPartOfSoftware/createSMSComponentPartOfSoftware/{{software.software_id}}" role="button">Add</a>&nbsp<a class="btn btn-primary btn-lg" href="/sms_componentPartOfSoftware/importSCAreportToComponentPartOfSoftwareView/{{software.software_id}}" role="button">Import SCA report</a></p>
             <table class="table">
               <thead>
               <tr>
@@ -100,6 +100,26 @@
           </div>
         </div>
         <hr>
+        <hr>
+        <div class="row">
+          <div class="col-md-6">
+            <h2>Uploaded SBOM Files:</h2>
+            <ul>
+              {% for file in SBOMFiles %}
+              <li><a href="/uploads/{{software.software_id}}/{{file}}">{{file}}</a></li>
+              {% endfor %}
+            </ul>
+
+          </div>
+          <div class="col-md-6">
+            <h2>Issues:</h2>
+
+          </div>
+        </div>
+        <hr>
       </div> <!-- /container -->
       
 {% endblock %}
+
+
+

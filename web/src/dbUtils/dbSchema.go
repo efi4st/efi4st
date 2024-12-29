@@ -395,3 +395,84 @@ CREATE TABLE IF NOT EXISTS sms_projectBOM (
 	CONSTRAINT sms_projectBOM_ibfk_2 FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_issueAffectedSoftware_schema = `
+CREATE TABLE IF NOT EXISTS sms_issueAffectedSoftware (
+	software_id INT(11) NOT NULL,
+	issue_id INT(11) NOT NULL,
+	additionalInfo VARCHAR(150) DEFAULT NULL,
+	confirmed BOOLEAN NOT NULL,
+	PRIMARY KEY (software_id, issue_id),
+	CONSTRAINT sms_issueAffectedSoftware_ibfk_1 FOREIGN KEY (software_id) REFERENCES sms_software (software_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	CONSTRAINT sms_issueAffectedSoftware_ibfk_2 FOREIGN KEY (issue_id) REFERENCES sms_issue (issue_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_artefactPartOfDevice_schema = `
+CREATE TABLE IF NOT EXISTS sms_artefactPartOfDevice (
+	device_id INT(11) NOT NULL,
+	artefact_id INT(11) NOT NULL,
+	additionalInfo VARCHAR(150) DEFAULT NULL,
+	PRIMARY KEY (device_id, artefact_id),
+	CONSTRAINT sms_artefactPartOfDevice_ibfk_1 FOREIGN KEY (device_id) REFERENCES sms_device (device_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	CONSTRAINT sms_artefactPartOfDevice_ibfk_2 FOREIGN KEY (artefact_id) REFERENCES sms_artefact (artefact_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_manufacturingOrder_schema = `
+CREATE TABLE IF NOT EXISTS sms_manufacturingOrder (
+	manufacturingOrder_id INT(11) NOT NULL AUTO_INCREMENT,
+	system_id INT(11) NOT NULL,
+	packageReference VARCHAR(100) DEFAULT NULL,
+	start DATE NOT NULL,
+	end DATE DEFAULT NULL,
+	description VARCHAR(150) DEFAULT NULL,
+	PRIMARY KEY (manufacturingOrder_id),
+	CONSTRAINT sms_manufacturingOrder_ibfk_1 FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_certification_schema = `
+CREATE TABLE IF NOT EXISTS sms_certification (
+	certification_id INT(11) NOT NULL AUTO_INCREMENT,
+	name VARCHAR(100) NOT NULL,
+	date DATE NOT NULL,
+	description VARCHAR(200) NOT NULL,
+	PRIMARY KEY (certification_id)
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_systemHasCertification_schema = `
+CREATE TABLE IF NOT EXISTS sms_systemHasCertification (
+	system_id INT(11) NOT NULL,
+	certification_id INT(11) NOT NULL,
+	additionalInfo VARCHAR(150) DEFAULT NULL,
+	PRIMARY KEY (system_id, certification_id),
+	CONSTRAINT sms_systemHasCertification_ibfk_1 FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	CONSTRAINT sms_systemHasCertification_ibfk_2 FOREIGN KEY (certification_id) REFERENCES sms_certification (certification_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_issueAffectedComponent_schema = `
+CREATE TABLE IF NOT EXISTS sms_issueAffectedComponent (
+    component_id INT(11) NOT NULL,
+    issue_id INT(11) NOT NULL,
+    additionalInfo VARCHAR(150) DEFAULT NULL,
+    confirmed BOOLEAN NOT NULL,
+    PRIMARY KEY (component_id, issue_id),
+    CONSTRAINT sms_issueAffectedComponent_ibfk_1 FOREIGN KEY (component_id) REFERENCES sms_component (component_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+    CONSTRAINT sms_issueAffectedComponent_ibfk_2 FOREIGN KEY (issue_id) REFERENCES sms_issue (issue_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_issueAffectedArtefact_schema = `
+CREATE TABLE IF NOT EXISTS sms_issueAffectedArtefact (
+    artefact_id INT(11) NOT NULL,
+    issue_id INT(11) NOT NULL,
+    additionalInfo VARCHAR(150) DEFAULT NULL,
+    confirmed BOOLEAN NOT NULL,
+    PRIMARY KEY (artefact_id, issue_id),
+    CONSTRAINT sms_issueAffectedArtefact_ibfk_1 FOREIGN KEY (artefact_id) REFERENCES sms_artefact (artefact_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+    CONSTRAINT sms_issueAffectedArtefact_ibfk_2 FOREIGN KEY (issue_id) REFERENCES sms_issue (issue_id) ON UPDATE CASCADE ON DELETE NO ACTION
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`

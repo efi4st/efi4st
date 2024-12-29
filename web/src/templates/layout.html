@@ -26,33 +26,35 @@
     <link href="/static/css/dropzone.css" type="text/css" rel="stylesheet" /><link rel="stylesheet" type="text/css" href="http://cdn.datatables.net/1.10.2/css/jquery.dataTables.min.css" />
   </head>
   <body>
-      <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
-          <a class="navbar-brand" href="/">efi4st</a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-    
-          <div class="collapse navbar-collapse" id="navbarsExampleDefault">
-            <ul class="navbar-nav mr-auto">
-              <li class="nav-item active">
-                <a class="nav-link" href="/projects">Projects </a>
-              </li>
-              <li class="nav-item active">
-                 <a class="nav-link" href="/firmwares">Firmwares </a>
-              </li>
-               <li class="nav-item active">
-                    <a class="nav-link" href="/relevantApps">relevant Apps </a>
-               </li>
-                <li class="nav-item active">
-                    <a class="nav-link" href="/testResults">Modul Results </a>
-                </li>
-                <li class="nav-item active">
-                    <a class="nav-link" href="/sms_projects">Product Security Management </a>
-                </li>
-            </ul>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+      <a class="navbar-brand" href="/">efi4st</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+      </button>
 
-          </div>
-        </nav>
+      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+          <ul class="navbar-nav mr-auto">
+              <!-- First Dropdown: FirmwareInspection -->
+              <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="firmwareDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      FirmwareInspection
+                  </a>
+                  <div class="dropdown-menu" aria-labelledby="firmwareDropdown">
+                      <a class="dropdown-item" href="/projects">Projects</a>
+                      <a class="dropdown-item" href="/firmwares">Firmwares</a>
+                      <a class="dropdown-item" href="/relevantApps">Relevant Apps</a>
+                      <div class="dropdown-divider"></div>
+                      <a class="dropdown-item" href="/testResults">Module Results</a>
+                  </div>
+              </li>
+              <!-- Product Security Management Button -->
+              <li class="nav-item">
+                  <a class="nav-link text-light font-weight-bold" href="/sms_projects">Product Security Management</a>
+              </li>
+
+          </ul>
+      </div>
+  </nav>
       <main role="main">
 
           <div id="content">
@@ -63,7 +65,7 @@
 
   </br>
     <footer class="container">
-      <p>&copy; Michael Kraus HM München Master Informatik 2019</p>
+      <p>&copy; Admiral Helmut</p>
     </footer>
 
     </body>

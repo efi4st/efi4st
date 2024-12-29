@@ -233,7 +233,7 @@ func irisMain()() {
 	app.Post("/sms_issueAffectedDevice/addSMSIssueAffectedDevice", routes.AddSMSIssueAffectedDevice)
 
 	// GET: http://localhost:8144/sms_issueAffectedDevice/remove/1
-	app.Get("/sms_issueAffectedDevice/remove/{id:string}", routes.RemoveSMSIssueAffectedDevice)
+	app.Get("/sms_issueAffectedDevice/remove/{issueId:string}/{deviceId:string}", routes.RemoveSMSIssueAffectedDevice)
 
 	// POST: http://localhost:8144/sms_solutions/addSMSSolution
 	app.Post("/sms_solutions/addSMSSolution", routes.AddSMSSolution)
@@ -304,6 +304,12 @@ func irisMain()() {
 	// POST: http://localhost:8144/sms_componentPartOfSoftware/addSMSComponentPartOfSoftware
 	app.Post("/sms_componentPartOfSoftware/addSMSComponentPartOfSoftware", routes.AddSMSComponentPartOfSoftware)
 
+	// GET: http://localhost:8144/sms_componentPartOfSoftware/importSCAreportToComponentPartOfSoftwareView/1
+	app.Get("/sms_componentPartOfSoftware/importSCAreportToComponentPartOfSoftwareView/{id:string}", routes.UploadViewSMSComponentPartOfSoftwareSCAReport)
+
+	// POST: http://localhost:8144/sms_componentPartOfSoftware/1/upload-sbom
+	app.Post("/sms_componentPartOfSoftware/{id:string}/upload-sbom", routes.UploadSMSComponentPartOfSoftwareSCAReport)
+
 	// GET: http://localhost:8144/sms_componentPartOfSoftware/remove/1
 	app.Get("/sms_componentPartOfSoftware/remove/{id:string}", routes.RemoveSMSComponentPartOfSoftware)
 
@@ -333,6 +339,75 @@ func irisMain()() {
 
 	// GET: http://localhost:8144/sms_projectBOM/remove/1
 	app.Get("/sms_projectBOM/remove/{id:string}", routes.RemoveSMSProjectBOM)
+
+	// GET: http://localhost:8144/sms_issueAffectedSoftware/createSMSIssueAffectedSoftware/1
+	app.Get("/sms_issueAffectedSoftware/createSMSIssueAffectedSoftware/{id:string}", routes.CreateSMSIssueAffectedSoftware)
+
+	// POST: http://localhost:8144/sms_issueAffectedSoftware/addSMSIssueAffectedSoftware
+	app.Post("/sms_issueAffectedSoftware/addSMSIssueAffectedSoftware", routes.AddSMSIssueAffectedSoftware)
+
+	// GET: http://localhost:8144/sms_issueAffectedSoftware/remove/1/1
+	app.Get("/sms_issueAffectedSoftware/remove/{issue_id:string}/{software_id:string}", routes.RemoveSMSIssueAffectedSoftware)
+
+	// GET: http://localhost:8144/sms_artefactPartOfDevice/createSMSArtefactPartOfDevice/1
+	app.Get("/sms_artefactPartOfDevice/createSMSArtefactPartOfDevice/{id:string}", routes.CreateSMSArtefactPartOfDevice)
+
+	// POST: http://localhost:8144/sms_artefactPartOfDevice/addSMSArtefactPartOfDevice
+	app.Post("/sms_artefactPartOfDevice/addSMSArtefactPartOfDevice", routes.AddSMSArtefactPartOfDevice)
+
+	// GET: http://localhost:8144/sms_artefactPartOfDevice/remove/1
+	app.Get("/sms_artefactPartOfDevice/remove/{id:string}", routes.RemoveSMSArtefactPartOfDevice)
+
+	// GET: http://localhost:8144/sms_manufacturingOrder/createSMSManufacturingOrder/1
+	app.Get("/sms_manufacturingOrder/createSMSManufacturingOrder/{id:string}", routes.CreateSMSManufacturingOrder)
+
+	// POST: http://localhost:8144/sms_manufacturingOrder/addSMSManufacturingOrder
+	app.Post("/sms_manufacturingOrder/addSMSManufacturingOrder", routes.AddSMSManufacturingOrder)
+
+	// GET: http://localhost:8144/sms_manufacturingOrder/show/1
+	app.Get("/sms_manufacturingOrder/show/{id:string}", routes.ShowSMSManufacturingOrder)
+
+	// GET: http://localhost:8144/sms_certifications
+	app.Get("/sms_certifications", routes.SMSCertification)
+
+	// GET: http://localhost:8144/sms_certifications/createSMSCertification
+	app.Get("/sms_certifications/createSMSCertification", routes.CreateSMSCertification)
+
+	// POST: http://localhost:8144/sms_certifications/addSMSCertification
+	app.Post("/sms_certifications/addSMSCertification", routes.AddSMSCertification)
+
+	// GET: http://localhost:8144/sms_certifications/show/1
+	app.Get("/sms_certifications/show/{id:string}", routes.ShowSMSCertification)
+
+	// GET: http://localhost:8144/sms_certifications/remove/1
+	app.Get("/sms_certifications/remove/{id:string}", routes.RemoveSMSCertification)
+
+	// GET: http://localhost:8144/sms_systemHasCertification/createSMSSystemHasCertification/1
+	app.Get("/sms_systemHasCertification/createSMSSystemHasCertification/{id:string}", routes.CreateSMSSystemHasCertification)
+
+	// POST: http://localhost:8144/sms_systemHasCertification/addSMSSystemHasCertification
+	app.Post("/sms_systemHasCertification/addSMSSystemHasCertification", routes.AddSMSSystemHasCertification)
+
+	// GET: http://localhost:8144/sms_systemHasCertification/removeSMSSystemHasCertification/1/2
+	app.Get("/sms_systemHasCertification/removeSMSSystemHasCertification/{systemId:string}/{certificationId:string}", routes.RemoveSMSSystemHasCertification)
+
+	// GET: http://localhost:8144/sms_issueAffectedComponent/createSMSIssueAffectedComponent/1
+	app.Get("/sms_issueAffectedComponent/createSMSIssueAffectedComponent/{id:string}", routes.CreateSMSIssueAffectedComponent)
+
+	// POST: http://localhost:8144/sms_issueAffectedComponent/addSMSIssueAffectedComponent
+	app.Post("/sms_issueAffectedComponent/addSMSIssueAffectedComponent", routes.AddSMSIssueAffectedComponent)
+
+	// GET: http://localhost:8144/sms_issueAffectedComponent/remove/1/1
+	app.Get("/sms_issueAffectedComponent/remove/{issueId:string}/{componentId:string}", routes.RemoveSMSIssueAffectedComponent)
+
+	// GET: http://localhost:8144/sms_issueAffectedArtefact/createSMSIssueAffectedArtefact/1
+	app.Get("/sms_issueAffectedArtefact/createSMSIssueAffectedArtefact/{id:string}", routes.CreateSMSIssueAffectedArtefact)
+
+	// POST: http://localhost:8144/sms_issueAffectedArtefact/addSMSIssueAffectedArtefact
+	app.Post("/sms_issueAffectedArtefact/addSMSIssueAffectedArtefact", routes.AddSMSIssueAffectedArtefact)
+
+	// GET: http://localhost:8144/sms_issueAffectedArtefact/remove/1/1
+	app.Get("/sms_issueAffectedArtefact/remove/{issueId:string}/{artefactId:string}", routes.RemoveSMSIssueAffectedArtefact)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

@@ -8,4 +8,3 @@ see install.md
 
 Contact:
 For any questions, bugs or if you are interested to contribute -> please contact me!
-mike.kraus@onlinehome.de

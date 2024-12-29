@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <h1>Upload CycloneDX SBOM</h1>
+            <form action="/sms_componentPartOfSoftware/{{ softwareId }}/upload-sbom" method="POST" enctype="multipart/form-data">
+              <label for="sbomFile">Select CycloneDX SBOM File:</label>
+              <input type="file" id="sbomFile" name="sbomFile" accept=".json,.xml" required>
+              <button type="submit">Upload SBOM</button>
+            </form>
+            <div class="back-link">
+              <a href="/sms_softwares/show/{{ softwareId }}">Back to Software</a>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

@@ -100,7 +100,9 @@ func ShowSMSDeviceInstance(ctx iris.Context) {
 
 	deviceInstanceUpdateHistories := dbprovider.GetDBManager().GetSMSUpdateHistoryForDevice(i)
 	deviceInstance := dbprovider.GetDBManager().GetSMSDeviceInstanceInfo(i)
+	deviceModel := dbprovider.GetDBManager().GetSMSDeviceInfo(deviceInstance.Device_id())
 
+	ctx.ViewData("deviceModel", deviceModel)
 	ctx.ViewData("deviceInstanceId", i)
 	ctx.ViewData("deviceInstanceUpdateHistories", deviceInstanceUpdateHistories)
 	ctx.ViewData("deviceInstance", deviceInstance)

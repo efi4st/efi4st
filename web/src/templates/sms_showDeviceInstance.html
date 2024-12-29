@@ -39,8 +39,14 @@
           </div>
 
           <div class="col-md-7">
-            <h2>Based on System:</h2>
-
+            <h2>Based on (Model):</h2>
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">{{deviceModel.devicetype_id}}&nbsp;in Version:&nbsp;{{deviceModel.version}}</h5>
+                <p class="card-text">Device was released at {{deviceModel.date}}</p>
+                <a href="/sms_devices/show/{{ deviceModel.device_id }}" class="btn btn-primary" role="button">View &raquo;</a>
+              </div>
+            </div>
           </div>
         </div>
 

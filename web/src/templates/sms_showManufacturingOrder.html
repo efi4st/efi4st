@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <h1>Manufacturing Order:</h1>
+          <div class="col-md-5">
+            <ul class="list-group">
+              <li class="list-group-item">ID: {{manufacturingOrder.manufacturingOrder_id}}</li>
+              <li class="list-group-item">System: <a href="/sms_systems/show/{{ manufacturingOrder.system_id }}">{{ manufacturingOrder.system_id }}</a></li>
+              <li class="list-group-item">PackageReference: {{manufacturingOrder.packageReference}}</li>
+            </ul>
+          </div>
+
+          <div class="col-md-7">
+
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+          <div class="col-md-3">
+            <h3>Start:&nbsp;{{manufacturingOrder.start|truncatechars:13 }}</h3>
+            <h3>End:&nbsp;{{manufacturingOrder.end|truncatechars:13 }}</h3>
+
+          </div>
+          <div class="col-md-9">
+            <h2>Description:</h2>
+            <textarea id="textfeld_01_id" name="textfeld_01" rows="6" cols="85" readonly>{{manufacturingOrder.description}}</textarea>
+          </div>
+
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}

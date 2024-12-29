@@ -8,6 +8,7 @@
 package routes
 
 import (
+	"fmt"
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
@@ -72,12 +73,31 @@ func ShowSMSIssue(ctx iris.Context) {
 
 	issue := dbprovider.GetDBManager().GetSMSIssueInfo(i)
 	affectedDevices := dbprovider.GetDBManager().GetSMSIssueAffectedDevicesForIssueID(i)
+	affectedSoftwares := dbprovider.GetDBManager().GetSMSIssueAffectedSoftwareForIssueID(i)
+	affectedComponents, err := dbprovider.GetDBManager().GetSMSIssueAffectedComponentsForIssueID(i)
+	affectedArtefacts, err := dbprovider.GetDBManager().GetSMSIssueAffectedArtefactsForIssueID(i)
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error getting affected components!")
+	}
+
+	// complex query to determine all affected devices, instances, components and applications....
 	affectedDeviceInstancesAndProjects := dbprovider.GetDBManager().GetSMSAffectedDeviceInstancesAndProjects(i)
+	fmt.Println("6")
+	// statistics for above query
+	issueaffectedStatistics, err := dbprovider.GetDBManager().GetIssueAffectedStats(i)
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error getting statistics for affected components!")
+	}
+
 	solutionsForThisIssue := dbprovider.GetDBManager().GetSMSSolutionsForIssue(i)
 
 	ctx.ViewData("solutionsForThisIssue", solutionsForThisIssue)
 	ctx.ViewData("affectedDeviceInstancesAndProjects", affectedDeviceInstancesAndProjects)
 	ctx.ViewData("affectedDevices", affectedDevices)
+	ctx.ViewData("affectedSoftwares", affectedSoftwares)
+	ctx.ViewData("affectedComponents", affectedComponents)
+	ctx.ViewData("affectedArtefacts", affectedArtefacts)
+	ctx.ViewData("issueaffectedStatistics", issueaffectedStatistics)
 	ctx.ViewData("issue", issue)
 	ctx.View("sms_showIssue.html")
 }

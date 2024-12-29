@@ -34,8 +34,47 @@
             </ul>
           </div>
 
-          <div class="col-md-7">
-            <h2>Certificates:</h2>
+          <div class="col-md-4">
+            <h2>Certificates:</h2> <p><a class="btn btn-primary btn-lg" href="/sms_systemHasCertification/createSMSSystemHasCertification/{{system.system_id}}" role="button">Add</a></p>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Info</th>
+                <th><i class="fa fa-trash-o"></i></th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for certificate in systemHasCertificates %}
+              <tr>
+                <td><a href="/sms_certifications/show/{{ certificate.certification_id }}">{{ certificate.certification_name }}</a></td>
+                <td>{{ certificate.additionalInfo|truncatechars:20 }}</td>
+                <td><a href="/sms_systemHasCertification/removeSMSSystemHasCertification/{{system.system_id}}/{{ certificate.certification_id }}" class="button"><i class="fa fa-close"></i></a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-3">
+            <h2>Manufacturing Order:</h2> <p><a class="btn btn-primary btn-lg" href="/sms_manufacturingOrder/createSMSManufacturingOrder/{{system.system_id}}" role="button">Add</a></p>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>ID</th>
+                <th>Start</th>
+                <th>End</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for order in systemManufacturingOrders %}
+              <tr>
+                <td><a href="/sms_manufacturingOrder/show/{{ order.manufacturingOrder_id }}">{{ order.manufacturingOrder_id }}</a></td>
+                <td>{{ order.start|truncatechars:13 }}</td>
+                <td>{{ order.end|truncatechars:13 }}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
 
           </div>
         </div>
@@ -50,7 +89,7 @@
               <tr>
                 <th>Name</th>
                 <th>Version</th>
-                <th>Del</th>
+                <th><i class="fa fa-trash-o"></i></th>
               </tr>
               </thead>
               <tbody>
@@ -73,13 +112,43 @@
         <hr>
         <hr>
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-md-12">
+            <h1>Structure:</h1>
+            <ul id="myUL">
+              <li><span class="caret"><h2>{{system.systemtype_id}} with ID: {{systemTree.version}}</h2></span>
+                {% for device in systemTree.devices %}
+                <ul class="nested">
+                  <li><span class="caret"><h3>{{device.name}}&nbsp;{{device.version}}</h3></span>
+                    {% for app in device.applications %}
+                    <ul class="nested">
+                      <li><span class="caret">{{app.name}}&nbsp;{{app.version}}</span>
+                        {% for comp in app.components %}
+                        <ul class="nested">
+                          <li><span class="caret">{{comp.name}}&nbsp;{{comp.version}}</span>
+                          </li>
+                        </ul>
+                        {% endfor %}
+                      </li>
+                    </ul>
+                    {% endfor %}
+                  </li>
+                </ul>
+                {% endfor %}
+              </li>
+            </ul>
+
+          </div>
+
+        </div>
+        <hr>
+        <hr>
+        <div class="row">
+          <div class="col-md-12">
+            <h1>Release Notes:</h1>
 
 
           </div>
-          <div class="col-md-6">
 
-          </div>
         </div>
       </div> <!-- /container -->
 <hr>

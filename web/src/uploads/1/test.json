@@ -1,0 +1,59 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:123e4567-e89b-12d3-a456-426614174000",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2024-12-14T12:34:56Z",
+    "tools": [
+      {
+        "vendor": "EMBA",
+        "name": "EMBA Firmware Analyzer",
+        "version": "1.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "Example Firmware",
+      "version": "1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "libexample",
+      "version": "1.2.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:generic/libexample@1.2.3"
+    },
+    {
+      "type": "library",
+      "name": "openssl",
+      "version": "1.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "OpenSSL"
+          }
+        }
+      ],
+      "purl": "pkg:generic/openssl@1.1.1"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:generic/libexample@1.2.3",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:generic/openssl@1.1.1",
+      "dependsOn": []
+    }
+  ]
+}

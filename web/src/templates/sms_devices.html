@@ -22,6 +22,78 @@
           {% endif %}
         </div>
 
+<div class="container">
+  <div class="row">
+    <nav class="navbar navbar-expand-md" style="background-color: #343a40; border-radius: 5px; margin-top: 20px;">
+      <div class="container">
+        <ul class="navbar-nav">
+          <!-- Overview Button -->
+          <li class="nav-item">
+            <a class="nav-link text-light font-weight-bold" href="/sms_projects">Overview</a>
+          </li>
+
+          <!-- Abstract System (Model) Dropdown -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarAbstractSystem" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Abstract System (Model)
+            </a>
+            <div class="dropdown-menu bg-dark">
+              <a class="dropdown-item text-light" href="/sms_systems">Systems</a>
+              <a class="dropdown-item text-light" href="/sms_devices">Devices</a>
+              <a class="dropdown-item text-light" href="/sms_softwares">Applications</a>
+              <a class="dropdown-item text-light" href="/sms_components">Components</a>
+            </div>
+          </li>
+
+          <!-- Instances (Fleet) Dropdown -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarInstances" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Instances (Fleet)
+            </a>
+            <div class="dropdown-menu bg-dark">
+              <a class="dropdown-item text-light" href="/sms_deviceInstances">Instances</a>
+            </div>
+          </li>
+
+          <!-- Security Dropdown -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarSecurity" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Security
+            </a>
+            <div class="dropdown-menu bg-dark">
+              <a class="dropdown-item text-light" href="/sms_issues">Issues</a>
+              <a class="dropdown-item text-light" href="/sms_certifications">Certifications</a>
+            </div>
+          </li>
+
+          <!-- Artefacts Button -->
+          <li class="nav-item">
+            <a class="nav-link text-light font-weight-bold" href="/sms_artefacts">Artefacts</a>
+          </li>
+
+          <!-- Misc Dropdown -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Misc
+            </a>
+            <div class="dropdown-menu bg-dark">
+              <a class="dropdown-item text-light" href="/sms_releaseNotes">Release Notes</a>
+            </div>
+          </li>
+
+          <!-- Statistics Button -->
+          <li class="nav-item">
+            <a class="nav-link text-light font-weight-bold" href="/sms_statistics">Statistics</a>
+          </li>
+
+        </ul>
+      </div>
+    </nav>
+
+  </div>
+</div>
+<hr>
+
       <div class="container">
         <div class="row">
           <p><a class="btn btn-primary btn-lg" href="/sms_devices/createSMSDevice" role="button">New Device &raquo;</a></p>

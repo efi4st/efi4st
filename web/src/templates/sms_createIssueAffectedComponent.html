@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_issueAffectedComponent/addSMSIssueAffectedComponent" method="POST">
+              <div class="form-group">
+                <h3>Which Components are affected by Issue {{issueId}}:</h3>
+                </br>
+                <label for="Issue_id">Issue_id:</label>
+                <input type="text" class="form-control" name="Issue_id" id="Issue_id" value="{{issueId}}" readonly>
+                </br>
+                <label for="Component_ids">Component_ids:</label>
+                <select name="Component_ids" id="Component_ids" class="form-select" multiple aria-label="Default select example">
+                  {% for component in componentList %}
+                  <option value="{{component.component_id}}">{{component.name}} &nbsp; {{component.version}}</option>
+                  {% endfor %}
+                </select>
+                </br>
+                <label for="AdditionalInfo">AdditionalInfo:</label>
+                <input type="text" class="form-control" name="AdditionalInfo" id="AdditionalInfo" placeholder="AdditionalInfo">
+                </br>
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

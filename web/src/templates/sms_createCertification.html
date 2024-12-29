@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_certifications/addSMSCertification" method="POST">
+              <div class="form-group">
+
+                <h3>Add new Certification:</h3>
+                </br>
+                <label for="CertificationName">CertificationName:</label>
+                <input type="text" class="form-control" name="CertificationName" id="CertificationName" placeholder="CertificationName">
+                </br>
+                <label for="Description">Description:</label>
+                <textarea class="form-control" name="Description" id="Description" placeholder="Description" cols="40" rows="5"></textarea>
+                </br>
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

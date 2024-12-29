@@ -36,8 +36,16 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(sms_softwaretype_schema)			// SMS
 	db.MustExec(sms_software_schema)				// SMS
 	db.MustExec(sms_component_schema)				// SMS
-	db.MustExec(sms_componentPartOfSoftware_schema) //SMS
-	db.MustExec(sms_softwarePartOfDevice_schema)	//SMS
-	db.MustExec(sms_devicePartOfSystem_schema)		//SMS
-	db.MustExec(sms_projectBOM_schema)				//SMS
+	db.MustExec(sms_componentPartOfSoftware_schema) // SMS
+	db.MustExec(sms_softwarePartOfDevice_schema)	// SMS
+	db.MustExec(sms_devicePartOfSystem_schema)		// SMS
+	db.MustExec(sms_projectBOM_schema)				// SMS
+	db.MustExec(sms_issueAffectedSoftware_schema)	// SMS
+	db.MustExec(sms_artefactPartOfDevice_schema)	// SMS
+	db.MustExec(sms_manufacturingOrder_schema)		// SMS
+	db.MustExec(sms_certification_schema)			// SMS
+	db.MustExec(sms_systemHasCertification_schema)	// SMS
+	db.MustExec(sms_issueAffectedComponent_schema)	// SMS
+	db.MustExec(sms_issueAffectedArtefact_schema)	// SMS
 }
+
