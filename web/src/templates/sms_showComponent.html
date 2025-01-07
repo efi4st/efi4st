@@ -75,7 +75,24 @@
         <div class="row">
           <div class="col-md-6">
             <h2>Issues:</h2>
-
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Info</th>
+                <th>Confirmed?</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for issue in issuesForThisComponent %}
+              <tr>
+                <td><a href="/sms_issues/show/{{ issue.issue_id }}">{{ issue.component_name|truncatechars:20 }}</a></td>
+                <td>{{ issue.additionalInfo|truncatechars:13 }}</td>
+                <td>{% if issue.confirmed %}<i class="fa fa-handshake-o" aria-hidden="true"></i>{% endif %}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
           </div>
           <div class="col-md-6">
             <h2>Subscriber:</h2>

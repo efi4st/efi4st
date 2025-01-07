@@ -88,10 +88,10 @@
               <tbody>
               {% for device in affectedDevices %}
               <tr>
-                <td><a href="/sms_devices/show/{{ device.device_id }}">{{ device.tmp }}</a></td>
-                <td>{{ device.tmp2 }}</td>
-                <td></td>
-                <td><a href="/sms_issueAffectedDevice/remove/{{issue.issue_id}}/{{ device.device_id }}" class="button"><i class="fa fa-close"></i></a></td>
+                <td><a href="/sms_devices/show/{{ device.DeviceID }}">{{ device.DeviceType }}</a></td>
+                <td>{{ device.DeviceVersion }}</td>
+                <td>{% if device.Inherit %} TRUE {% endif %}</td>
+                <td>{% if not device.Inherit %}<a href="/sms_issueAffectedDevice/remove/{{issue.issue_id}}/{{ device.device_id }}" class="button"><i class="fa fa-close"></i></a>{% endif %}</td>
               </tr>
               {% endfor %}
               </tbody>
@@ -111,10 +111,10 @@
               <tbody>
               {% for software in affectedSoftwares %}
               <tr>
-                <td><a href="/sms_softwares/show/{{ software.software_id }}">{{ software.tmp }}</a></td>
-                <td>{{ software.tmp2 }}</td>
-                <td></td>
-                <td><a href="/sms_issueAffectedSoftware/remove/{{issue.issue_id}}/{{ software.software_id }}" class="button"><i class="fa fa-close"></i></a></td>
+                <td><a href="/sms_softwares/show/{{ software.SoftwareID }}">{{ software.TypeName }}</a></td>
+                <td>{{ software.Version }}</td>
+                <td>{% if software.Inherit %} TRUE {% endif %}</td>
+                <td>{% if not software.Inherit %}<a href="/sms_issueAffectedSoftware/remove/{{issue.issue_id}}/{{ software.SoftwareID }}" class="button"><i class="fa fa-close"></i></a>{% endif %}</td>
               </tr>
               {% endfor %}
               </tbody>

@@ -101,11 +101,15 @@ func ShowSMSDeviceInstance(ctx iris.Context) {
 	deviceInstanceUpdateHistories := dbprovider.GetDBManager().GetSMSUpdateHistoryForDevice(i)
 	deviceInstance := dbprovider.GetDBManager().GetSMSDeviceInstanceInfo(i)
 	deviceModel := dbprovider.GetDBManager().GetSMSDeviceInfo(deviceInstance.Device_id())
-
+	issuesForThisDeviceInstance, err := dbprovider.GetDBManager().GetSMSIssuesForDeviceInstance(i)
+	if err != nil {
+		ctx.ViewData("error", "Error: Error getting issues for device instance!")
+	}
 	ctx.ViewData("deviceModel", deviceModel)
 	ctx.ViewData("deviceInstanceId", i)
 	ctx.ViewData("deviceInstanceUpdateHistories", deviceInstanceUpdateHistories)
 	ctx.ViewData("deviceInstance", deviceInstance)
+	ctx.ViewData("issuesForThisDeviceInstance", issuesForThisDeviceInstance)
 	ctx.View("sms_showDeviceInstance.html")
 }
 

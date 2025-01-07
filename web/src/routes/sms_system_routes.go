@@ -78,12 +78,14 @@ func ShowSMSSystem(ctx iris.Context) {
 	if err != nil {
 		ctx.ViewData("error", "Error: Error matching certificates!")
 	}
+	deviceIssuesForThisSystem, err := dbprovider.GetDBManager().GetSMSIssuesForSystem(i)
 
 	ctx.ViewData("systemTree", systemTree)
 	ctx.ViewData("systemManufacturingOrders", systemManufacturingOrders)
 	ctx.ViewData("devicesUnderSystem", devicesUnderSystem)
 	ctx.ViewData("system", system)
 	ctx.ViewData("systemHasCertificates", systemHasCertificates)
+	ctx.ViewData("deviceIssuesForThisSystem", deviceIssuesForThisSystem)
 	ctx.View("sms_showSystem.html")
 }
 

@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_securityReports/addSMSSecurityReport" method="POST">
+              <div class="form-group">
+
+                <h3>Add New Report:</h3>
+                </br>
+                <label for="ReportName">Report Name:</label>
+                <input type="text" class="form-control" name="ReportName" id="ReportName" placeholder="Report Name">
+                </br>
+
+                <label for="ScannerName">Scanner Name:</label>
+                <input type="text" class="form-control" name="ScannerName" id="ScannerName" placeholder="Scanner Name">
+                </br>
+
+                <label for="ScannerVersion">Scanner Version:</label>
+                <input type="text" class="form-control" name="ScannerVersion" id="ScannerVersion" placeholder="Scanner Version">
+                </br>
+
+                <label for="CreationDate">Creation Date:</label>
+                <input type="datetime-local" class="form-control" name="CreationDate" id="CreationDate" placeholder="Creation Date">
+                </br>
+
+                <label for="UploadedBy">Uploaded By:</label>
+                <input type="text" class="form-control" name="UploadedBy" id="UploadedBy" placeholder="Uploaded By">
+                </br>
+
+                <label for="ScanScope">Scan Scope:</label>
+                <textarea class="form-control" name="ScanScope" id="ScanScope" placeholder="Scan Scope"></textarea>
+                </br>
+
+                <label for="VulnerabilityCount">Vulnerabilities Found:</label>
+                <input type="number" class="form-control" name="VulnerabilityCount" id="VulnerabilityCount" placeholder="Vulnerabilities Count">
+                </br>
+
+                <label for="ComponentCount">Components Scanned:</label>
+                <input type="number" class="form-control" name="ComponentCount" id="ComponentCount" placeholder="Components Count">
+                </br>
+
+              </div>
+              <button type="submit" class="btn btn-primary">Add Report</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

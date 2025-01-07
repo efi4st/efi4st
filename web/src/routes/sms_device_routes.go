@@ -8,6 +8,7 @@
 package routes
 
 import (
+	"fmt"
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
@@ -70,15 +71,23 @@ func ShowSMSDevice(ctx iris.Context) {
 	}
 
 	device := dbprovider.GetDBManager().GetSMSDeviceInfo(i)
+	fmt.Println("1")
 	deviceReleaseNotes := dbprovider.GetDBManager().GetSMSReleaseNoteForDevice(i)
+	fmt.Println("2")
 	applicationsUnderDevice := dbprovider.GetDBManager().GetSMSSoftwarePartOfDeviceForDevice(i)
+	fmt.Println("3")
 	systemsParentsOfDevice := dbprovider.GetDBManager().GetSMSDevicePartOfSystemForDevice(i)
+	fmt.Println("4")
 	artefactsUnderDevice := dbprovider.GetDBManager().GetSMSArtefactPartOfDeviceForDevice(i)
+	fmt.Println("5")
+	issuesForThisDevice := dbprovider.GetDBManager().GetSMSIssuesForDevice(i)
+	fmt.Println("6")
 
 	ctx.ViewData("systemsParentsOfDevice", systemsParentsOfDevice)
 	ctx.ViewData("applicationsUnderDevice", applicationsUnderDevice)
 	ctx.ViewData("artefactsUnderDevice", artefactsUnderDevice)
 	ctx.ViewData("deviceReleaseNotes", deviceReleaseNotes)
+	ctx.ViewData("issuesForThisDevice", issuesForThisDevice)
 	ctx.ViewData("device", device)
 	ctx.View("sms_showDevice.html")
 }

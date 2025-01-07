@@ -72,8 +72,8 @@ func ShowSMSIssue(ctx iris.Context) {
 	}
 
 	issue := dbprovider.GetDBManager().GetSMSIssueInfo(i)
-	affectedDevices := dbprovider.GetDBManager().GetSMSIssueAffectedDevicesForIssueID(i)
-	affectedSoftwares := dbprovider.GetDBManager().GetSMSIssueAffectedSoftwareForIssueID(i)
+	affectedDevices, err := dbprovider.GetDBManager().GetSMSIssueAffectedDevicesWithInheritage(i)
+	affectedSoftwares, err := dbprovider.GetDBManager().GetSMSIssueAffectedSoftwareWithInheritage(i)
 	affectedComponents, err := dbprovider.GetDBManager().GetSMSIssueAffectedComponentsForIssueID(i)
 	affectedArtefacts, err := dbprovider.GetDBManager().GetSMSIssueAffectedArtefactsForIssueID(i)
 	if err !=nil {

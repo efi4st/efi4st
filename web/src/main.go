@@ -409,6 +409,21 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_issueAffectedArtefact/remove/1/1
 	app.Get("/sms_issueAffectedArtefact/remove/{issueId:string}/{artefactId:string}", routes.RemoveSMSIssueAffectedArtefact)
 
+	// GET: http://localhost:8144/sms_securityReports
+	app.Get("/sms_securityReports", routes.SMSSecurityReports)
+
+	// GET: http://localhost:8144/sms_securityReports/createSMSSecurityReport
+	app.Get("/sms_securityReports/createSMSSecurityReport", routes.CreateSMSSecurityReport)
+
+	// POST: http://localhost:8144/sms_securityReports/addSMSSecurityReport
+	app.Post("/sms_securityReports/addSMSSecurityReport", routes.AddSMSSecurityReport)
+
+	// GET: http://localhost:8144/sms_securityReports/show/1
+	app.Get("/sms_securityReports/show/{id:string}", routes.ShowSMSSecurityReport)
+
+	// GET: http://localhost:8144/sms_securityReports/remove/1
+	app.Get("/sms_securityReports/remove/{id:string}", routes.RemoveSMSSecurityReport)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

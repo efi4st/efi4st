@@ -96,7 +96,26 @@
           </div>
           <div class="col-md-6">
             <h2>Issues:</h2>
-
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Info</th>
+                <th>Confirmed</th>
+                <th>Inherit</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for issue in issuesForThisSoftware %}
+              <tr>
+                <td><a href="/sms_issues/show/{{ issue.IssueID }}">{{ issue.TypeName|truncatechars:20 }}</a></td>
+                <td>{{ issue.AdditionalInfo|truncatechars:13 }}</td>
+                <td>{% if issue.Confirmed %}<i class="fa fa-handshake-o" aria-hidden="true"></i>{% endif %}</td>
+                <td>{% if issue.Inherit %}TRUE{% endif %}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
         <hr>

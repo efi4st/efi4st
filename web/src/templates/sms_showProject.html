@@ -95,29 +95,47 @@
             </table>
           </div>
           <div class="col-md-4">
+            <h2>XXXX:</h2>
+
+          </div>
+        </div>
+
+        <hr>
+        <hr>
+        <div class="row">
+          <div class="col-md-12">
             <h2>Issues:</h2>
             <table class="table">
               <thead>
               <tr>
                 <th>Name</th>
-                <th>Ref</th>
-                <th>Severity</th>
+                <th>Crit.</th>
+                <th>Affected Devices</th>
               </tr>
               </thead>
               <tbody>
-              {% for result in projectResults %}
+              {% for issue in issuesForThisProject %}
               <tr>
-                <td><a href="/results/show/{{ result.result_id }}">{{ result.name }}</a></td>
-                <td>{{ result.date }}</td>
-                <td><a href="/results/remove/{{ result.result_id }}">{{ result.name }}</a></td>
+                <td><a href="/sms_issues/show/{{ issue.IssueID }}">{{ issue.IssueName|truncatechars:20 }}</a></td>
+                <td>{% if issue.Criticality > 2 %}<h3 style="color:red">HIGH</h3>{% elif issue.Criticality < 2 %}<h3 style="color:greenyellow">LOW</h3>{% else %}<h3 style="color:orange">MEDIUM</h3>{% endif %}</td>
+                <td>
+                  <ul>
+                    {% for device in issue.AffectedDevices %}
+                    <li>
+                      <strong>{{ device.DeviceName }}</strong> (ID: {{ device.DeviceID }}, Version: {{ device.DeviceVersion }})
+                      {% if device.Inherit %}
+                      <span class="text-muted">(Inherited)</span>
+                      {% endif %}
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </td>
               </tr>
               {% endfor %}
               </tbody>
             </table>
           </div>
         </div>
-
-        <hr>
       </div> <!-- /container -->
       
 {% endblock %}

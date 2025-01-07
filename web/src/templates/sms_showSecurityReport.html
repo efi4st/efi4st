@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+      <div class="container">
+        <h1>Report Details</h1>
+        <div class="row">
+          <div class="col-md-8">
+            <ul class="list-group">
+              <li class="list-group-item"><h2>Report Name: {{ report.ReportName }}</h2></li>
+              <li class="list-group-item">Uploaded By: {{ report.UploadedBy }}</li>
+              <li class="list-group-item">Creation Date: {{ report.CreationDate|truncatechars:13 }}</li>
+              <li class="list-group-item">Scanner: {{ report.ScannerName }} (Version: {{ report.ScannerVersion }})</li>
+              <li class="list-group-item">Scan Scope: {{ report.ScanScope }}</li>
+              <li class="list-group-item">Vulnerabilities Found: <strong>{{ report.VulnerabilityCount }}</strong></li>
+              <li class="list-group-item">Components Scanned: <strong>{{ report.ComponentCount }}</strong></li>
+            </ul>
+          </div>
+
+          <div class="col-md-4">
+            <h2>Actions:</h2>
+            <a href="/sms_securityReports/edit/{{ report.ReportID }}" class="btn btn-warning">Edit Report</a>
+            <a href="/sms_securityReports/remove/{{ report.ReportID }}" class="btn btn-danger">Delete Report</a>
+            <a href="/sms_securityReports" class="btn btn-secondary">Back to Reports</a>
+          </div>
+        </div>
+
+        <hr>
+
+
+        <hr>
+        <hr>
+
+        <hr>
+        <hr>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}

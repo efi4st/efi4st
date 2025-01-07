@@ -69,12 +69,14 @@ type Manager interface {
 	GetSMSProjectInfo(id int) *classes.Sms_Project
 	UpdateSMSProjectsActive(id int, active bool) error
 	RemoveSMSProject(id int) error
+	GetSMSIssuesForProject(projectID int) ([]classes.Sms_IssueWithAffectedDevices, error)
 	AddSMSSystem(systemtypeId int, version string, date string) error
 	GetSMSSystems() []classes.Sms_System
 	GetSMSSystemInfo(id int) *classes.Sms_System
 	RemoveSMSSystem(id int) error
 	AddSMSDevice(devicetypeId int, version string, date string) error
 	GetSMSDevice() []classes.Sms_Device
+	GetSMSIssuesForSystem(system_id int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage, err error)
 	GetSMSDeviceInfo(id int) *classes.Sms_Device
 	RemoveSMSDevice(id int) error
 	AddSMSDeviceInstance(project_id int, device_id int, serialnumber string, provisioner string, configuration string) error
@@ -82,6 +84,7 @@ type Manager interface {
 	GetSMSDeviceInstanceInfo(id int) *classes.Sms_DeviceInstance
 	RemoveSMSDeviceInstances(id int) error
 	GetDeviceInstanceListForProject(id int) []classes.Sms_DeviceInstance
+	GetSMSIssuesForDeviceInstance(deviceInstanceID int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage, err error)
 	GetSMSUpdateHistoryForDevice(id int) []classes.Sms_UpdateHistory
 	AddSMSUpdateHistory(deviceInstance_id int, user string, updateType string, description string) error
 	GetSMSUdateHistoryInfo(id int) *classes.Sms_UpdateHistory
@@ -91,7 +94,8 @@ type Manager interface {
 	RemoveSMSIssue(id int) error
 	AddSMSIssueAffectedDevice(device_id int, issue_id int, additionalInfo string, confirmed bool) error
 	GetSMSIssueAffectedDevicesForIssueID(issue_id int) []classes.Sms_IssueAffectedDevice
-	GetSMSIssuesForDevice(device_id int) []classes.Sms_IssueAffectedDevice
+	GetSMSIssueAffectedDevicesWithInheritage(issue_id int) ([]classes.Sms_IssueAffectedDeviceWithInheritage, error)
+	GetSMSIssuesForDevice(device_id int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage)
 	RemoveSMSIssueAffectedDevice(device_id int, issue_id int) error
 	GetSMSAffectedDeviceInstancesAndProjects(issue_id int) []classes.Sms_AffectedDeviceInstancesAndProjects
 	GetIssueAffectedStats(issue_id int) (*classes.Sms_IssueAffectedStats, error)
@@ -136,8 +140,8 @@ type Manager interface {
 	GetSMSProjectBOMForSystem(system_id int) []classes.Sms_ProjectBOM
 	RemoveSMSProjectBOM(id int) error
 	AddSMSIssueAffectedSoftware(software_id int, issue_id int, additionalInfo string, confirmed bool) error
-	GetSMSIssueAffectedSoftwareForIssueID(issue_id int) []classes.Sms_IssueAffectedSoftware
-	GetSMSIssuesForSoftware(software_id int) []classes.Sms_IssueAffectedSoftware
+	GetSMSIssueAffectedSoftwareWithInheritage(issueID int) ([]classes.Sms_IssueAffectedSoftwareWithInheritage, error)
+	GetSMSIssuesForSoftware(software_id int) (issueAffectedSoftwares []classes.Sms_IssueAffectedSoftwareWithInheritage)
 	RemoveSMSIssueAffectedSoftware(software_id int, issue_id int) (err error)
 	AddSMSArtefactPartOfDevice(device_id int, artefact_id int, additionalInfo string) error
 	GetSMSArtefactPartOfDeviceForDevice(device_id int) []classes.Sms_ArtefactPartOfDevice
@@ -169,6 +173,18 @@ type Manager interface {
 	GetSMSIssueAffectedArtefactsForIssueID(issue_id int) (issueAffectedArtefacts []classes.Sms_IssueAffectedArtefact, err error)
 	GetSMSIssuesForArtefact(artefact_id int) (issueAffectedArtefacts []classes.Sms_IssueAffectedArtefact, err error)
 	RemoveSMSIssueAffectedArtefact(artefact_id int, issue_id int) error
+	//SecurityReport
+	AddSMSSecurityReport(reportName string, scannerName string, scannerVersion string, creationDate time.Time, uploadedBy string, scanScope string, vulnerabilityCount int, componentCount int) (err error)
+	GetAllSMSSecurityReports() (reports []classes.Sms_SecurityReport, err error)
+	GetSMSSecurityReportByID(reportID int) (*classes.Sms_SecurityReport, error)
+	RemoveSMSSecurityReport(reportID int) (err error)
+	UpdateSMSSecurityReport(report classes.Sms_SecurityReport) (err error)
+	//SecurityReportLink
+	GetReportLinksByReportID(reportID int) (links []classes.Sms_SecurityReportLink, err error)
+	AddReportLink(reportID int, linkedObjectID int, linkedObjectType string) error
+	RemoveReportLink(reportID int, linkedObjectID int, linkedObjectType string) error
+	RemoveAllReportLinks(reportID int) error
+	GetReportsForLinkedObject(linkedObjectID int, linkedObjectType string) (reports []classes.Sms_SecurityReportLink, err error)
 }
 
 type manager struct {
@@ -1283,6 +1299,75 @@ func (mgr *manager) GetDeviceInstanceListForProject(id int) (deviceInstances []c
 	return deviceInstances
 }
 
+func (mgr *manager) GetSMSIssuesForProject(projectID int) ([]classes.Sms_IssueWithAffectedDevices, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_issuesForProject)
+
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Map to group devices by issues
+	issueMap := make(map[int]*classes.Sms_IssueWithAffectedDevices)
+
+	for rows.Next() {
+		var deviceID int
+		var deviceName string
+		var deviceVersion string
+		var issueID int
+		var issueName string
+		var criticality string
+		var inherit bool
+
+		err := rows.Scan(&deviceID, &deviceName, &deviceVersion, &issueID, &issueName, &criticality, &inherit)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check if issue already exists in the map
+		if _, exists := issueMap[issueID]; !exists {
+			issueMap[issueID] = &classes.Sms_IssueWithAffectedDevices{
+				IssueID:     issueID,
+				IssueName:   issueName,
+				Criticality: criticality,
+				AffectedDevices: []struct {
+					DeviceID      int    `db:"device_id"`
+					DeviceName    string `db:"device_name"`
+					DeviceVersion string `db:"device_version"`
+					Inherit       bool   `db:"inherit"`
+				}{},
+			}
+		}
+
+		// Append the device to the issue's device list
+		issueMap[issueID].AffectedDevices = append(issueMap[issueID].AffectedDevices, struct {
+			DeviceID      int    `db:"device_id"`
+			DeviceName    string `db:"device_name"`
+			DeviceVersion string `db:"device_version"`
+			Inherit       bool   `db:"inherit"`
+		}{
+			DeviceID:      deviceID,
+			DeviceName:    deviceName,
+			DeviceVersion: deviceVersion,
+			Inherit:       inherit,
+		})
+	}
+
+	// Convert map to slice
+	var issues []classes.Sms_IssueWithAffectedDevices
+	for _, issue := range issueMap {
+		issues = append(issues, *issue)
+	}
+
+	return issues, nil
+}
+
 /////////////////////////////////////////
 ////	SMS System
 ////////////////////////////////////////
@@ -1453,6 +1538,37 @@ func (mgr *manager) GetSMSSystemTreeForSystem(id int) (*classes.Sms_Tree_System)
 	return systemTree
 }
 
+func (mgr *manager) GetSMSIssuesForSystem(system_id int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage, err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_getIssuesForWholeSystem)
+	if err != nil{
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(system_id, system_id, system_id, system_id)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var record classes.Sms_IssueAffectedDeviceWithInheritage
+		err := rows.Scan(
+			&record.DeviceID,
+			&record.IssueID,
+			&record.AdditionalInfo,
+			&record.Confirmed,
+			&record.DeviceType, // Storing issue_name in DeviceType
+			&record.DeviceVersion,
+			&record.Inherit,
+		)
+		if err != nil {
+			return nil, err
+		}
+		issueAffectedDevices = append(issueAffectedDevices, record)
+	}
+
+	return issueAffectedDevices, nil
+}
 
 /////////////////////////////////////////
 ////	SMS Device
@@ -1634,6 +1750,42 @@ func (mgr *manager) RemoveSMSDeviceInstances(id int) (err error) {
 	stmt.QueryRow(id)
 
 	return err
+}
+
+func (mgr *manager) GetSMSIssuesForDeviceInstance(deviceInstanceID int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage, err error) {
+	// Prepare the query
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_issuesForDeviceInstance)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	// Execute the query
+	rows, err := stmt.Query(deviceInstanceID, deviceInstanceID, deviceInstanceID, deviceInstanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Scan results
+	for rows.Next() {
+		var record classes.Sms_IssueAffectedDeviceWithInheritage
+		err := rows.Scan(
+			&record.DeviceID,
+			&record.IssueID,
+			&record.AdditionalInfo,
+			&record.Confirmed,
+			&record.DeviceType, // Storing issue_name in DeviceType
+			&record.DeviceVersion,
+			&record.Inherit,
+		)
+		if err != nil {
+			return nil, err
+		}
+		issueAffectedDevices = append(issueAffectedDevices, record)
+	}
+
+	return issueAffectedDevices, nil
 }
 
 
@@ -1833,6 +1985,72 @@ func (mgr *manager) GetSMSIssueAffectedDevicesForIssueID(issue_id int) (issueAff
 	return issueAffectedDevices
 }
 
+func (mgr *manager) GetSMSIssueAffectedDevicesWithInheritage(issue_id int) ([]classes.Sms_IssueAffectedDeviceWithInheritage, error) {
+	// Prepare the statement for the new query
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssueAffectedDevicesForIssueIDWithInheritage)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing statement: %v", err)
+	}
+	defer stmt.Close()
+
+	// Execute the query
+	rows, err := stmt.Query(issue_id, issue_id, issue_id, issue_id)
+	if err != nil {
+		return nil, fmt.Errorf("error executing query: %v", err)
+	}
+	defer rows.Close()
+
+	// Variables for scanning
+	var (
+		dbDeviceID       sql.NullInt32
+		dbIssueID        sql.NullInt32
+		dbAdditionalInfo sql.NullString
+		dbConfirmed      sql.NullBool
+		dbDeviceType     sql.NullString
+		dbDeviceVersion  sql.NullString
+		dbInherit        bool
+	)
+
+	var issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage
+
+	// Iterate over rows
+	for rows.Next() {
+		err := rows.Scan(
+			&dbDeviceID,
+			&dbIssueID,
+			&dbAdditionalInfo,
+			&dbConfirmed,
+			&dbDeviceType,
+			&dbDeviceVersion,
+			&dbInherit,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning row: %v", err)
+		}
+
+		// Construct the new data object
+		affectedDevice := classes.Sms_IssueAffectedDeviceWithInheritage{
+			DeviceID:       intOrDefault(dbDeviceID),
+			IssueID:        intOrDefault(dbIssueID),
+			AdditionalInfo: stringOrDefault(dbAdditionalInfo), // Now mandatory
+			Confirmed:      boolOrDefault(dbConfirmed),
+			DeviceType:     stringOrDefault(dbDeviceType),
+			DeviceVersion:  stringOrDefault(dbDeviceVersion),
+			Inherit:        dbInherit,
+		}
+
+		// Append to the result slice
+		issueAffectedDevices = append(issueAffectedDevices, affectedDevice)
+	}
+
+	// Check for iteration errors
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during row iteration: %v", err)
+	}
+
+	return issueAffectedDevices, nil
+}
+
 func (mgr *manager) GetSMSAffectedDeviceInstancesAndProjects(issue_id int) (affectedDevicInstancessAndProjects []classes.Sms_AffectedDeviceInstancesAndProjects) {
 	// Prepare the statement
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_affectedDeviceInstancesAndProjects)
@@ -1943,28 +2161,47 @@ func (mgr *manager) GetIssueAffectedStats(issue_id int) (*classes.Sms_IssueAffec
 	return stats, nil
 }
 
-func (mgr *manager) GetSMSIssuesForDevice(device_id int) (issueAffectedDevices []classes.Sms_IssueAffectedDevice) {
+func (mgr *manager) GetSMSIssuesForDevice(device_id int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage) {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssuesForDevice)
-	if err != nil{
+	if err != nil {
 		fmt.Print(err)
 	}
-	rows, err := stmt.Query(device_id)
+	rows, err := stmt.Query(device_id, device_id, device_id, device_id)
+	if err != nil {
+		fmt.Print(err)
+	}
 
-	var ( 	dbDevice_id int
-		dbIssue_id int
-		dbAdditionalInfo string
-		dbConfirmed bool
-		dbTmp string
-		dbTmp2 string
+	var (
+		dbDevice_id      int
+		dbIssue_id       sql.NullInt32
+		dbAdditionalInfo sql.NullString
+		dbConfirmed      sql.NullBool
+		dbDeviceType     sql.NullString // Issue name wird in DeviceType gespeichert
+		dbInherit        sql.NullBool
 	)
 
+	// Iterieren über alle Zeilen
 	for rows.Next() {
-		err := rows.Scan(&dbDevice_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbTmp)
-		dbTmp2 = ""
-		var issueList = classes.NewSms_IssueAffectedDevice(dbDevice_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbTmp, dbTmp2)
-		issueAffectedDevices=append(issueAffectedDevices, *issueList)
+		err := rows.Scan(&dbDevice_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbDeviceType, &dbInherit)
 		if err != nil {
 			log.Fatal(err)
+		}
+
+		// Erstellen eines neuen Eintrags der Datenklasse
+		issue := classes.Sms_IssueAffectedDeviceWithInheritage{
+			DeviceID:       dbDevice_id,
+			IssueID:        intOrDefault(dbIssue_id),
+			AdditionalInfo: stringOrDefault(dbAdditionalInfo),
+			Confirmed:      boolOrDefault(dbConfirmed),
+			DeviceType:     stringOrDefault(dbDeviceType),     // Hier wird der Issue name gespeichert
+			DeviceVersion:  "",               // DeviceVersion bleibt leer
+			Inherit:        boolOrDefault(dbInherit),        // Inherit wird aus der Query übernommen
+		}
+
+		// Hinzufügen des neuen Eintrags zur Rückgabeliste
+
+		if issue.IssueID > 0 {
+			issueAffectedDevices = append(issueAffectedDevices, issue)
 		}
 	}
 
@@ -2840,63 +3077,123 @@ func (mgr *manager) AddSMSIssueAffectedSoftware(software_id int, issue_id int, a
 	return err
 }
 
-func (mgr *manager) GetSMSIssueAffectedSoftwareForIssueID(issue_id int) (issueAffectedSoftwares []classes.Sms_IssueAffectedSoftware) {
-	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssueAffectedSoftwaresForIssueID)
-	if err != nil{
-		fmt.Print(err)
+func (mgr *manager) GetSMSIssueAffectedSoftwareWithInheritage(issueID int) ([]classes.Sms_IssueAffectedSoftwareWithInheritage, error) {
+	// Prepare the query statement
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssueAffectedSoftwaresForIssueIDWithInheritage)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing statement: %w", err)
 	}
-	rows, err := stmt.Query(issue_id)
+	defer stmt.Close()
 
-	var ( 	dbSoftware_id int
-		dbIssue_id int
-		dbAdditionalInfo string
-		dbConfirmed bool
-		dbTmp string
-		dbTmp2 string
-	)
+	// Execute the query
+	rows, err := stmt.Query(issueID, issueID, issueID)
+	if err != nil {
+		return nil, fmt.Errorf("error executing query: %w", err)
+	}
+	defer rows.Close()
 
+	// Slice to store results
+	var affectedSoftware []classes.Sms_IssueAffectedSoftwareWithInheritage
+
+	// Iterate over rows
 	for rows.Next() {
-		err := rows.Scan(&dbSoftware_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbTmp, &dbTmp2)
+		var (
+			softwareID     int
+			issueID        int
+			additionalInfo sql.NullString
+			confirmed      bool
+			typeName       string
+			version        string
+			inherit        bool
+		)
 
-		var affectedSoftware = classes.NewSms_IssueAffectedSoftware(dbSoftware_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbTmp, dbTmp2)
-		issueAffectedSoftwares=append(issueAffectedSoftwares, *affectedSoftware)
-		if err != nil {
-			log.Fatal(err)
+		// Scan the row
+		if err := rows.Scan(&softwareID, &issueID, &additionalInfo, &confirmed, &typeName, &version, &inherit); err != nil {
+			return nil, fmt.Errorf("error scanning row: %w", err)
 		}
+
+		// Create the object and append to slice
+		affectedSoftware = append(affectedSoftware, classes.Sms_IssueAffectedSoftwareWithInheritage{
+			SoftwareID:     softwareID,
+			IssueID:        issueID,
+			AdditionalInfo: stringOrDefault(additionalInfo),
+			Confirmed:      confirmed,
+			TypeName:       typeName,
+			Version:        version,
+			Inherit:        inherit,
+		})
 	}
 
-	return issueAffectedSoftwares
+	// Check for errors after iteration
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	return affectedSoftware, nil
+}
+
+// Helper function to convert sql.NullString to *string
+func nilIfNullString(ns sql.NullString) *string {
+	if ns.Valid {
+		return &ns.String
+	}
+	return nil
 }
 
 
-func (mgr *manager) GetSMSIssuesForSoftware(software_id int) (issueAffectedSoftwares []classes.Sms_IssueAffectedSoftware) {
+func (mgr *manager) GetSMSIssuesForSoftware(software_id int) (issueAffectedSoftwares []classes.Sms_IssueAffectedSoftwareWithInheritage) {
+	// Prepare the query
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_IssuesForSoftware)
-	if err != nil{
-		fmt.Print(err)
+	if err != nil {
+		fmt.Println(err)
+		return nil
 	}
-	rows, err := stmt.Query(software_id)
+	defer stmt.Close()
 
-	var ( 	dbSoftware_id int
-		dbIssue_id int
+	// Execute the query
+	rows, err := stmt.Query(software_id)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	// Variables to store row data
+	var (
+		dbSoftwareID     int
+		dbIssueID        int
 		dbAdditionalInfo string
-		dbConfirmed bool
-		dbTmp string
-		dbTmp2 string
+		dbConfirmed      bool
+		dbTypeName       string // We'll use this for issue_name
+		dbInherit        bool
 	)
 
+	// Process rows
 	for rows.Next() {
-		err := rows.Scan(&dbSoftware_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbTmp)
-		dbTmp2 = ""
-		var issueList = classes.NewSms_IssueAffectedSoftware(dbSoftware_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbTmp, dbTmp2)
-		issueAffectedSoftwares=append(issueAffectedSoftwares, *issueList)
+		err := rows.Scan(&dbSoftwareID, &dbIssueID, &dbAdditionalInfo, &dbConfirmed, &dbTypeName, &dbInherit)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
+			continue
 		}
+
+		// Create the data object
+		issueAffectedSoftware := classes.Sms_IssueAffectedSoftwareWithInheritage{
+			SoftwareID:     dbSoftwareID,
+			IssueID:        dbIssueID,
+			AdditionalInfo: dbAdditionalInfo,
+			Confirmed:      dbConfirmed,
+			TypeName:       dbTypeName, // Storing issue_name here
+			Version:        "",        // Version left empty as specified
+			Inherit:        dbInherit, // True if affected through a component
+		}
+
+		// Append to the result slice
+		issueAffectedSoftwares = append(issueAffectedSoftwares, issueAffectedSoftware)
 	}
 
+	// Return the result
 	return issueAffectedSoftwares
 }
-
 
 func (mgr *manager) RemoveSMSIssueAffectedSoftware(software_id int, issue_id int) (err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_IssueAffectedSoftware)
@@ -3472,15 +3769,15 @@ func (mgr *manager) GetSMSIssuesForArtefact(artefact_id int) (issueAffectedArtef
 		var dbIssue_id int
 		var dbAdditionalInfo string
 		var dbConfirmed bool
-		var dbArtefact_name string
+		var dbIssue_name string
 
-		err := rows.Scan(&dbArtefact_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbArtefact_name)
+		err := rows.Scan(&dbArtefact_id, &dbIssue_id, &dbAdditionalInfo, &dbConfirmed, &dbIssue_name)
 		if err != nil {
 			fmt.Println("Error scanning row:", err)
 			return nil, err
 		}
 
-		issueList := classes.NewSms_IssueAffectedArtefact(dbArtefact_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbArtefact_name, "")
+		issueList := classes.NewSms_IssueAffectedArtefact(dbArtefact_id, dbIssue_id, dbAdditionalInfo, dbConfirmed, dbIssue_name, "")
 		issueAffectedArtefacts = append(issueAffectedArtefacts, *issueList)
 	}
 
@@ -3501,4 +3798,236 @@ func (mgr *manager) RemoveSMSIssueAffectedArtefact(artefact_id int, issue_id int
 	}
 
 	return err
+}
+
+func intOrDefault(input sql.NullInt32) int {
+	if input.Valid {
+		return int(input.Int32)
+	}
+	return 0
+}
+
+func stringOrDefault(input sql.NullString) string {
+	if input.Valid {
+		return input.String
+	}
+	return ""
+}
+
+func boolOrDefault(input sql.NullBool) bool {
+	if input.Valid {
+		return input.Bool
+	}
+	return false
+}
+
+/////////////////////////////////////////
+////	SMS_SecurityReport
+////////////////////////////////////////
+func (mgr *manager) AddSMSSecurityReport(
+	reportName string, scannerName string, scannerVersion string, creationDate time.Time,
+	uploadedBy string, scanScope string, vulnerabilityCount int, componentCount int,
+) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_new_report)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(reportName, scannerName, scannerVersion, creationDate, time.Now(), uploadedBy, scanScope, vulnerabilityCount, componentCount)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func (mgr *manager) GetAllSMSSecurityReports() (reports []classes.Sms_SecurityReport, err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_all_reports)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var report classes.Sms_SecurityReport
+		err = rows.Scan(
+			&report.ReportID, &report.ReportName, &report.ScannerName, &report.ScannerVersion,
+			&report.CreationDate, &report.UploadDate, &report.UploadedBy,
+			&report.ScanScope, &report.VulnerabilityCount, &report.ComponentCount,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		reports = append(reports, report)
+	}
+	return reports, nil
+}
+
+func (mgr *manager) GetSMSSecurityReportByID(reportID int) (*classes.Sms_SecurityReport, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_report_by_id)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var report classes.Sms_SecurityReport
+	err = stmt.QueryRow(reportID).Scan(
+		&report.ReportID, &report.ReportName, &report.ScannerName, &report.ScannerVersion,
+		&report.CreationDate, &report.UploadDate, &report.UploadedBy,
+		&report.ScanScope, &report.VulnerabilityCount, &report.ComponentCount,
+	)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return &report, nil
+}
+
+func (mgr *manager) RemoveSMSSecurityReport(reportID int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_report)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(reportID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func (mgr *manager) UpdateSMSSecurityReport(report classes.Sms_SecurityReport) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_report)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		report.ReportName, report.ScannerName, report.ScannerVersion, report.CreationDate,
+		report.UploadDate, report.UploadedBy, report.ScanScope, report.VulnerabilityCount,
+		report.ComponentCount, report.ReportID,
+	)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+/////////////////////////////////////////
+////	SMS_SecurityReportLink
+////////////////////////////////////////
+
+// Handler to get links for a specific report
+func (mgr *manager) GetReportLinksByReportID(reportID int) (links []classes.Sms_SecurityReportLink, err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_securityReport_by_ID)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(reportID)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var link classes.Sms_SecurityReportLink
+		err = rows.Scan(&link.ReportID, &link.LinkedObjectID, &link.LinkedObjectType)
+		if err != nil {
+			log.Fatal(err)
+		}
+		links = append(links, link)
+	}
+	return links, nil
+}
+
+// Handler to add a new link
+func (mgr *manager) AddReportLink(reportID int, linkedObjectID int, linkedObjectType string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_new_securityReport)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(reportID, linkedObjectID, linkedObjectType)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+// Handler to remove a specific link
+func (mgr *manager) RemoveReportLink(reportID int, linkedObjectID int, linkedObjectType string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_securityReport_by_IDs)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(reportID, linkedObjectID, linkedObjectType)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+// Handler to remove all links for a specific report
+func (mgr *manager) RemoveAllReportLinks(reportID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_securityReport_by_reportID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(reportID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func (mgr *manager) GetReportsForLinkedObject(linkedObjectID int, linkedObjectType string) (reports []classes.Sms_SecurityReportLink, err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_securityReport_by_ObjectID)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(linkedObjectID, linkedObjectType)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var reportLink classes.Sms_SecurityReportLink
+		err = rows.Scan(&reportLink.ReportID, &reportLink.LinkedObjectID, &reportLink.LinkedObjectType)
+		if err != nil {
+			log.Fatal(err)
+		}
+		reports = append(reports, reportLink)
+	}
+	return reports, nil
 }

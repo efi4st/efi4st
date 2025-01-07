@@ -71,8 +71,13 @@ func ShowSMSArtefact(ctx iris.Context) {
 
 	artefact := dbprovider.GetDBManager().GetSMSArtefactInfo(i)
 	devicesParentsOfArtefact := dbprovider.GetDBManager().GetSMSArtefactPartOfDeviceForArtefact(i)
+	issuesForThisArtefact, err := dbprovider.GetDBManager().GetSMSIssuesForArtefact(i)
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error getting issues for artefact Id!")
+	}
 
 	ctx.ViewData("devicesParentsOfArtefact", devicesParentsOfArtefact)
+	ctx.ViewData("issuesForThisArtefact", issuesForThisArtefact)
 	ctx.ViewData("artefact", artefact)
 	ctx.View("sms_showArtefact.html")
 }

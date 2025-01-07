@@ -6,5 +6,5 @@ Automatic Firmware Analysis of Embedded Linux Devices as Preparation for Securit
 Installation:
 see install.md
 
-Contact:
-For any questions, bugs or if you are interested to contribute -> please contact me!
+Product Security Management System:
+see product_security_management.md

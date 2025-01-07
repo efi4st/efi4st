@@ -476,3 +476,29 @@ CREATE TABLE IF NOT EXISTS sms_issueAffectedArtefact (
     CONSTRAINT sms_issueAffectedArtefact_ibfk_2 FOREIGN KEY (issue_id) REFERENCES sms_issue (issue_id) ON UPDATE CASCADE ON DELETE NO ACTION
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_securityReport_schema = `
+CREATE TABLE IF NOT EXISTS sms_securityReport (
+report_id INT(11) AUTO_INCREMENT PRIMARY KEY,
+report_name VARCHAR(255) NOT NULL,
+scanner_name VARCHAR(100) NOT NULL,
+scanner_version VARCHAR(50) DEFAULT NULL,
+creation_date DATETIME NOT NULL,
+upload_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+uploaded_by VARCHAR(100) DEFAULT NULL,
+scan_scope TEXT DEFAULT NULL,
+vulnerability_count INT(11) DEFAULT 0,
+component_count INT(11) DEFAULT 0,
+UNIQUE(report_name, scanner_name, creation_date)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_securityReportLink_schema = `
+CREATE TABLE IF NOT EXISTS sms_securityReportLink (
+report_id INT NOT NULL,
+linked_object_id INT NOT NULL,
+linked_object_type ENUM('sms_device', 'sms_application', 'sms_system') NOT NULL,
+PRIMARY KEY (report_id, linked_object_id, linked_object_type),
+FOREIGN KEY (report_id) REFERENCES sms_securityReport(report_id) ON DELETE CASCADE
+);
+`
