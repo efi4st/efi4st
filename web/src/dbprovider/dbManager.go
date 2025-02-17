@@ -65,7 +65,7 @@ type Manager interface {
 	RemoveBinaryAnalysisByRelevantApp(id int) error
 	UpdateBinaryAnalysis(id int, output string) error
 	GetSMSProjects() []classes.Sms_Project
-	AddSMSProject(projectName string, customer string, projecttypeId int, reference string) (err error)
+	AddSMSProject(projectName string, customer string, projecttypeId int, reference string) (int, error)
 	GetSMSProjectInfo(id int) *classes.Sms_Project
 	UpdateSMSProjectsActive(id int, active bool) error
 	RemoveSMSProject(id int) error
@@ -184,7 +184,18 @@ type Manager interface {
 	AddReportLink(reportID int, linkedObjectID int, linkedObjectType string) error
 	RemoveReportLink(reportID int, linkedObjectID int, linkedObjectType string) error
 	RemoveAllReportLinks(reportID int) error
-	GetReportsForLinkedObject(linkedObjectID int, linkedObjectType string) (reports []classes.Sms_SecurityReportLink, err error)
+	GetReportsForLinkedObject(linkedObjectID int, linkedObjectType string) (reports []classes.Sms_SecurityReport, err error)
+	AddProjectSetting(keyName string, valueType string, defaultValue string) error
+	GetProjectSettings() ([]classes.ProjectSetting, error)
+	UpdateProjectSetting(settingID int, name string, description string, valueType string) error
+	DeleteProjectSetting(settingID int) error
+	AddProjectSettingLink(projectID int, settingID int, value string) error
+	GetProjectSettingLinks(projectID int) ([]classes.ProjectSettingsLink, error)
+	UpdateProjectSettingLink(projectID int, settingID int, value string) error
+	DeleteProjectSettingLink(projectID int, settingID int) error
+	GetProjectSettingDefaultValue(settingID int) (string, error)
+	GetLinkedProjectSettings(projectID int) ([]classes.ProjectSetting, error)
+	GetAvailableProjectSettings(projectID int) ([]classes.ProjectSetting, error)
 }
 
 type manager struct {
@@ -1159,22 +1170,32 @@ func (mgr *manager) UpdateBinaryAnalysis(id int, output string) (err error) {
 /////////////////////////////////////////
 ////	SMS Project
 ////////////////////////////////////////
-func (mgr *manager) AddSMSProject(projectName string, customer string, projecttypeId int, reference string) (err error) {
+func (mgr *manager) AddSMSProject(projectName string, customer string, projecttypeId int, reference string) (int, error) {
 	dt := time.Now()
 	act := false
 
 	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newProject)
-	if err != nil{
-		fmt.Print(err)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return 0, err
+	}
+	defer stmt.Close()
+
+	// Führe das INSERT aus
+	result, err := stmt.Exec(projectName, customer, projecttypeId, reference, dt, act)
+	if err != nil {
+		fmt.Println("Error executing statement:", err)
+		return 0, err
 	}
 
-	rows, err := stmt.Query(projectName, customer, projecttypeId, reference, dt, act)
-
-	if rows == nil{
-		fmt.Println("rows should be null")
+	// Die letzte eingefügte ID abrufen
+	projectID, err := result.LastInsertId()
+	if err != nil {
+		fmt.Println("Error retrieving last insert ID:", err)
+		return 0, err
 	}
 
-	return err
+	return int(projectID), nil
 }
 
 func (mgr *manager) GetSMSProjects() (projects []classes.Sms_Project) {
@@ -3967,6 +3988,9 @@ func (mgr *manager) AddReportLink(reportID int, linkedObjectID int, linkedObject
 	}
 	defer stmt.Close()
 
+	fmt.Println(reportID)
+	fmt.Println(linkedObjectID)
+	fmt.Println(linkedObjectType)
 	_, err = stmt.Exec(reportID, linkedObjectID, linkedObjectType)
 	if err != nil {
 		fmt.Println(err)
@@ -4006,7 +4030,7 @@ func (mgr *manager) RemoveAllReportLinks(reportID int) error {
 	return err
 }
 
-func (mgr *manager) GetReportsForLinkedObject(linkedObjectID int, linkedObjectType string) (reports []classes.Sms_SecurityReportLink, err error) {
+func (mgr *manager) GetReportsForLinkedObject(linkedObjectID int, linkedObjectType string) (reports []classes.Sms_SecurityReport, err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_securityReport_by_ObjectID)
 	if err != nil {
 		fmt.Println(err)
@@ -4022,12 +4046,258 @@ func (mgr *manager) GetReportsForLinkedObject(linkedObjectID int, linkedObjectTy
 	defer rows.Close()
 
 	for rows.Next() {
-		var reportLink classes.Sms_SecurityReportLink
-		err = rows.Scan(&reportLink.ReportID, &reportLink.LinkedObjectID, &reportLink.LinkedObjectType)
+		var report classes.Sms_SecurityReport
+		err = rows.Scan(&report.ReportID, &report.ReportName, &report.ScannerName, &report.ScannerVersion, &report.CreationDate, &report.UploadDate, &report.UploadedBy, &report.ScanScope, &report.VulnerabilityCount, &report.ComponentCount)
 		if err != nil {
 			log.Fatal(err)
 		}
-		reports = append(reports, reportLink)
+		reports = append(reports, report)
 	}
 	return reports, nil
+}
+
+/////////////////////////////////////////
+////	SMS_ProjectSetting
+////////////////////////////////////////
+
+// (Neues Setting hinzufügen)
+func (mgr *manager) AddProjectSetting(keyName string, valueType string, defaultValue string) error {
+	// Bereite die SQL-Query vor
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_new_projectSettings)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	// Führe die SQL-Query aus
+	_, err = stmt.Exec(keyName, valueType, defaultValue)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+// GetProjectSettings (Alle Settings abrufen)
+func (mgr *manager) GetProjectSettings() ([]classes.ProjectSetting, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_all_Settings)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var settings []classes.ProjectSetting
+	for rows.Next() {
+		var setting classes.ProjectSetting
+		err = rows.Scan(&setting.SettingID, &setting.KeyName, &setting.DefaultValue, &setting.ValueType)
+		if err != nil {
+			fmt.Println("Error scanning row:", err)
+			continue
+		}
+		fmt.Printf("Fetched setting: %+v\n", setting)
+		settings = append(settings, setting)
+	}
+	return settings, nil
+}
+
+// UpdateProjectSetting (Setting aktualisieren)
+func (mgr *manager) UpdateProjectSetting(settingID int, name string, description string, valueType string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_projectSettings)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(name, description, valueType, settingID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+// DeleteProjectSetting (Setting löschen)
+func (mgr *manager) DeleteProjectSetting(settingID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_global_Setting)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(settingID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+// AddProjectSettingLink (Projekt mit Setting verknüpfen)
+func (mgr *manager) AddProjectSettingLink(projectID int, settingID int, value string) error {
+	fmt.Printf("Attempting to add project setting link - ProjectID: %d, SettingID: %d, Value: %s\n", projectID, settingID, value)
+
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_new_projectSettingsLink)
+	if err != nil {
+		fmt.Printf("Error preparing SQL statement: %v\n", err)
+		return err
+	}
+	defer stmt.Close()
+
+	// Debug-Ausgabe: SQL-Query-Parameter anzeigen
+	fmt.Printf("Executing SQL statement with values - ProjectID: %d, SettingID: %d, Value: %s\n", projectID, settingID, value)
+
+	// Hier wird der Fehler von Exec explizit behandelt
+	result, err := stmt.Exec(projectID, settingID, value)
+	if err != nil {
+		fmt.Printf("Error executing SQL statement: %v\n", err)
+		return err
+	}
+
+	// Anzahl der betroffenen Zeilen überprüfen
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		fmt.Printf("Error retrieving affected rows: %v\n", err)
+		return err
+	}
+	fmt.Printf("Successfully added project setting link. Rows affected: %d\n", rowsAffected)
+
+	return nil
+}
+
+// GetProjectSettingLinks (Alle Verknüpfungen für ein Projekt abrufen)
+func (mgr *manager) GetProjectSettingLinks(projectID int) ([]classes.ProjectSettingsLink, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_settings_for_project)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var links []classes.ProjectSettingsLink
+	for rows.Next() {
+		var link classes.ProjectSettingsLink
+		err = rows.Scan(&link.ProjectID, &link.SettingID, &link.Value)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		links = append(links, link)
+	}
+	return links, nil
+}
+
+// UpdateProjectSettingLink (Einen bestimmten Link aktualisieren)
+func (mgr *manager) UpdateProjectSettingLink(projectID int, settingID int, value string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_projectSettingsLink)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(value, projectID, settingID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+// DeleteProjectSettingLink (Einen Link zwischen Projekt und Setting löschen)
+func (mgr *manager) DeleteProjectSettingLink(projectID int, settingID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_projectSettingsLink)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(projectID, settingID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func (mgr *manager) GetProjectSettingDefaultValue(settingID int) (string, error) {
+	// SQL-Abfrage, um den Standardwert für das angegebene Setting zu holen
+	query := `SELECT default_value FROM sms_projectSettings WHERE setting_id = ?`
+
+	var defaultValue string
+
+	// Die Abfrage ausführen
+	err := mgr.db.Get(&defaultValue, query, settingID)
+	if err != nil {
+		// Fehlerbehandlung, falls keine Zeile gefunden wurde oder ein anderer Fehler auftritt
+		if err == sql.ErrNoRows {
+			return "", nil // Kein Standardwert gesetzt, also kein Fehler
+		}
+		return "", err // Ein anderer Fehler
+	}
+
+	// Erfolgreich den Standardwert abgerufen
+	return defaultValue, nil
+}
+
+func (mgr *manager) GetLinkedProjectSettings(projectID int) ([]classes.ProjectSetting, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_settings_for_project)
+	if err != nil {
+		return nil, fmt.Errorf("Error preparing query: %v", err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("Error executing query: %v", err)
+	}
+	defer rows.Close()
+
+	var settings []classes.ProjectSetting
+	for rows.Next() {
+		var setting classes.ProjectSetting
+		err := rows.Scan(&setting.SettingID, &setting.KeyName, &setting.DefaultValue, &setting.ValueType)
+		if err != nil {
+			return nil, fmt.Errorf("Error scanning row: %v", err)
+		}
+		settings = append(settings, setting)
+	}
+
+	return settings, nil
+}
+
+func (mgr *manager) GetAvailableProjectSettings(projectID int) ([]classes.ProjectSetting, error) {
+	query := `SELECT setting_id, key_name, value_type, default_value FROM sms_projectSettings`
+	rows, err := mgr.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var settings []classes.ProjectSetting
+	for rows.Next() {
+		var setting classes.ProjectSetting
+		if err := rows.Scan(&setting.SettingID, &setting.KeyName, &setting.ValueType, &setting.DefaultValue); err != nil {
+			return nil, err
+		}
+		settings = append(settings, setting)
+	}
+
+	fmt.Println("Available project settings:", settings) // DEBUG OUTPUT
+
+	return settings, nil
 }

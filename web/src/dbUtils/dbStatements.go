@@ -313,7 +313,7 @@ var INSERT_new_securityReport = `INSERT INTO sms_securityReportLink (report_id, 
 // Alle Links für einen bestimmten Report abrufen
 var SELECT_securityReport_by_ID = `SELECT linked_object_id, linked_object_type FROM sms_securityReportLink WHERE report_id = ?;`
 // Alle Reports für ein bestimmtes Objekt abrufen
-var SELECT_securityReport_by_ObjectID = `SELECT report_id FROM sms_securityReportLink WHERE linked_object_id = ? AND linked_object_type = ?;`
+var SELECT_securityReport_by_ObjectID = `SELECT sr.report_id, sr.report_name, sr.scanner_name, sr.scanner_version, sr.creation_date, sr.upload_date, sr.uploaded_by, sr.scan_scope, sr.vulnerability_count, sr.component_count FROM sms_securityReportLink AS srl JOIN sms_securityReport AS sr ON srl.report_id = sr.report_id WHERE srl.linked_object_id = ? AND srl.linked_object_type = ?;`
 // Alle Reports für einen bestimmten Typ abrufen
 var SELECT_securityReport_by_ObjectType = `SELECT report_id, linked_object_id FROM sms_securityReportLink WHERE linked_object_type = ?;`
 // Einen spezifischen Link löschen
@@ -322,3 +322,15 @@ var DELETE_securityReport_by_IDs = `DELETE FROM sms_securityReportLink WHERE rep
 var DELETE_securityReport_by_reportID = `DELETE FROM sms_securityReportLink WHERE report_id = ?;`
 // Alle Links für ein bestimmtes Objekt löschen
 var DELETE_securityReport_by_objectID = `DELETE FROM sms_securityReportLink WHERE linked_object_id = ? AND linked_object_type = ?;`
+
+// SMS_projectSetting & SMS_projectSettingLink
+var INSERT_new_projectSettings = `INSERT INTO sms_projectSettings (key_name, value_type, default_value) VALUES (?, ?, ?);`
+var UPDATE_projectSettings = `UPDATE sms_projectSettings SET key_name = ?, value_type = ?, default_value = ? WHERE setting_id = ?;`
+var INSERT_new_projectSettingsLink = `INSERT INTO sms_projectSettingsLink (project_id, setting_id, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value);`
+var SELECT_settings_for_project = `SELECT ps.setting_id, ps.key_name, COALESCE(psl.value, ps.default_value) AS value, ps.value_type FROM sms_projectSettingsLink psl INNER JOIN sms_projectSettings ps ON ps.setting_id = psl.setting_id WHERE psl.project_id = ?;`
+var SELECT_projectSetting = `SELECT COALESCE(psl.value, ps.default_value) AS value, ps.value_type FROM sms_projectSettings ps LEFT JOIN sms_projectSettingsLink psl ON ps.setting_id = psl.setting_id AND psl.project_id = ? WHERE ps.key_name = ?;`
+var DELETE_projectSettingsLink = `DELETE FROM sms_projectSettingsLink WHERE project_id = ? AND setting_id = ?;`
+var DELETE_global_Setting = `DELETE FROM sms_projectSettings WHERE setting_id = ?;`
+var SELECT_all_Settings = `SELECT setting_id, key_name, default_value, value_type FROM sms_projectSettings;`
+var UPDATE_projectSettingsLink = `UPDATE sms_projectSettingsLink SET value = ? WHERE project_id = ? AND setting_id = ?;`
+var SELECT_available_settings_for_project = `SELECT ps.setting_id, ps.key_name, ps.value_type, ps.default_value FROM sms_projectSettings ps WHERE NOT EXISTS (SELECT 1 FROM sms_projectSettingsLink psl WHERE psl.setting_id = ps.setting_id AND psl.project_id = ?);`

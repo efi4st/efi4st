@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_securityReports/addReportLink" method="POST">
+              <div class="form-group">
+                <h3>Link Security Report to {{ objectType }} with ID {{ objectId }}:</h3>
+                </br>
+                <!-- Verlinktes Objekt-ID -->
+                <label for="LinkedObjectId">Linked Object ID:</label>
+                <input type="text" class="form-control" name="LinkedObjectId" id="LinkedObjectId" value="{{ objectId }}" readonly>
+                </br>
+                <!-- Verlinkter Objekt-Typ -->
+                <label for="LinkedObjectType">Linked Object Type:</label>
+                <input type="text" class="form-control" name="LinkedObjectType" id="LinkedObjectType" value="{{ objectType }}" readonly>
+                </br>
+                <!-- Auswahl der Security Reports -->
+                <label for="ReportId">Select Security Report:</label>
+                <select name="ReportId" id="ReportId" class="form-select" aria-label="Default select example">
+                  {% for report in securityReportList %}
+                  <option value="{{ report.report_id }}">{{ report.report_name }} &nbsp; ({{ report.scanner_name }} - {{ report.creation_date }})</option>
+                  {% endfor %}
+                </select>
+                </br>
+                </br>
+              </div>
+              <button type="submit" class="btn btn-primary">Link Report</button>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

@@ -213,38 +213,6 @@ CREATE TABLE IF NOT EXISTS sms_releasenote (
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
 
-var sms_applicationtype_schema = `
-CREATE TABLE IF NOT EXISTS sms_applicationtype (
-	applicationtype_id INT(11) NOT NULL AUTO_INCREMENT,
-	type VARCHAR(150) NOT NULL,
-	PRIMARY KEY (applicationtype_id)
-)ENGINE=InnoDB DEFAULT CHARSET=latin1;
-`
-
-var sms_application_schema = `
-CREATE TABLE IF NOT EXISTS sms_application (
-	application_id INT(11) NOT NULL AUTO_INCREMENT,
-	device_id INT(11) NOT NULL,
-	applicationtype_id INT(11) NOT NULL,
-	version VARCHAR(150) NOT NULL,
-	date DATE NOT NULL,
-	PRIMARY KEY (application_id),
-	CONSTRAINT sms_application_ibfk_1 FOREIGN KEY (device_id) REFERENCES sms_device (device_id) ON UPDATE CASCADE ON DELETE NO ACTION,
-	CONSTRAINT sms_application_ibfk_2 FOREIGN KEY (applicationtype_id) REFERENCES sms_applicationtype (applicationtype_id) ON UPDATE CASCADE ON DELETE NO ACTION
-)ENGINE=InnoDB DEFAULT CHARSET=latin1;
-`
-
-var sms_applicationPartOfDevice_schema = `
-CREATE TABLE IF NOT EXISTS sms_applicationPartOfDevice (
-	application_id INT(11) NOT NULL,
-	device_id INT(11) NOT NULL,
-	amount INT(11) NOT NULL,
-	PRIMARY KEY (application_id, device_id),
-	CONSTRAINT sms_applicationPartOfDevice_ibfk_1 FOREIGN KEY (application_id) REFERENCES sms_application (application_id) ON UPDATE CASCADE ON DELETE NO ACTION,
-	CONSTRAINT sms_applicationPartOfDevice_ibfk_2 FOREIGN KEY (device_id) REFERENCES sms_device (device_id) ON UPDATE CASCADE ON DELETE NO ACTION
-)ENGINE=InnoDB DEFAULT CHARSET=latin1;
-`
-
 var sms_componentPartOfApplication_schema = `
 CREATE TABLE IF NOT EXISTS sms_componentPartOfApplication (
     component_id INT(11) NOT NULL,
@@ -497,8 +465,28 @@ var sms_securityReportLink_schema = `
 CREATE TABLE IF NOT EXISTS sms_securityReportLink (
 report_id INT NOT NULL,
 linked_object_id INT NOT NULL,
-linked_object_type ENUM('sms_device', 'sms_application', 'sms_system') NOT NULL,
+linked_object_type ENUM('sms_device', 'sms_software', 'sms_system') NOT NULL,
 PRIMARY KEY (report_id, linked_object_id, linked_object_type),
-FOREIGN KEY (report_id) REFERENCES sms_securityReport(report_id) ON DELETE CASCADE
-);
+CONSTRAINT sms_securityReportLink_ibfk_1 FOREIGN KEY (report_id) REFERENCES sms_securityReport(report_id) ON UPDATE CASCADE ON DELETE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_projectSettings_schema = `
+CREATE TABLE IF NOT EXISTS sms_projectSettings (
+setting_id INT AUTO_INCREMENT PRIMARY KEY,
+key_name VARCHAR(255) NOT NULL UNIQUE,
+value_type ENUM('string', 'int', 'boolean', 'json') NOT NULL,
+default_value VARCHAR(255) DEFAULT NULL
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_projectSettingsLink_schema = `
+CREATE TABLE IF NOT EXISTS sms_projectSettingsLink (
+project_id INT NOT NULL,
+setting_id INT NOT NULL,
+value VARCHAR(255) NOT NULL,
+PRIMARY KEY (project_id, setting_id),
+CONSTRAINT sms_projectSettingsLink_ibfk_1 FOREIGN KEY (project_id) REFERENCES sms_project(project_id) ON DELETE CASCADE,
+CONSTRAINT sms_projectSettingsLink_ibfk_2 FOREIGN KEY (setting_id) REFERENCES sms_projectSettings(setting_id) ON DELETE CASCADE
+)ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `

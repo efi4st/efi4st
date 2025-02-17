@@ -424,6 +424,39 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_securityReports/remove/1
 	app.Get("/sms_securityReports/remove/{id:string}", routes.RemoveSMSSecurityReport)
 
+	// GET: http://localhost:8144/sms_securityReportLink/createSMSSecurityReportLink/1/Device
+	app.Get("/sms_securityReportLink/createSMSSecurityReportLink/{linkedObjectId:string}/{linkedObjectType:string}", routes.CreateSMSSecurityReportLink)
+
+	// POST: http://localhost:8144/sms_securityReportLink/addReportLink
+	app.Post("/sms_securityReportLink/addReportLink", routes.AddSMSSecurityReportLink)
+
+	// GET: http://localhost:8144/sms_securityReportLink/remove/1/1
+	app.Get("/sms_securityReportLink/remove/{reportId:string}/{linkedObjectId:string}/{linkedObjectType:string}", routes.RemoveSMSSecurityReportLink)
+
+	// GET: http://localhost:8144/sms_securityReportLink/linked/1/sms_device
+	app.Get("/sms_securityReportLink/linked/{linkedObjectId:int}/{linkedObjectType:string}", routes.RedirectToLinkedObject)
+
+	// GET: http://localhost:8144/sms_projectSettings
+	app.Get("/sms_projectSettings", routes.SMSProjectSettings)
+
+	// GET: http://localhost:8144/sms_projectSettings/createSMSProjectSettings
+	app.Get("/sms_projectSettings/createSMSProjectSettings", routes.CreateSMSProjectSettings)
+
+	// POST: http://localhost:8144/sms_projectSettings/addSMSProjectSettings
+	app.Post("/sms_projectSettings/addSMSProjectSettings", routes.AddSMSProjectSetting)
+
+	// GET: http://localhost:8144/sms_projectSettings/remove/1
+	app.Get("/sms_projectSettings/remove/{id:string}", routes.RemoveSMSProjectSettings)
+
+	// GET: http://localhost:8144/sms_projectSettingsLink/createSMSProjectSettingsLink/1
+	app.Get("/sms_projectSettingsLink/createSMSProjectSettingsLink/{id:string}", routes.CreateSMSProjectSettingsLink)
+
+	// POST: http://localhost:8144/sms_projectSettingsLink/addSMSProjectSettingsLink
+	app.Post("/sms_projectSettingsLink/addSMSProjectSettingsLink", routes.AddSMSProjectSettingsLink)
+
+	// GET: http://localhost:8144/sms_projectSettingsLink/remove/1/1
+	app.Get("/sms_projectSettingsLink/remove/{project_id:string}/{setting_id:string}", routes.RemoveSMSProjectSettingsLink)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

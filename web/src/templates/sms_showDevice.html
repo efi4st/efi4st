@@ -159,6 +159,39 @@
           </div>
         </div>
         <hr>
+        <hr>
+        <div class="row">
+          <div class="col-md-6">
+            <h2>Reports:</h2> <p><a class="btn btn-primary btn-lg" href="/sms_securityReportLink/createSMSSecurityReportLink/{{device.device_id}}/sms_device" role="button">Add</a></p>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Name</th>
+                <th>Scanner</th>
+                <th>ScannerVersion</th>
+                <th>UploadDate</th>
+                <th><i class="fa fa-trash-o"></i></th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for report in reportsForThisDevice %}
+              <tr>
+                <td><a href="/sms_securityReports/show/{{ report.ReportID }}">{{ report.ReportName|truncatechars:20 }}</a></td>
+                <td>{{ report.ScannerName }}</td>
+                <td>{{ report.ScannerVersion }}</td>
+                <td>{{ report.UploadDate|truncatechars:13 }}</td>
+                <td><a href="/sms_securityReportLink/remove/{{ report.ReportID }}/{{device.device_id}}/sms_device" class="button"><i class="fa fa-close"></i></a></td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+
+          </div>
+          <div class="col-md-6">
+            <h2>Issues:</h2>
+
+          </div>
+        </div>
       </div> <!-- /container -->
       
 {% endblock %}

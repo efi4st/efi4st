@@ -79,6 +79,8 @@ func ShowSMSSystem(ctx iris.Context) {
 		ctx.ViewData("error", "Error: Error matching certificates!")
 	}
 	deviceIssuesForThisSystem, err := dbprovider.GetDBManager().GetSMSIssuesForSystem(i)
+	reportsForThisSystem, err := dbprovider.GetDBManager().GetReportsForLinkedObject(i,"sms_system")
+
 
 	ctx.ViewData("systemTree", systemTree)
 	ctx.ViewData("systemManufacturingOrders", systemManufacturingOrders)
@@ -86,6 +88,7 @@ func ShowSMSSystem(ctx iris.Context) {
 	ctx.ViewData("system", system)
 	ctx.ViewData("systemHasCertificates", systemHasCertificates)
 	ctx.ViewData("deviceIssuesForThisSystem", deviceIssuesForThisSystem)
+	ctx.ViewData("reportsForThisSystem", reportsForThisSystem)
 	ctx.View("sms_showSystem.html")
 }
 

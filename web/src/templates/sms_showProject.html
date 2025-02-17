@@ -95,7 +95,25 @@
             </table>
           </div>
           <div class="col-md-4">
-            <h2>XXXX:</h2>
+            <h3>Project Settings:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="/sms_projectSettingsLink/createSMSProjectSettingsLink/{{project.project_id}}" class="btn btn-primary">Add</a></h3>
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Setting Name</th>
+                <th>Value</th>
+                <th>Value Type</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for setting in projectSettings %}
+              <tr>
+                <td>{{ setting.KeyName }}</td>
+                <td>{{ setting.DefaultValue }}</td>
+                <td>{{ setting.ValueType }}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
 
           </div>
         </div>

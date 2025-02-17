@@ -123,9 +123,11 @@ func ShowSMSSoftware(ctx iris.Context) {
 	componentsUnderSoftware := dbprovider.GetDBManager().GetSMSComponentPartOfSoftwareForSoftware(i)
 	devicesParentsOfSoftware := dbprovider.GetDBManager().GetSMSSoftwarePartOfDeviceForSoftware(i)
 	issuesForThisSoftware := dbprovider.GetDBManager().GetSMSIssuesForSoftware(i)
+	reportsForThisSoftware, err := dbprovider.GetDBManager().GetReportsForLinkedObject(i,"sms_software")
 
 	ctx.ViewData("devicesParentsOfSoftware", devicesParentsOfSoftware)
 	ctx.ViewData("componentsUnderSoftware", componentsUnderSoftware)
+	ctx.ViewData("reportsForThisSoftware", reportsForThisSoftware)
 	ctx.ViewData("software", software)
 	ctx.ViewData("SBOMFiles", sbomFiles)
 	ctx.ViewData("issuesForThisSoftware", issuesForThisSoftware)

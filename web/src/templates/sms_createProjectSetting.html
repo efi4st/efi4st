@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+
+          <div class="col-md-8">
+            <form action="/sms_projectSettings/addSMSProjectSettings" method="POST">
+              <div class="form-group">
+                <h3>Add New Project Setting:</h3>
+                <br>
+
+                <!-- Field for setting key -->
+                <label for="key_name">Setting Key:</label>
+                <input type="text" class="form-control" name="key_name" id="key_name" placeholder="Enter setting key" required>
+                <br>
+
+                <!-- Field for value type (using a select dropdown) -->
+                <label for="value_type">Value Type:</label>
+                <select name="value_type" id="value_type" class="form-control" required>
+                  <option value="string">String</option>
+                  <option value="int">Integer</option>
+                  <option value="boolean">Boolean</option>
+                  <option value="json">JSON</option>
+                </select>
+                <br>
+
+                <!-- Field for default value -->
+                <label for="default_value">Default Value:</label>
+                <input type="text" class="form-control" name="default_value" id="default_value" placeholder="Enter default value" required>
+                <br>
+
+                <button type="submit" class="btn btn-primary">Add</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="col-md-2">
+          </div>
+        </div>
+
+        <hr>
+      </div> <!-- /container -->
+      
+{% endblock %}
+

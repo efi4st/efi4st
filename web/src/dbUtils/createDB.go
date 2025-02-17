@@ -49,5 +49,7 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(sms_issueAffectedArtefact_schema)	// SMS
 	db.MustExec(sms_securityReport_schema)			// SMS
 	db.MustExec(sms_securityReportLink_schema)		// SMS
+	db.MustExec(sms_projectSettings_schema)			// SMS
+	db.MustExec(sms_projectSettingsLink_schema)		// SMS
 }
 

@@ -31,29 +31,45 @@
           <div class="col-md-8">
             <form action="/sms_projects/addSMSProject" method="POST">
               <div class="form-group">
-
                 <h3>Add new Project:</h3>
+
                 <label for="ProjectName">Name:</label>
-                <input type="text" class="form-control" name="ProjectName" id="ProjectName" placeholder="ProjectName">
-                </br>
+                <input type="text" class="form-control" name="ProjectName" id="ProjectName" placeholder="ProjectName" required>
+                <br>
+
                 <label for="Customer">Customer:</label>
                 <input type="text" class="form-control" name="Customer" id="Customer" placeholder="Customer">
-                </br>
+                <br>
+
                 <label for="ProjecttypeId">Type:</label>
                 <select name="ProjecttypeId" id="ProjecttypeId" class="form-select" aria-label="Default select example">
                   {% for type in typeList %}
-                  <option value="{{type.projecttype_id}}">{{type.projectType}}</option>
+                  <option value="{{ type.projecttype_id }}">{{ type.projectType }}</option>
                   {% endfor %}
-
                 </select>
-                </br>
+                <br>
+
                 <label for="Reference">Reference:</label>
                 <input type="text" class="form-control" name="Reference" id="Reference" placeholder="Reference">
-                </br>
+                <br>
 
+                <h4>Select Project Settings:</h4>
+                {% for setting in projectSettingsList %}
+                <div class="form-check">
+                  <input class="form-check-input setting-checkbox" type="checkbox" name="selectedSettings" value="{{ setting.SettingID }}" id="setting_{{ setting.SettingID }}">
+                  <label class="form-check-label" for="setting_{{ setting.SettingID }}">
+                    {{ setting.KeyName }} ({{ setting.ValueType }}) - Default: {{ setting.DefaultValue }}
+                  </label>
+                  <br>
+                  <input type="text" class="form-control setting-value" name="SettingValue_{{ setting.SettingID }}" placeholder="Enter value (optional)" disabled>
+                </div>
+                <br>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary">Add</button>
               </div>
-              <button type="submit" class="btn btn-primary">Add</button>
             </form>
+
           </div>
 
           <div class="col-md-2">
@@ -62,6 +78,14 @@
 
         <hr>
       </div> <!-- /container -->
-      
+<script>
+  // Aktiviert das Eingabefeld nur, wenn die Checkbox angehakt ist
+  document.querySelectorAll(".setting-checkbox").forEach(checkbox => {
+    checkbox.addEventListener("change", function() {
+      let inputField = this.parentElement.querySelector(".setting-value");
+      inputField.disabled = !this.checked;
+    });
+  });
+</script>
 {% endblock %}
 
