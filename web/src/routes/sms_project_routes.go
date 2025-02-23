@@ -169,3 +169,27 @@ func RemoveSMSProject(ctx iris.Context) {
 	ctx.ViewData("projectList", projects)
 	ctx.View("sms_projects.html")
 }
+
+func SMSProjectIPs(ctx iris.Context) {
+	// Projekt-ID aus URL holen
+	projectIDStr := ctx.Params().Get("project_id")
+	projectID, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		ctx.ViewData("error", "Invalid project ID!")
+		ctx.View("sms_projectIPs.html")
+		return
+	}
+
+	// IPs abrufen
+	ipList, err := dbprovider.GetDBManager().GetIPsForProject(projectID)
+	if err != nil {
+		ctx.ViewData("error", "Error retrieving IPs for project!")
+		ctx.View("sms_projectIPs.html")
+		return
+	}
+
+	// Projekt-ID und IP-Liste an die View übergeben
+	ctx.ViewData("projectID", projectID)
+	ctx.ViewData("ipList", ipList)
+	ctx.View("sms_projectIPs.html")
+}

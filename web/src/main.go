@@ -153,6 +153,8 @@ func irisMain()() {
 	// GET: http://localhost:8144/smsprojects/remove/1
 	app.Get("/sms_projects/remove/{id:string}", routes.RemoveSMSProject)
 
+	// GET: http://localhost:8144/smsprojects/getiplist/1
+	app.Get("/sms_projects/getiplist/{project_id:string}", routes.SMSProjectIPs)
 
 	// GET: http://localhost:8144/smssystems
 	app.Get("/sms_systems", routes.SMSSystems)
@@ -456,6 +458,18 @@ func irisMain()() {
 
 	// GET: http://localhost:8144/sms_projectSettingsLink/remove/1/1
 	app.Get("/sms_projectSettingsLink/remove/{project_id:string}/{setting_id:string}", routes.RemoveSMSProjectSettingsLink)
+
+	// GET: http://localhost:8144/sms_deviceIPDefinitions
+	app.Get("/sms_deviceIPDefinitions", routes.SMSDeviceIPDefinitions)
+
+	// GET: http://localhost:8144/sms_deviceIPDefinitions/createSMSDeviceIPDefinitions
+	app.Get("/sms_deviceIPDefinitions/createSMSDeviceIPDefinitions", routes.CreateSMSDeviceIPDefinitions)
+
+	// POST: http://localhost:8144/sms_deviceIPDefinitions/addSMSDeviceIPDefinitions
+	app.Post("/sms_deviceIPDefinitions/addSMSDeviceIPDefinitions", routes.AddSMSDeviceIPDefinition)
+
+	// GET: http://localhost:8144/sms_deviceIPDefinitions/remove/1
+	app.Get("/sms_deviceIPDefinitions/remove/{id:string}", routes.RemoveSMSDeviceIPDefinition)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

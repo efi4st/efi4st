@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+        <div class="row">
+          <h1>Project: {{projectID}}&nbsp;&nbsp;&nbsp;&nbsp; IP Setup</h1>
+        </div>
+
+        <div class="row">
+          <div class="col-md-1">
+          </div>
+          <div class="col-md-10">
+            <table class="table table-striped">
+              <thead>
+              <tr>
+                <th>IP Address</th>
+                <th>Applicable Versions</th>
+                <th>VLAN ID</th>
+                <th>Description</th>
+                <th>Device Type</th>
+                <th>Instance Count</th>
+                <th>Versions</th>
+              </tr>
+              </thead>
+              <tbody id="myTable">
+              {% for ip in ipList %}
+              <tr>
+                <td>{{ ip.IPAddress }}</td>
+                <td>{{ ip.ApplicableVersions }}</td>
+                <td>{{ ip.VLANID }}</td>
+                <td>{{ ip.Description }}</td>
+                <td>{{ ip.DeviceType }}</td>
+                <td>{{ ip.InstanceCount }}</td>
+                <td>{{ ip.Versions }}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-1">
+          </div>
+
+        </div>
+        <a href="/sms_projects/show/{{ projectID }}" class="btn btn-secondary">Back to Project</a>
+        <hr>
+
+      </div> <!-- /container -->
+      
+{% endblock %}

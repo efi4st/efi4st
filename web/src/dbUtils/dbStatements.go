@@ -334,3 +334,39 @@ var DELETE_global_Setting = `DELETE FROM sms_projectSettings WHERE setting_id = 
 var SELECT_all_Settings = `SELECT setting_id, key_name, default_value, value_type FROM sms_projectSettings;`
 var UPDATE_projectSettingsLink = `UPDATE sms_projectSettingsLink SET value = ? WHERE project_id = ? AND setting_id = ?;`
 var SELECT_available_settings_for_project = `SELECT ps.setting_id, ps.key_name, ps.value_type, ps.default_value FROM sms_projectSettings ps WHERE NOT EXISTS (SELECT 1 FROM sms_projectSettingsLink psl WHERE psl.setting_id = ps.setting_id AND psl.project_id = ?);`
+
+// sms_deviceIPDefinition
+var INSERT_new_deviceIPDefinition = `INSERT INTO sms_deviceIPDefinition (device_type_id, applicable_versions, ip_address, vlan_id, description, filter_condition) VALUES (?, ?, ?, ?, ?, ?);`;
+var UPDATE_deviceIPDefinition = `UPDATE sms_deviceIPDefinition SET device_type_id = ?, applicable_versions = ?, ip_address = ?, vlan_id = ?, description = ?, filter_condition = ? WHERE id = ?;`;
+var SELECT_ips_for_deviceType = `SELECT id, device_type_id, applicable_versions, ip_address, vlan_id, description, filter_condition FROM sms_deviceIPDefinition WHERE device_type_id = ?;`;
+var SELECT_ips_for_device = `SELECT dip.id, dip.device_type_id, dip.applicable_versions, dip.ip_address, dip.vlan_id, dip.description, dip.filter_condition 
+FROM sms_deviceIPDefinition dip 
+JOIN sms_device d ON d.devicetype_id = dip.device_type_id 
+WHERE d.device_id = ? 
+AND (dip.applicable_versions = 'all' OR FIND_IN_SET(d.version, dip.applicable_versions) > 0);`;
+var DELETE_deviceIPDefinition = `DELETE FROM sms_deviceIPDefinition WHERE id = ?;`;
+var SELECT_ips = `SELECT 
+    dip.id, 
+    dt.type AS device_type_name, 
+    dip.applicable_versions, 
+    dip.ip_address, 
+    dip.vlan_id, 
+    dip.description, 
+    dip.filter_condition
+FROM sms_deviceIPDefinition dip
+JOIN sms_devicetype dt ON dip.device_type_id = dt.devicetype_id;`
+var SELECT_ips_for_project = `SELECT 
+    dip.ip_address,
+    dip.applicable_versions,
+    dip.vlan_id,
+    dip.description,
+    dip.filter_condition,
+    dt.type AS device_type,
+    COUNT(di.deviceInstance_id) AS instance_count, 
+    GROUP_CONCAT(DISTINCT d.version ORDER BY d.version ASC SEPARATOR ', ') AS versions
+FROM sms_deviceIPDefinition dip
+JOIN sms_devicetype dt ON dip.device_type_id = dt.devicetype_id
+JOIN sms_device d ON dt.devicetype_id = d.devicetype_id
+JOIN sms_deviceInstance di ON d.device_id = di.device_id
+WHERE di.project_id = ?
+GROUP BY dip.ip_address, dip.applicable_versions, dip.vlan_id, dip.description, dip.filter_condition, dt.type;`

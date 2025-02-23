@@ -490,3 +490,16 @@ CONSTRAINT sms_projectSettingsLink_ibfk_1 FOREIGN KEY (project_id) REFERENCES sm
 CONSTRAINT sms_projectSettingsLink_ibfk_2 FOREIGN KEY (setting_id) REFERENCES sms_projectSettings(setting_id) ON DELETE CASCADE
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_deviceIPDefinition_schema = `
+CREATE TABLE IF NOT EXISTS sms_deviceIPDefinition (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    device_type_id INT NOT NULL,
+    applicable_versions VARCHAR(255) NOT NULL DEFAULT 'all', -- Kommaseparierte Liste oder "all"
+    ip_address VARCHAR(45) NOT NULL, -- Einzelne IP-Adresse (IPv4 oder IPv6)
+    vlan_id INT DEFAULT NULL, -- VLAN-ID als freie Zahl
+    description VARCHAR(255) DEFAULT NULL, -- Beschreibung der IP
+    filter_condition VARCHAR(255) DEFAULT NULL, -- Bedingung für die Nutzung der IP (z. B. "IF COUNT=2" oder "IF SETTING appserver")
+    CONSTRAINT fk_deviceipdefinition_deviceType FOREIGN KEY (device_type_id) REFERENCES sms_devicetype(devicetype_id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`

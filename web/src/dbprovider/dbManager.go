@@ -18,6 +18,7 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -196,6 +197,13 @@ type Manager interface {
 	GetProjectSettingDefaultValue(settingID int) (string, error)
 	GetLinkedProjectSettings(projectID int) ([]classes.ProjectSetting, error)
 	GetAvailableProjectSettings(projectID int) ([]classes.ProjectSetting, error)
+	AddDeviceIPDefinition(deviceTypeID int, applicableVersions string, ipAddress string, vlanID *int, description *string, filterCondition *string) error
+	UpdateDeviceIPDefinition(id int, deviceTypeID int, applicableVersions string, ipAddress string, vlanID *int, description *string, filterCondition *string) error
+	GetIPsForDeviceType(deviceTypeID int) ([]classes.Sms_DeviceIPDefinition, error)
+	GetIPsForDevice(deviceID int) ([]classes.Sms_DeviceIPDefinition, error)
+	DeleteDeviceIPDefinition(id int) error
+	GetIPsForProject(projectID int) ([]classes.ResultProjectIP, error)
+	GetAllDeviceIPDefinitions() ([]classes.Sms_DeviceIPDefinition, error)
 }
 
 type manager struct {
@@ -4300,4 +4308,297 @@ func (mgr *manager) GetAvailableProjectSettings(projectID int) ([]classes.Projec
 	fmt.Println("Available project settings:", settings) // DEBUG OUTPUT
 
 	return settings, nil
+}
+
+/////////////////////////////////////////
+////	SMS_DeviceIPDefinition
+////////////////////////////////////////
+
+// ADD
+func (mgr *manager) AddDeviceIPDefinition(deviceTypeID int, applicableVersions string, ipAddress string, vlanID *int, description *string, filterCondition *string) error {
+	// Bereite die SQL-Query vor
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_new_deviceIPDefinition)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	// Führe die SQL-Query aus
+	_, err = stmt.Exec(deviceTypeID, applicableVersions, ipAddress, vlanID, description, filterCondition)
+	if err != nil {
+		fmt.Println("Fehler beim Einfügen des Datensatzes:", err)
+		return err
+	}
+
+	return nil
+}
+
+// UPDATE
+func (mgr *manager) UpdateDeviceIPDefinition(id int, deviceTypeID int, applicableVersions string, ipAddress string, vlanID *int, description *string, filterCondition *string) error {
+	// Bereite die SQL-Query vor
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_deviceIPDefinition)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	// Führe die SQL-Query aus
+	_, err = stmt.Exec(deviceTypeID, applicableVersions, ipAddress, vlanID, description, filterCondition, id)
+	if err != nil {
+		fmt.Println("Fehler beim Aktualisieren des Datensatzes:", err)
+		return err
+	}
+
+	return nil
+}
+
+// Select_ips_for_devicetype
+func (mgr *manager) GetIPsForDeviceType(deviceTypeID int) ([]classes.Sms_DeviceIPDefinition, error) {
+	// Bereite die SQL-Query vor
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ips_for_deviceType)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	// Führe die Query aus
+	rows, err := stmt.Query(deviceTypeID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Daten:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Ergebnisse in Slice speichern
+	var ipDefinitions []classes.Sms_DeviceIPDefinition
+	for rows.Next() {
+		var ipDef classes.Sms_DeviceIPDefinition
+		err = rows.Scan(&ipDef.ID, &ipDef.DeviceTypeID, &ipDef.ApplicableVersions, &ipDef.IPAddress, &ipDef.VLANID, &ipDef.Description, &ipDef.FilterCondition)
+		if err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+		fmt.Printf("Gefundene IP: %+v\n", ipDef)
+		ipDefinitions = append(ipDefinitions, ipDef)
+	}
+
+	return ipDefinitions, nil
+}
+
+// Select_ips_for_device
+func (mgr *manager) GetIPsForDevice(deviceID int) ([]classes.Sms_DeviceIPDefinition, error) {
+	// Bereite die SQL-Query vor
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ips_for_device)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	// Führe die Query aus
+	rows, err := stmt.Query(deviceID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Daten:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Ergebnisse in Slice speichern
+	var ipDefinitions []classes.Sms_DeviceIPDefinition
+	for rows.Next() {
+		var ipDef classes.Sms_DeviceIPDefinition
+		err = rows.Scan(&ipDef.ID, &ipDef.DeviceTypeID, &ipDef.ApplicableVersions, &ipDef.IPAddress, &ipDef.VLANID, &ipDef.Description, &ipDef.FilterCondition)
+		if err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+		fmt.Printf("Gefundene IP für Gerät: %+v\n", ipDef)
+		ipDefinitions = append(ipDefinitions, ipDef)
+	}
+
+	return ipDefinitions, nil
+}
+
+// DELETE IP Definition
+func (mgr *manager) DeleteDeviceIPDefinition(id int) error {
+	// Bereite die SQL-Query vor
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_deviceIPDefinition)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der DELETE-Query:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	// Führe die Query aus
+	_, err = stmt.Exec(id)
+	if err != nil {
+		fmt.Println("Fehler beim Löschen des Eintrags:", err)
+	}
+	return err
+}
+
+// Select IPs for Project
+func (mgr *manager) GetIPsForProject(projectID int) ([]classes.ResultProjectIP, error) {
+	// SQL-Query vorbereiten
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ips_for_project)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	// Query ausführen
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Daten:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Ergebnisse speichern
+	var ipDefinitions []classes.ResultProjectIP
+	for rows.Next() {
+		var ipDef classes.ResultProjectIP
+		err = rows.Scan(
+			&ipDef.IPAddress, &ipDef.ApplicableVersions, &ipDef.VLANID,
+			&ipDef.Description, &ipDef.FilterCondition, &ipDef.DeviceType,
+			&ipDef.InstanceCount, &ipDef.Versions,
+		)
+		if err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+		ipDefinitions = append(ipDefinitions, ipDef)
+	}
+
+	// ProjectSettings abrufen
+	projectSettings, err := mgr.GetLinkedProjectSettings(projectID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der ProjectSettings:", err)
+		return nil, err
+	}
+
+	// Liste filtern
+	var filteredIPs []classes.ResultProjectIP
+	for _, ipDef := range ipDefinitions {
+		filterCondition := ""
+		if ipDef.FilterCondition != nil {
+			filterCondition = *ipDef.FilterCondition
+		}
+
+		if evaluateFilterCondition(filterCondition, projectSettings, ipDef.ApplicableVersions, ipDef.DeviceType, ipDef.Versions, ipDef.InstanceCount) {
+			filteredIPs = append(filteredIPs, ipDef)
+		}
+	}
+
+	return filteredIPs, nil
+}
+
+func evaluateFilterCondition(filterCondition string, projectSettings []classes.ProjectSetting, applicableVersions string, deviceType string, versions string, instanceCount int) bool {
+	// 1. Check: ApplicableVersions == "all" oder Überschneidung mit Versions
+	if applicableVersions != "all" {
+		// ApplicableVersions und Versions in Listen umwandeln
+		applicableVersionsList := strings.Split(applicableVersions, ",")
+		deviceVersionsList := strings.Split(versions, ",")
+
+		// Prüfen, ob es eine gemeinsame Version gibt
+		matchFound := false
+		for _, appVersion := range applicableVersionsList {
+			for _, devVersion := range deviceVersionsList {
+				if strings.TrimSpace(appVersion) == strings.TrimSpace(devVersion) {
+					matchFound = true
+					break
+				}
+			}
+			if matchFound {
+				break
+			}
+		}
+
+		// Wenn keine Übereinstimmung gefunden wurde, IP rausfiltern
+		if !matchFound {
+			return false
+		}
+	}
+
+	// 2. Falls keine FilterCondition vorhanden ist, direkt erlauben
+	if filterCondition == "" {
+		return true
+	}
+
+	// 3. Filterbedingungen auswerten (z.B. "IF appserver", "#3")
+	conditions := strings.Split(filterCondition, " ")
+
+	for _, condition := range conditions {
+		// IF-Filter: Prüfen, ob das Setting existiert
+		if strings.HasPrefix(condition, "IF") {
+			settingKey := strings.TrimSpace(strings.TrimPrefix(condition, "IF"))
+
+			settingExists := false
+			for _, setting := range projectSettings {
+				if setting.KeyName == settingKey {
+					settingExists = true
+					break
+				}
+			}
+
+			if !settingExists {
+				return false
+			}
+		}
+
+		// # Filter: Prüfen, ob genug Instanzen existieren
+		if strings.HasPrefix(condition, "#") {
+			requiredCountStr := strings.TrimPrefix(condition, "#")
+			requiredCount, err := strconv.Atoi(requiredCountStr)
+			if err != nil {
+				fmt.Println("Fehler beim Parsen des # Filters:", err)
+				continue
+			}
+
+			if instanceCount < requiredCount {
+				return false
+			}
+		}
+	}
+
+	// Falls alle Bedingungen erfüllt sind, IP behalten
+	return true
+}
+
+// Select all ips
+func (mgr *manager) GetAllDeviceIPDefinitions() ([]classes.Sms_DeviceIPDefinition, error) {
+	// Bereite die SQL-Query vor
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ips)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	// Führe die Query aus
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Daten:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Ergebnisse speichern
+	var ipDefinitions []classes.Sms_DeviceIPDefinition
+	for rows.Next() {
+		var ipDef classes.Sms_DeviceIPDefinition
+		// Scanne die Zeilen in das struct
+		err = rows.Scan(&ipDef.ID, &ipDef.DeviceTypeName, &ipDef.ApplicableVersions, &ipDef.IPAddress, &ipDef.VLANID, &ipDef.Description, &ipDef.FilterCondition)
+		if err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+		ipDefinitions = append(ipDefinitions, ipDef)
+	}
+
+	return ipDefinitions, nil
 }
