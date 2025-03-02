@@ -204,6 +204,7 @@ type Manager interface {
 	DeleteDeviceIPDefinition(id int) error
 	GetIPsForProject(projectID int) ([]classes.ResultProjectIP, error)
 	GetAllDeviceIPDefinitions() ([]classes.Sms_DeviceIPDefinition, error)
+	GetSMSIssueAffectedProjects(issueID int) ([]classes.Sms_AffectedProjects, error)
 }
 
 type manager struct {
@@ -2133,6 +2134,60 @@ func (mgr *manager) GetSMSAffectedDeviceInstancesAndProjects(issue_id int) (affe
 	}
 
 	return affectedDevicInstancessAndProjects
+}
+
+func (mgr *manager) GetSMSIssueAffectedProjects(issueID int) ([]classes.Sms_AffectedProjects, error) {
+	// Prepare the SQL statement
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_issueAffectedProjects)
+	if err != nil {
+		log.Printf("Error preparing statement: %v", err)
+		return nil, err
+	}
+	defer stmt.Close() // Ensure statement is closed
+
+	// Execute the query
+	rows, err := stmt.Query(issueID, issueID, issueID, issueID)
+	if err != nil {
+		log.Printf("Error executing query: %v", err)
+		return nil, err
+	}
+	defer rows.Close() // Ensure rows are closed
+
+	// Slice to store results
+	var affectedProjects []classes.Sms_AffectedProjects
+
+	// Variables for scanning
+	var (
+		dbProjectID sql.NullInt32
+		dbName      sql.NullString
+		dbCustomer  sql.NullString
+	)
+
+	// Iterate over rows
+	for rows.Next() {
+		err := rows.Scan(&dbProjectID, &dbName, &dbCustomer)
+		if err != nil {
+			log.Printf("Error scanning row: %v", err)
+			continue
+		}
+
+		// Erstelle das Objekt und füge es der Liste hinzu
+		affectedProject := classes.Sms_AffectedProjects{
+			ProjectID: dbProjectID.Int32,
+			Name:      dbName.String,
+			Customer:  dbCustomer.String,
+		}
+
+		affectedProjects = append(affectedProjects, affectedProject)
+	}
+
+	// Check for errors during iteration
+	if err = rows.Err(); err != nil {
+		log.Printf("Error during row iteration: %v", err)
+		return nil, err
+	}
+
+	return affectedProjects, nil
 }
 
 func (mgr *manager) GetIssueAffectedStats(issue_id int) (*classes.Sms_IssueAffectedStats, error) {

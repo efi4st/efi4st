@@ -138,23 +138,29 @@ func irisMain()() {
 	 * (C)
 	 **/
 
-	// GET: http://localhost:8144/smsprojects
+	// GET: http://localhost:8144/sms_projects
 	app.Get("/sms_projects", routes.SMSProjects)
 
-	// GET: http://localhost:8144/smsprojects/createSMSProject
+	// GET: http://localhost:8144/sms_projects/createSMSProject
 	app.Get("/sms_projects/createSMSProject", routes.CreateSMSProject)
 
-	// POST: http://localhost:8144/smsprojects/createSMSProject
+	// POST: http://localhost:8144/sms_projects/createSMSProject
 	app.Post("/sms_projects/addSMSProject", routes.AddSMSProject)
 
-	// GET: http://localhost:8144/smsprojects/show/1
+	// GET: http://localhost:8144/sms_projects/show/1
 	app.Get("/sms_projects/show/{id:string}", routes.ShowSMSProject)
 
-	// GET: http://localhost:8144/smsprojects/remove/1
+	// GET: http://localhost:8144/sms_projects/remove/1
 	app.Get("/sms_projects/remove/{id:string}", routes.RemoveSMSProject)
 
-	// GET: http://localhost:8144/smsprojects/getiplist/1
+	// GET: http://localhost:8144/sms_projects/getiplist/1
 	app.Get("/sms_projects/getiplist/{project_id:string}", routes.SMSProjectIPs)
+
+	// GET: http://localhost:8144/sms_projects/downloadiplist/1
+	app.Get("/sms_projects/downloadiplist/{project_id:string}", routes.SMSExportProjectIPsCSV)
+
+	// GET: http://localhost:8144/sms_projects/downloadiplistCustomer/1
+	app.Get("/sms_projects/downloadiplistCustomer/{project_id:string}", routes.SMSExportProjectIPsCSVCustomer)
 
 	// GET: http://localhost:8144/smssystems
 	app.Get("/sms_systems", routes.SMSSystems)
@@ -227,6 +233,9 @@ func irisMain()() {
 
 	// GET: http://localhost:8144/sms_issues/remove/1
 	app.Get("/sms_issues/remove/{id:string}", routes.RemoveSMSIssue)
+
+	// GET: http://localhost:8144/sms_issues/show/1
+	app.Get("/sms_issues/serviceletter/{id:string}", routes.SMSIssueServiceLetter)
 
 	// GET: http://localhost:8144/sms_issueAffectedDevice/createSMSIssueAffectedDevice/1
 	app.Get("/sms_issueAffectedDevice/createSMSIssueAffectedDevice/{id:string}", routes.CreateSMSIssueAffectedDevice)

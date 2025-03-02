@@ -1,0 +1,168 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+        <div class="row">
+        <h1>Service Letter:</h1>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<h3>{{issue.name}}</h3>
+        </div>
+
+        <hr>
+        <div class="row">
+          <div class="affected-projects">
+            <h2>Affected Projects</h2>
+
+            {% if affectedProjects %}
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Select</th>
+                <th>Project Name</th>
+                <th>Customer</th>
+                <th>Project ID</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for project in affectedProjects %}
+              <tr>
+                <td>
+                  <input type="radio" name="selectedProject" value="{{ project.Customer }}">
+                </td>
+                <td>{{ project.Name }}</td>
+                <td>{{ project.Customer }}</td>
+                <td>{{ project.ProjectID }}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <p>No affected projects found.</p>
+            {% endif %}
+          </div>
+        </div>
+        <hr>
+
+        <div class="row">
+          <div style="font-family: Arial, sans-serif; margin: 40px; padding: 20px; background-color: #f8f9fa;">
+
+            <div style="max-width: 800px; background: white; padding: 20px; border-radius: 8px;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+
+              <p>[Your Company Name]<br>
+                [Your Email] </p>
+
+              <p><strong>Date:</strong> {{ currentDate }}</p>
+
+              <h1 style="color: #d9534f;">Security Advisory – Vulnerability Notification  {{issue.cve}}</h1>
+
+              <p><strong>Customer:</strong> <span id="customerName">[Customer Name]</span></p>
+              <p>Dear <span id="customerGreeting">[Customer Name]</span>,</p>
+
+              <p>We are writing to inform you about a recently identified security vulnerability that may impact your systems. As part of our ongoing commitment to security and transparency, we want to ensure that you are aware of this issue and provide you with the necessary information to mitigate potential risks.</p>
+
+              <h2 style="color: #007bff;">Vulnerability Details</h2>
+              <ul>
+                <li><strong>Name:</strong> {{issue.name}}</li>
+                <li><strong>CVE Number:</strong> {{issue.cve}}</li>
+                <li><strong>Description:</strong> {{issue.description}}</li>
+                <li><strong>Criticality:</strong> {% if issue.Criticality > 2 %}<b style="color:red">HIGH</b>{% elif issue.Criticality < 2 %}<b style="color:greenyellow">LOW</b>{% else %}<b style="color:orange">MEDIUM</b>{% endif %}</li>
+                <li><strong>Date of Discovery:</strong> {{issue.date|truncatechars:13}}</li>
+              </ul>
+
+              <h2 style="color: #007bff;">Affected Devices</h2>
+              <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <thead>
+                <tr>
+                  <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #007bff; color: white;">Device Type</th>
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for device in affectedDevices %}
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 8px;">{{ device.DeviceType }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ device.DeviceVersion }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+              </br>
+              <h2 style="color: #007bff;">Available Solutions:</h2>
+              <p>The following solutions / mitigations are available for specified device types:</p>
+              <ol>
+                {% for solution in solutionsForThisIssue %}
+                <li>
+                  <strong>{{ solution.name }}</strong> ({{ solution.date|truncatechars:13 }})<br>
+                  <em>Device Type:</em> {{ solution.deviceTypeJoined }}<br>
+                  <em>Description:</em> {{ solution.description }}<br>
+                  {% if solution.reference %}
+                  <em>Reference:</em> <a href="{{ solution.reference }}" target="_blank">{{ solution.reference }}</a>
+                  {% endif %}
+                </li>
+                {% endfor %}
+              </ol>
+              </br>
+              <h2 style="color: #007bff;">Basic Recommendations:</h2>
+              <p>To mitigate the risk associated with this vulnerability, we strongly recommend the following actions regarding all connected systems:</p>
+              <ol>
+                <li><strong>Update firmware/software</strong> to the latest available version where applicable.</li>
+                <li><strong>Apply available security patches</strong> to all relevant systems.</li>
+                <li><strong>Restrict network access</strong> where necessary to minimize exposure.</li>
+                <li><strong>Monitor system logs</strong> for any unusual activity related to this vulnerability.</li>
+                <li>If you require <strong>further assistance</strong>, please contact our support team at
+                  <a href="mailto:support@yourcompany.com">support@yourcompany.com</a>.
+                </li>
+              </ol>
+
+              <p style="margin-top: 20px; font-size: 0.9em; color: #555;">We take security very seriously and are actively working on additional measures to mitigate this risk. If you have any concerns or require further clarification, please do not hesitate to contact us.</p>
+
+              <p>Best regards,</p>
+              <p><strong>[Your Name]</strong><br>
+                [Your Company Name]</p>
+            </div>
+
+          </div>
+
+        </div>
+        <hr>
+        <hr>
+        <div class="row">
+
+        </div>
+
+      </div> <!-- /container -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    let radios = document.querySelectorAll("input[name='selectedProject']");
+
+    radios.forEach(radio => {
+      radio.addEventListener("change", function () {
+        let customerName = this.value;  // Holt den Customer-Namen aus dem ausgewählten Radio-Button
+        document.getElementById("customerName").innerText = customerName;
+        document.getElementById("customerGreeting").innerText = customerName;
+      });
+    });
+  });
+</script>
+      
+{% endblock %}

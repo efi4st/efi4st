@@ -8,6 +8,7 @@
 package routes
 
 import (
+	"encoding/csv"
 	"fmt"
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
@@ -192,4 +193,120 @@ func SMSProjectIPs(ctx iris.Context) {
 	ctx.ViewData("projectID", projectID)
 	ctx.ViewData("ipList", ipList)
 	ctx.View("sms_projectIPs.html")
+}
+
+func SMSExportProjectIPsCSV(ctx iris.Context) {
+	// Projekt-ID aus URL holen
+	projectIDStr := ctx.Params().Get("project_id")
+	projectID, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("Invalid project ID")
+		return
+	}
+
+	// IPs abrufen
+	ipList, err := dbprovider.GetDBManager().GetIPsForProject(projectID)
+	if err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("Error retrieving IPs for project")
+		return
+	}
+
+	// CSV-Header setzen
+	ctx.ResponseWriter().Header().Set("Content-Type", "text/csv")
+	ctx.ResponseWriter().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=project_%d_ips.csv", projectID))
+
+	// CSV-Writer erstellen
+	writer := csv.NewWriter(ctx.ResponseWriter())
+	defer writer.Flush()
+
+	// Spalten-Header schreiben
+	header := []string{"IPAddress", "ApplicableVersions", "VLANID", "Description", "DeviceType", "InstanceCount", "Versions"}
+	if err := writer.Write(header); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("Error writing CSV header")
+		return
+	}
+
+	// Daten in CSV schreiben
+	for _, ip := range ipList {
+		record := []string{
+			ip.IPAddress,
+			ip.ApplicableVersions,
+			"",
+			"",
+			ip.DeviceType,
+			strconv.Itoa(ip.InstanceCount),
+			ip.Versions,
+		}
+
+		// VLANID prüfen und konvertieren
+		if ip.VLANID != nil {
+			record[2] = strconv.Itoa(*ip.VLANID) // Dereferenzieren, um den int-Wert zu erhalten
+		}
+
+		// Description prüfen
+		if ip.Description != nil {
+			record[3] = *ip.Description
+		}
+
+		if err := writer.Write(record); err != nil {
+			ctx.StatusCode(iris.StatusInternalServerError)
+			ctx.WriteString("Error writing CSV data")
+			return
+		}
+	}
+}
+
+func SMSExportProjectIPsCSVCustomer(ctx iris.Context) {
+	// Projekt-ID aus URL holen
+	projectIDStr := ctx.Params().Get("project_id")
+	projectID, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("Invalid project ID!")
+		return
+	}
+
+	// IPs abrufen
+	ipList, err := dbprovider.GetDBManager().GetIPsForProject(projectID)
+	if err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("Error retrieving IPs for project!")
+		return
+	}
+
+	// CSV-Header setzen
+	ctx.ResponseWriter().Header().Set("Content-Type", "text/csv")
+	ctx.ResponseWriter().Header().Set("Content-Disposition", "attachment; filename=project_ips_minimal.csv")
+
+	// CSV-Schreiber initialisieren
+	writer := csv.NewWriter(ctx.ResponseWriter())
+	defer writer.Flush()
+
+	// Header-Zeile schreiben
+	writer.Write([]string{"IP Address", "Device Type", "Description"})
+
+	// Daten schreiben
+	for _, ip := range ipList {
+		record := []string{
+			ip.IPAddress,
+			ip.DeviceType,
+		}
+
+		// Description prüfen
+		if ip.Description != nil {
+			record = append(record, *ip.Description) // Dereferenzieren, falls vorhanden
+		} else {
+			record = append(record, "") // Falls nil, leeres Feld einfügen
+		}
+
+		// Zeile schreiben
+		if err := writer.Write(record); err != nil {
+			ctx.StatusCode(iris.StatusInternalServerError)
+			ctx.WriteString("Error writing CSV data")
+			return
+		}
+	}
 }

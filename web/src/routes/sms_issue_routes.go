@@ -13,6 +13,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
 	"strconv"
+	"time"
 )
 
 func SMSIssues(ctx iris.Context) {
@@ -118,4 +119,35 @@ func RemoveSMSIssue(ctx iris.Context) {
 
 	ctx.ViewData("issueList", issues)
 	ctx.View("sms_issues.html")
+}
+
+func SMSIssueServiceLetter(ctx iris.Context) {
+	id := ctx.Params().Get("id")
+
+	i, err := strconv.Atoi(id)
+
+	ctx.ViewData("error", "")
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error parsing issue Id!")
+	}
+
+	issue := dbprovider.GetDBManager().GetSMSIssueInfo(i)
+	affectedDevices, err := dbprovider.GetDBManager().GetSMSIssueAffectedDevicesWithInheritage(i)
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error getting affected components!")
+	}
+
+	affectedProjects, err := dbprovider.GetDBManager().GetSMSIssueAffectedProjects(i)
+	if err !=nil {
+		ctx.ViewData("error", "Error: Error getting affected projects!")
+	}
+	solutionsForThisIssue := dbprovider.GetDBManager().GetSMSSolutionsForIssue(i)
+	currentDate := time.Now().Format("2006-01-02") // YYYY-MM-DD Format
+
+	ctx.ViewData("currentDate", currentDate)
+	ctx.ViewData("affectedProjects", affectedProjects)
+	ctx.ViewData("solutionsForThisIssue", solutionsForThisIssue)
+	ctx.ViewData("affectedDevices", affectedDevices)
+	ctx.ViewData("issue", issue)
+	ctx.View("sms_showServiceLetter.html")
 }

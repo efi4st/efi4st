@@ -200,6 +200,14 @@ SELECT
     COUNT(DISTINCT project_id) AS affected_projects,
     COUNT(DISTINCT CONCAT(type, version)) AS distinct_device_version_combinations
 FROM combined_result;`
+var SELECT_sms_issueAffectedProjects = `SELECT DISTINCT p.project_id, p.name, p.customer FROM sms_project p JOIN ( SELECT DISTINCT project_id FROM (
+SELECT sdi.project_id FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_issueAffectedDevice siad ON sdi.device_id = siad.device_id WHERE siad.issue_id = ?
+UNION ALL
+SELECT sdi.project_id FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_issueAffectedSoftware sias ON ssod.software_id = sias.software_id WHERE sias.issue_id = ?
+UNION ALL
+SELECT sdi.project_id FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_softwarePartOfDevice ssod ON sd1.device_id = ssod.device_id LEFT JOIN sms_componentPartOfSoftware scps ON ssod.software_id = scps.software_id LEFT JOIN sms_issueAffectedComponent siac ON scps.component_id = siac.component_id WHERE siac.issue_id = ?
+UNION ALL
+SELECT sdi.project_id FROM sms_deviceInstance sdi LEFT JOIN sms_device sd1 ON sdi.device_id = sd1.device_id LEFT JOIN sms_artefactPartOfDevice sapd ON sd1.device_id = sapd.device_id LEFT JOIN sms_issueAffectedArtefact siaa ON sapd.artefact_id = siaa.artefact_id WHERE siaa.issue_id = ? ) AS affected_projects WHERE project_id IS NOT NULL ) AS filtered_projects ON p.project_id = filtered_projects.project_id;`
 
 // SMS Solution
 var INSERT_sms_newSolution = `INSERT INTO sms_solution (issue_id, devicetype_id, date, name, description, reference) VALUES (?,?,?,?,?,?);`

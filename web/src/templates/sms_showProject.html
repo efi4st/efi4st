@@ -69,10 +69,12 @@
         <div class="row">
           <div class="col-md-4">
             <h2>Functions:</h2>
-            <a class="btn btn-primary btn-lg" href="/sms_projects/getiplist/{{project.project_id}}" role="button" align=right>IP List</a>
-            <a class="btn btn-primary btn-lg" href="/asas/asas/{{project.project_id}}" role="button" align=right>Part List</a>
-            <a class="btn btn-primary btn-lg" href="/asas/asas/{{project.project_id}}" role="button" align=right>Check Lists</a>
-            <a class="btn btn-primary btn-lg" href="/asas/asas/{{project.project_id}}" role="button" align=right>Update</a>
+            <div class="d-flex flex-column">
+              <a class="btn btn-primary btn-lg mb-2" href="/sms_projects/getiplist/{{project.project_id}}" role="button">IP List</a>
+              <a class="btn btn-primary btn-lg mb-2" href="/asas/asas/{{project.project_id}}" role="button">Part List</a>
+              <a class="btn btn-primary btn-lg mb-2" href="/asas/asas/{{project.project_id}}" role="button">Check Lists</a>
+              <a class="btn btn-primary btn-lg" href="/asas/asas/{{project.project_id}}" role="button">Update</a>
+            </div>
           </div>
           <div class="col-md-4">
             <h3>Project Settings:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="/sms_projectSettingsLink/createSMSProjectSettingsLink/{{project.project_id}}" class="btn btn-primary">Add</a></h3>
