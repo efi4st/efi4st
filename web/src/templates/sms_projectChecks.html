@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+        <div class="row">
+          <h1>Project: {{projectID}}&nbsp;&nbsp;&nbsp;&nbsp; Check List Setup</h1>
+        </div>
+
+        <div class="row">
+          <div class="col-md-1">
+          </div>
+          <div class="col-md-10">
+            <table class="table table-striped">
+              <thead>
+              <tr>
+                <th>Test Name</th>
+                <th>Device Type</th>
+                <th>Applicable Versions</th>
+                <th>Test Description</th>
+                <th>Explanation</th>
+                <th>Expected Result</th>
+                <th>Instance Count</th>
+                <th>Versions</th>
+              </tr>
+              </thead>
+              <tbody id="myTable">
+              {% for check in projectChecks %}
+              <tr>
+                <td>{{ check.TestName }}</td>
+                <td>{{ check.DeviceType }}</td>
+                <td>{{ check.ApplicableVersions }}</td>
+                <td>{{ check.TestDescription }}</td>
+                <td>{{ check.Explanation }}</td>
+                <td>{{ check.ExpectedResult }}</td>
+                <td>{{ check.InstanceCount }}</td>
+                <td>{{ check.Versions }}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-1">
+          </div>
+
+        </div>
+        <a href="/sms_projects/show/{{ projectID }}" class="btn btn-secondary">Back to Project</a>&nbsp;&nbsp;&nbsp;&nbsp; <a href="/sms_projects/downloadiplist/{{projectID}}" class="btn btn-secondary">Download CSV Table</a>&nbsp;&nbsp;&nbsp;&nbsp; <a href="/sms_projects/downloadiplistCustomer/{{projectID}}" class="btn btn-secondary">Download CSV Table Customer</a>
+        <hr>
+
+      </div> <!-- /container -->
+      
+{% endblock %}

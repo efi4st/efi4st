@@ -110,51 +110,53 @@
   </div>
 </div>
 <hr>
-      <div class="container">
-        <div class="row">
-          <p><a class="btn btn-primary btn-lg" href="/sms_projects/createSMSProject" role="button">New Project &raquo;</a></p>
-        </div>
+<div class="container">
+  <div class="row">
+    <p>
+      <a class="btn btn-primary btn-lg" href="/sms_deviceCheckDefinitions/createSMSDeviceCheckDefinition" role="button">New Check &raquo;</a>
+    </p>
+  </div>
 
-        <div class="row">
-          <div class="col-md-2">
-          </div>
-          <div class="col-md-8">
-            <h2>Projects:</h2>
-            <input class="form-control" id="myInput" type="text" placeholder="Search..">
-            <br>
-            <table class="table">
-              <thead>
-              <tr>
-                <th>Date</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Reference</th>
-                <th>Active?</th>
-                <th><i class="fa fa-trash-o"></i></th>
-              </tr>
-              </thead>
-              <tbody id="myTable">
-              {% for project in projectList %}
-              <tr>
-                <td>{{ project.date|truncatechars:13 }}</td>
-                <td><a href="/sms_projects/show/{{ project.project_id }}">{{ project.name }}</a></td>
-                <td>{{ project.projecttype }}</td>
-                <td>{{ project.reference }}</td>
-                <td>{{ project.active }}</td>
-                <td><a href="/sms_projects/remove/{{project.project_id}}" class="button"><i class="fa fa-close"></i></a></td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <div class="col-md-2">
-          </div>
-        </div>
+  <div class="row">
+    <div class="col-md-12">
+      <h2>Check Definitions:</h2>
+      <input class="form-control" id="myInput" type="text" placeholder="Search..">
+      <br>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Test Name</th>
+          <th>Device Type</th>
+          <th>CheckTypes</th>
+          <th>Applicable Versions</th>
+          <th>Filter</th>
+          <th>Description</th>
+          <th><i class="fa fa-trash-o"></i></th>
+        </tr>
+        </thead>
+        <tbody id="myTable">
+        {% for check in deviceCheckDefinitionsList %}
+        <tr>
+          <td><a href="/sms_deviceCheckDefinitions/show/{{ check.ID }}">{{ check.TestName }}</a></td>
+          <td>{{ check.DeviceTypeName }}</td>
+          <td>{{ check.CheckType }}</td>
+          <td>{{ check.ApplicableVersions }}</td>
+          <td>{{ check.FilterCondition }}</td>
+          <td>{{ check.TestDescription }}</td>
+          <td>
+            <a href="/sms_deviceCheckDefinitions/remove/{{check.ID}}" class="button">
+              <i class="fa fa-close"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-        <hr>
-
-
-      </div> <!-- /container -->
+  <hr>
+</div> <!-- /container -->
       
 {% endblock %}
 

@@ -435,6 +435,15 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_securityReports/remove/1
 	app.Get("/sms_securityReports/remove/{id:string}", routes.RemoveSMSSecurityReport)
 
+	// POST: Datei-Upload für einen Security Report
+	app.Post("/sms_securityReports/upload", routes.UploadSecurityReportFile)
+
+	// GET: Anzeige des Security Reports als Datei
+	app.Get("/sms_securityReports/view/{report_id:string}", routes.ViewSecurityReport)
+
+	// GET: Download des Report Files, aber Anzeige direkt im Browser
+	app.Get("/uploads/reports/{file:path}", routes.GetSecurityReportFile)
+
 	// GET: http://localhost:8144/sms_securityReportLink/createSMSSecurityReportLink/1/Device
 	app.Get("/sms_securityReportLink/createSMSSecurityReportLink/{linkedObjectId:string}/{linkedObjectType:string}", routes.CreateSMSSecurityReportLink)
 
@@ -479,6 +488,24 @@ func irisMain()() {
 
 	// GET: http://localhost:8144/sms_deviceIPDefinitions/remove/1
 	app.Get("/sms_deviceIPDefinitions/remove/{id:string}", routes.RemoveSMSDeviceIPDefinition)
+
+	// GET: Übersicht aller Device Check Definitions
+	app.Get("/sms_deviceCheckDefinitions", routes.SMSDeviceCheckDefinitions)
+
+	// GET: Seite zum Erstellen einer neuen Device Check Definition
+	app.Get("/sms_deviceCheckDefinitions/createSMSDeviceCheckDefinition", routes.CreateSMSDeviceCheckDefinitions)
+
+	// POST: Neue Device Check Definition hinzufügen
+	app.Post("/sms_deviceCheckDefinitions/addSMSDeviceCheckDefinition", routes.AddSMSDeviceCheckDefinition)
+
+	// GET: Device Check Definition entfernen
+	app.Get("/sms_deviceCheckDefinitions/remove/{id:string}", routes.RemoveSMSDeviceCheckDefinition)
+
+	app.Get("/sms_deviceCheckDefinitions/show/{id:int}", routes.SMSDeviceCheckDetails)
+
+	app.Post("/sms_deviceCheckDefinitions/update/{id:int}", routes.SMSUpdateCheckDefinition)
+
+	app.Get("/sms_deviceCheckDefinitions/edit/{id:int}", routes.SMSEditProjectCheck)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

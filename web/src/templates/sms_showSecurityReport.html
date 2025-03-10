@@ -26,28 +26,48 @@
         <div class="row">
           <div class="col-md-8">
             <ul class="list-group">
-              <li class="list-group-item"><h2>Report Name: {{ report.ReportName }}</h2></li>
-              <li class="list-group-item">Uploaded By: {{ report.UploadedBy }}</li>
-              <li class="list-group-item">Creation Date: {{ report.CreationDate|truncatechars:13 }}</li>
-              <li class="list-group-item">Scanner: {{ report.ScannerName }} (Version: {{ report.ScannerVersion }})</li>
-              <li class="list-group-item">Scan Scope: {{ report.ScanScope }}</li>
-              <li class="list-group-item">Vulnerabilities Found: <strong>{{ report.VulnerabilityCount }}</strong></li>
-              <li class="list-group-item">Components Scanned: <strong>{{ report.ComponentCount }}</strong></li>
+              <li class="list-group-item"><h2>Report Name: {{ reportDetail.Report.ReportName }}</h2></li>
+              <li class="list-group-item">Uploaded By: {{ reportDetail.Report.UploadedBy }}</li>
+              <li class="list-group-item">Creation Date: {{ reportDetail.Report.CreationDate|truncatechars:13 }}</li>
+              <li class="list-group-item">Scanner: {{ reportDetail.Report.ScannerName }} (Version: {{ reportDetail.Report.ScannerVersion }})</li>
+              <li class="list-group-item">Scan Scope: {{ reportDetail.Report.ScanScope }}</li>
+              <li class="list-group-item">Vulnerabilities Found: <strong>{{ reportDetail.Report.VulnerabilityCount }}</strong></li>
+              <li class="list-group-item">Components Scanned: <strong>{{ reportDetail.Report.ComponentCount }}</strong></li>
             </ul>
           </div>
 
           <div class="col-md-4">
             <h2>Actions:</h2>
-            <a href="/sms_securityReports/edit/{{ report.ReportID }}" class="btn btn-warning">Edit Report</a>
-            <a href="/sms_securityReports/remove/{{ report.ReportID }}" class="btn btn-danger">Delete Report</a>
+            <a href="/sms_securityReports/edit/{{ reportDetail.Report.ReportID }}" class="btn btn-warning">Edit Report</a>
+            <a href="/sms_securityReports/remove/{{ reportDetail.Report.ReportID }}" class="btn btn-danger">Delete Report</a>
             <a href="/sms_securityReports" class="btn btn-secondary">Back to Reports</a>
           </div>
         </div>
 
         <hr>
+        <form action="/sms_securityReports/upload?report_id={{ reportDetail.Report.ReportID }}" method="post" enctype="multipart/form-data">
+          <label for="report_file">Upload Report File:</label>
+          <input type="file" name="report_file" required>
+          <button type="submit">Upload</button>
+        </form>
 
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
 
         <hr>
+        {% if reportDetail.ReportFilename %}
+        <div class="alert alert-info">
+          <p><strong>Uploaded File:</strong> {{ reportDetail.ReportFilename }}</p>
+          <a class="btn btn-primary" href="/sms_securityReports/view/{{ reportDetail.Report.ReportID }}" target="_blank">
+            View Report
+          </a>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+          <p>No file uploaded for this report.</p>
+        </div>
+        {% endif %}
         <hr>
 
         <hr>

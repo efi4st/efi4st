@@ -447,19 +447,19 @@ CREATE TABLE IF NOT EXISTS sms_issueAffectedArtefact (
 
 var sms_securityReport_schema = `
 CREATE TABLE IF NOT EXISTS sms_securityReport (
-report_id INT(11) AUTO_INCREMENT PRIMARY KEY,
-report_name VARCHAR(255) NOT NULL,
-scanner_name VARCHAR(100) NOT NULL,
-scanner_version VARCHAR(50) DEFAULT NULL,
-creation_date DATETIME NOT NULL,
-upload_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-uploaded_by VARCHAR(100) DEFAULT NULL,
-scan_scope TEXT DEFAULT NULL,
-vulnerability_count INT(11) DEFAULT 0,
-component_count INT(11) DEFAULT 0,
-UNIQUE(report_name, scanner_name, creation_date)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-`
+    report_id INT(11) AUTO_INCREMENT PRIMARY KEY,
+    report_name VARCHAR(255) NOT NULL,
+    scanner_name VARCHAR(100) NOT NULL,
+    scanner_version VARCHAR(50) DEFAULT NULL,
+    creation_date DATETIME NOT NULL,
+    upload_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    uploaded_by VARCHAR(100) DEFAULT NULL,
+    scan_scope TEXT DEFAULT NULL,
+    vulnerability_count INT(11) DEFAULT 0,
+    component_count INT(11) DEFAULT 0,
+    report_filename VARCHAR(255) DEFAULT NULL,  -- Neue Spalte für den Dateinamen
+    UNIQUE(report_name, scanner_name, creation_date)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;`
 
 var sms_securityReportLink_schema = `
 CREATE TABLE IF NOT EXISTS sms_securityReportLink (
@@ -503,3 +503,18 @@ CREATE TABLE IF NOT EXISTS sms_deviceIPDefinition (
     CONSTRAINT fk_deviceipdefinition_deviceType FOREIGN KEY (device_type_id) REFERENCES sms_devicetype(devicetype_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_deviceCheckDefinition_schema = `
+CREATE TABLE IF NOT EXISTS sms_deviceCheckDefinition (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    device_type_id INT NOT NULL,
+    applicable_versions VARCHAR(255) NOT NULL DEFAULT 'all',
+    test_name VARCHAR(255) NOT NULL,
+    test_description TEXT NOT NULL,
+    explanation TEXT DEFAULT NULL,
+    expected_result TEXT NOT NULL,
+    filter_condition VARCHAR(255) DEFAULT NULL,
+    check_type VARCHAR(255) NOT NULL DEFAULT '',
+    CONSTRAINT fk_devicecheckdefinition_deviceType FOREIGN KEY (device_type_id) 
+        REFERENCES sms_devicetype(devicetype_id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;`

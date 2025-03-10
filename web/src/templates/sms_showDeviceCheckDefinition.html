@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h1>{{ check.Name }}</h1>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Testcase Details</h5>
+          <p><strong>Device Type:</strong> {{ check.DeviceTypeName }}</p>
+          <p><strong>Filter:</strong> {{ check.FilterCondition }}</p>
+          <p><strong>Applicable Versions:</strong> {{ check.ApplicableVersions }}</p>
+          <p><strong>Check Type:</strong> {{ check.CheckType }}</p> <!-- Hier den CheckType einfügen -->
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Description</h5>
+          <p>{{ check.TestDescription }}</p>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Explanation</h5>
+          <p>{{ check.Explanation }}</p>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Expected Results</h5>
+          <p>{{ check.ExpectedResults }}</p>
+        </div>
+      </div>
+
+      <a href="/sms_deviceCheckDefinitions" class="btn btn-secondary">Back to List</a> &nbsp;&nbsp;<a href="/sms_deviceCheckDefinitions/edit/{{ check.ID }}" class="btn btn-warning">Edit</a>
+    </div>
+  </div>
+</div>
+      
+{% endblock %}

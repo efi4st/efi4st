@@ -74,6 +74,7 @@
             <div class="dropdown-menu bg-dark">
               <a class="dropdown-item text-light" href="/sms_projectSettings">Settings</a>
               <a class="dropdown-item text-light" href="/sms_deviceIPDefinitions">IP Definition</a>
+              <a class="dropdown-item text-light" href="/sms_deviceCheckDefinitions">Check Definition</a>
             </div>
           </li>
 
@@ -134,8 +135,8 @@
         <tr>
           <td>{{ setting.SettingID }}</td>
           <td>{{ setting.KeyName }}</td>
-          <td>{{ setting.DefaultValue }}</td>
           <td>{{ setting.ValueType }}</td>
+          <td>{{ setting.DefaultValue }}</td>
           <td><a href="/sms_projectSettings/remove/{{ setting.SettingID }}" class="button"><i class="fa fa-close"></i></a></td>
         </tr>
         {% endfor %}

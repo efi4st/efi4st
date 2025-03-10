@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h2>Edit Check</h2>
+      <form action="/sms_deviceCheckDefinitions/update/{{ check.ID }}" method="post">
+
+        <div class="form-group">
+          <label for="device_type_id">Device Type:</label>
+          <select class="form-control" id="device_type_id" name="device_type_id">
+            {% for deviceType in deviceTypes %}
+            <option value="{{ deviceType.devicetype_id }}" {% if check.DeviceTypeID == deviceType.devicetype_id %}selected{% endif %}>
+              {{ deviceType.deviceType }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="test_name">Test Name:</label>
+          <input class="form-control" type="text" id="test_name" name="test_name" value="{{ check.TestName }}" required />
+        </div>
+
+        <div class="form-group">
+          <label for="applicable_versions">Applicable Versions:</label>
+          <input class="form-control" type="text" id="applicable_versions" name="applicable_versions" value="{{ check.ApplicableVersions }}" required />
+        </div>
+
+        <div class="form-group">
+          <label for="filter_condition">Filter Condition:</label>
+          <input class="form-control" type="text" id="filter_condition" name="filter_condition" value="{{ check.FilterCondition }}" />
+        </div>
+
+        <div class="form-group">
+          <label for="test_description">Description:</label>
+          <textarea class="form-control" id="test_description" name="test_description" rows="3">{{ check.TestDescription }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="explanation">Explanation:</label>
+          <textarea class="form-control" id="explanation" name="explanation" rows="3">{{ check.Explanation }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="expected_result">Expected Result:</label>
+          <textarea class="form-control" id="expected_result" name="expected_result" rows="3">{{ check.ExpectedResult }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="check_type">Check Type:</label>
+          <select class="form-control" id="check_type" name="check_type" multiple>
+            {% for checkType in checkTypes %}
+            <option value="{{ checkType }}"
+                    {% if checkType in selectedCheckTypes %}
+                    selected
+                    {% endif %}>
+              {{ checkType }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Changes</button>
+        <a href="/sms_deviceCheckDefinitions/show/{{ check.ID }}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+      
+{% endblock %}
+

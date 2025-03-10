@@ -314,6 +314,8 @@ var SELECT_report_by_id = `SELECT report_id, report_name, scanner_name, scanner_
 var INSERT_new_report = `INSERT INTO sms_securityReport ( report_name, scanner_name, scanner_version, creation_date, upload_date, uploaded_by, scan_scope, vulnerability_count, component_count ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
 var DELETE_report = ` DELETE FROM sms_securityReport WHERE report_id = ?;`
 var UPDATE_report = ` UPDATE sms_securityReport SET report_name = ?, scanner_name = ?, scanner_version = ?, creation_date = ?, upload_date = ?, uploaded_by = ?, scan_scope = ?, vulnerability_count = ?, component_count = ? WHERE report_id = ?;`
+var UPDATE_report_filename = `UPDATE sms_securityReport SET report_filename = ? WHERE report_id = ?;`
+var SELECT_report_filename = `SELECT report_filename FROM sms_securityReport WHERE report_id = ?;`
 
 // SMS_SecurityReportLink
 // Hinzufügen eines neuen Links
@@ -378,3 +380,74 @@ JOIN sms_device d ON dt.devicetype_id = d.devicetype_id
 JOIN sms_deviceInstance di ON d.device_id = di.device_id
 WHERE di.project_id = ?
 GROUP BY dip.ip_address, dip.applicable_versions, dip.vlan_id, dip.description, dip.filter_condition, dt.type;`
+
+// sms_deviceCheckDefinition
+var INSERT_new_deviceCheckDefinition = `INSERT INTO sms_deviceCheckDefinition (device_type_id, applicable_versions, test_name, test_description, explanation, expected_result, filter_condition, check_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`
+
+var UPDATE_deviceCheckDefinition = `UPDATE sms_deviceCheckDefinition
+SET 
+    device_type_id = ?, 
+    applicable_versions = ?, 
+    test_name = ?, 
+    test_description = ?, 
+    explanation = ?, 
+    expected_result = ?, 
+    filter_condition = ?, 
+    check_type = ?
+WHERE id = ?;`
+
+var SELECT_checks_for_deviceType = `SELECT id, device_type_id, applicable_versions, test_name, test_description, explanation, expected_result, filter_condition, check_type FROM sms_deviceCheckDefinition WHERE device_type_id = ?;`
+
+var SELECT_checks_for_device = `SELECT dcd.id, dcd.device_type_id, dcd.applicable_versions, dcd.test_name, dcd.test_description, dcd.explanation, dcd.expected_result, dcd.filter_condition, dcd.check_type 
+FROM sms_deviceCheckDefinition dcd 
+JOIN sms_device d ON d.devicetype_id = dcd.device_type_id 
+WHERE d.device_id = ? 
+AND (dcd.applicable_versions = 'all' OR FIND_IN_SET(d.version, dcd.applicable_versions) > 0);`
+
+var DELETE_deviceCheckDefinition = `DELETE FROM sms_deviceCheckDefinition WHERE id = ?;`
+
+var SELECT_checks = `SELECT 
+    dcd.id, 
+    dt.type AS device_type_name, 
+    dcd.applicable_versions, 
+    dcd.test_name,
+    dcd.test_description, 
+    dcd.explanation, 
+    dcd.expected_result, 
+    dcd.filter_condition,
+    dcd.check_type
+FROM sms_deviceCheckDefinition dcd
+JOIN sms_devicetype dt ON dcd.device_type_id = dt.devicetype_id;`
+
+var SELECT_checks_for_project = `SELECT 
+    dcd.test_name,
+    dcd.test_description,
+    dcd.applicable_versions,
+    dcd.explanation,
+    dcd.expected_result,
+    dcd.filter_condition,
+    dcd.check_type,
+    dt.type AS device_type,
+    COUNT(di.deviceInstance_id) AS instance_count, 
+    GROUP_CONCAT(DISTINCT d.version ORDER BY d.version ASC SEPARATOR ', ') AS versions
+FROM sms_deviceCheckDefinition dcd
+JOIN sms_devicetype dt ON dcd.device_type_id = dt.devicetype_id
+JOIN sms_device d ON dt.devicetype_id = d.devicetype_id
+JOIN sms_deviceInstance di ON d.device_id = di.device_id
+WHERE di.project_id = ?
+GROUP BY dcd.test_name, dcd.test_description, dcd.applicable_versions, dcd.explanation, dcd.expected_result, dcd.filter_condition, dcd.check_type, dt.type;`
+
+var SELECT_check_by_id = `SELECT 
+    c.id, 
+    c.device_type_id, 
+    d.type AS device_type_name, 
+    c.applicable_versions, 
+    c.test_name, 
+    c.test_description, 
+    c.explanation, 
+    c.expected_result, 
+    c.filter_condition,
+    c.check_type
+FROM sms_deviceCheckDefinition c
+JOIN sms_devicetype d ON c.device_type_id = d.devicetype_id
+WHERE c.id = ?;`

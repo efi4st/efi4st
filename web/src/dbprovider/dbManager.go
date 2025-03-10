@@ -205,6 +205,16 @@ type Manager interface {
 	GetIPsForProject(projectID int) ([]classes.ResultProjectIP, error)
 	GetAllDeviceIPDefinitions() ([]classes.Sms_DeviceIPDefinition, error)
 	GetSMSIssueAffectedProjects(issueID int) ([]classes.Sms_AffectedProjects, error)
+	GetReportFilename(reportID int) (string, error)
+	UpdateReportFilename(reportID int, newFilename string) error
+	AddDeviceCheckDefinition(deviceTypeID int, applicableVersions string, testName string, testDescription string, explanation *string, expectedResult string, filterCondition *string, checkType string) error
+	GetChecksForDeviceType(deviceTypeID int) ([]classes.Sms_DeviceCheckDefinition, error)
+	GetChecksForDevice(deviceID int) ([]classes.Sms_DeviceCheckDefinition, error)
+	DeleteDeviceCheckDefinition(id int) error
+	GetChecksForProject(projectID int) ([]classes.ResultProjectCheck, error)
+	GetAllDeviceCheckDefinitions() ([]classes.Sms_DeviceCheckDefinition, error)
+	GetDeviceCheckByID(checkID int) (*classes.Sms_DeviceCheckDefinition, error)
+	UpdateDeviceCheck(check classes.Sms_DeviceCheckDefinition) error
 }
 
 type manager struct {
@@ -4011,6 +4021,68 @@ func (mgr *manager) UpdateSMSSecurityReport(report classes.Sms_SecurityReport) (
 	return err
 }
 
+func (mgr *manager) GetReportFilename(reportID int) (string, error) {
+	log.Printf("Fetching filename for report ID %d", reportID)
+
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_report_filename)
+	if err != nil {
+		log.Printf("Error preparing SELECT statement: %v", err)
+		return "", err
+	}
+	defer stmt.Close()
+
+	var filename sql.NullString
+	err = stmt.QueryRow(reportID).Scan(&filename)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("No filename found for report ID %d", reportID)
+			return "", nil // Keine Datei gefunden, gebe einen leeren String zurück
+		}
+		log.Printf("Error executing SELECT statement: %v", err)
+		return "", err
+	}
+
+	if filename.Valid {
+		return filename.String, nil
+	}
+	return "", nil
+}
+
+// UpdateReportFilename aktualisiert den Dateinamen eines Reports
+func (mgr *manager) UpdateReportFilename(reportID int, newFilename string) error {
+	log.Printf("Updating filename for report ID %d to %s", reportID, newFilename)
+
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_report_filename)
+	if err != nil {
+		log.Printf("Error preparing UPDATE statement: %v", err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(newFilename, reportID)
+	if err != nil {
+		log.Printf("Error executing UPDATE statement: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (mgr *manager) GetSecurityReportFilename(reportID int, filename *sql.NullString) error {
+	stmt, err := mgr.db.Prepare("SELECT report_filename FROM sms_securityReport WHERE report_id = ?")
+	if err != nil {
+		log.Println("Error preparing statement:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(reportID).Scan(filename)
+	if err != nil {
+		log.Println("Error retrieving filename:", err)
+		return err
+	}
+	return nil
+}
+
 /////////////////////////////////////////
 ////	SMS_SecurityReportLink
 ////////////////////////////////////////
@@ -4656,4 +4728,233 @@ func (mgr *manager) GetAllDeviceIPDefinitions() ([]classes.Sms_DeviceIPDefinitio
 	}
 
 	return ipDefinitions, nil
+}
+
+/////////////////////////////////////////
+////	SMS_DeviceCheckDefinition
+/////////////////////////////////////////
+
+// ADD
+func (mgr *manager) AddDeviceCheckDefinition(deviceTypeID int, applicableVersions string, testName string, testDescription string, explanation *string, expectedResult string, filterCondition *string, checkType string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_new_deviceCheckDefinition)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(deviceTypeID, applicableVersions, testName, testDescription, explanation, expectedResult, filterCondition, checkType)
+	if err != nil {
+		fmt.Println("Fehler beim Einfügen des Datensatzes:", err)
+		return err
+	}
+
+	return nil
+}
+
+// SELECT Checks für DeviceType
+func (mgr *manager) GetChecksForDeviceType(deviceTypeID int) ([]classes.Sms_DeviceCheckDefinition, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_checks_for_deviceType)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceTypeID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Daten:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var checkDefinitions []classes.Sms_DeviceCheckDefinition
+	for rows.Next() {
+		var checkDef classes.Sms_DeviceCheckDefinition
+		err = rows.Scan(&checkDef.ID, &checkDef.DeviceTypeID, &checkDef.ApplicableVersions, &checkDef.TestName, &checkDef.TestDescription, &checkDef.Explanation, &checkDef.ExpectedResult, &checkDef.FilterCondition, &checkDef.CheckType)
+		if err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+		checkDefinitions = append(checkDefinitions, checkDef)
+	}
+
+	return checkDefinitions, nil
+}
+
+// SELECT Checks für Device
+func (mgr *manager) GetChecksForDevice(deviceID int) ([]classes.Sms_DeviceCheckDefinition, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_checks_for_device)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Daten:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var checkDefinitions []classes.Sms_DeviceCheckDefinition
+	for rows.Next() {
+		var checkDef classes.Sms_DeviceCheckDefinition
+		err = rows.Scan(&checkDef.ID, &checkDef.DeviceTypeID, &checkDef.ApplicableVersions, &checkDef.TestName, &checkDef.TestDescription, &checkDef.Explanation, &checkDef.ExpectedResult, &checkDef.FilterCondition, &checkDef.CheckType)
+		if err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+		checkDefinitions = append(checkDefinitions, checkDef)
+	}
+
+	return checkDefinitions, nil
+}
+
+// DELETE Check Definition
+func (mgr *manager) DeleteDeviceCheckDefinition(id int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_deviceCheckDefinition)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der DELETE-Query:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	if err != nil {
+		fmt.Println("Fehler beim Löschen des Eintrags:", err)
+	}
+	return err
+}
+
+// SELECT Checks für Projekt
+func (mgr *manager) GetChecksForProject(projectID int) ([]classes.ResultProjectCheck, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_checks_for_project)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Daten:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var checkDefinitions []classes.ResultProjectCheck
+	for rows.Next() {
+		var checkDef classes.ResultProjectCheck
+		err = rows.Scan(&checkDef.TestName, &checkDef.TestDescription, &checkDef.ApplicableVersions, &checkDef.Explanation, &checkDef.ExpectedResult, &checkDef.FilterCondition, &checkDef.CheckType, &checkDef.DeviceType, &checkDef.InstanceCount, &checkDef.Versions)
+		if err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+		checkDefinitions = append(checkDefinitions, checkDef)
+	}
+
+	projectSettings, err := mgr.GetLinkedProjectSettings(projectID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der ProjectSettings:", err)
+		return nil, err
+	}
+
+	var filteredChecks []classes.ResultProjectCheck
+	for _, checkDef := range checkDefinitions {
+		filterCondition := ""
+		if checkDef.FilterCondition != nil {
+			filterCondition = *checkDef.FilterCondition
+		}
+
+		if evaluateFilterCondition(filterCondition, projectSettings, checkDef.ApplicableVersions, checkDef.DeviceType, checkDef.Versions, checkDef.InstanceCount) {
+			filteredChecks = append(filteredChecks, checkDef)
+		}
+	}
+
+	return filteredChecks, nil
+}
+
+// SELECT alle DeviceCheck-Definitionen
+func (mgr *manager) GetAllDeviceCheckDefinitions() ([]classes.Sms_DeviceCheckDefinition, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_checks)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Daten:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var checkDefinitions []classes.Sms_DeviceCheckDefinition
+	for rows.Next() {
+		var checkDef classes.Sms_DeviceCheckDefinition
+		err = rows.Scan(&checkDef.ID, &checkDef.DeviceTypeName, &checkDef.ApplicableVersions, &checkDef.TestName, &checkDef.TestDescription, &checkDef.Explanation, &checkDef.ExpectedResult, &checkDef.FilterCondition, &checkDef.CheckType)
+		if err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+		checkDefinitions = append(checkDefinitions, checkDef)
+	}
+
+	return checkDefinitions, nil
+}
+
+// SELECT Check nach ID
+func (mgr *manager) GetDeviceCheckByID(checkID int) (*classes.Sms_DeviceCheckDefinition, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_check_by_id)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRow(checkID)
+
+	var check classes.Sms_DeviceCheckDefinition
+	err = row.Scan(&check.ID, &check.DeviceTypeID, &check.DeviceTypeName, &check.ApplicableVersions, &check.TestName, &check.TestDescription, &check.Explanation, &check.ExpectedResult, &check.FilterCondition, &check.CheckType)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen des Checks:", err)
+		return nil, err
+	}
+
+	return &check, nil
+}
+
+func (mgr *manager) UpdateDeviceCheck(check classes.Sms_DeviceCheckDefinition) error {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_deviceCheckDefinition)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	fmt.Println("Update Check:", check) // Debugging-Ausgabe vor dem Update
+
+	result, err := stmt.Exec(
+		check.DeviceTypeID,
+		check.ApplicableVersions,
+		check.TestName,
+		check.TestDescription,
+		check.Explanation,
+		check.ExpectedResult,
+		check.FilterCondition,
+		check.CheckType,
+		check.ID,
+	)
+	if err != nil {
+		fmt.Println("Fehler beim Ausführen der Query:", err)
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	fmt.Println("Anzahl der betroffenen Zeilen:", rowsAffected) // Ausgabe der betroffenen Zeilen
+
+	return nil
 }

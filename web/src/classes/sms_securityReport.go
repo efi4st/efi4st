@@ -23,3 +23,8 @@ type Sms_SecurityReport struct {
 func NewSms_SecurityReport(reportID int, reportName string, scannerName string, scannerVersion string, creationDate string, uploadDate string, uploadedBy string, scanScope string, vulnerabilityCount int, componentCount int) *Sms_SecurityReport {
 	return &Sms_SecurityReport{ReportID: reportID, ReportName: reportName, ScannerName: scannerName, ScannerVersion: scannerVersion, CreationDate: creationDate, UploadDate: uploadDate, UploadedBy: uploadedBy, ScanScope: scanScope, VulnerabilityCount: vulnerabilityCount, ComponentCount: componentCount}
 }
+
+type SecurityReportDetail struct {
+	Report        Sms_SecurityReport
+	ReportFilename string
+}
