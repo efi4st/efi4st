@@ -162,6 +162,8 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_projects/downloadiplistCustomer/1
 	app.Get("/sms_projects/downloadiplistCustomer/{project_id:string}", routes.SMSExportProjectIPsCSVCustomer)
 
+	app.Get("/sms_projects/checklist/{id:int}/{check_type:string}", routes.SMSProjectCheckList)
+
 	// GET: http://localhost:8144/smssystems
 	app.Get("/sms_systems", routes.SMSSystems)
 

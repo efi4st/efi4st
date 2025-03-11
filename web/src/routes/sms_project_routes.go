@@ -310,3 +310,30 @@ func SMSExportProjectIPsCSVCustomer(ctx iris.Context) {
 		}
 	}
 }
+
+func SMSProjectCheckList(ctx iris.Context) {
+	// Projekt-ID aus URL holen
+	projectID, err := ctx.Params().GetInt("id")
+	if err != nil {
+		ctx.ViewData("error", "Invalid project ID!")
+		ctx.View("sms_projectChecks.html")
+		return
+	}
+
+	// Check-Typ aus der URL holen (Standard: "all", falls keiner übergeben wurde)
+	checkType := ctx.Params().GetStringDefault("check_type", "all")
+
+	// Checkliste für das Projekt abrufen (mit Filter auf Check-Typ)
+	checkList, err := dbprovider.GetDBManager().GetChecksForProject(projectID, checkType)
+	if err != nil {
+		ctx.ViewData("error", "Error retrieving checks for project!")
+		ctx.View("sms_projectChecks.html")
+		return
+	}
+
+	// Projekt-ID, Checkliste und den gewählten Check-Typ an die View übergeben
+	ctx.ViewData("projectID", projectID)
+	ctx.ViewData("projectChecks", checkList)
+	ctx.ViewData("selectedCheckType", checkType) // Falls du das für die UI brauchst
+	ctx.View("sms_projectChecks.html")
+}

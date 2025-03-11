@@ -142,7 +142,7 @@
           <td>{{ check.CheckType }}</td>
           <td>{{ check.ApplicableVersions }}</td>
           <td>{{ check.FilterCondition }}</td>
-          <td>{{ check.TestDescription }}</td>
+          <td>{{ check.TestDescription|truncatechars:13 }}</td>
           <td>
             <a href="/sms_deviceCheckDefinitions/remove/{{check.ID}}" class="button">
               <i class="fa fa-close"></i>

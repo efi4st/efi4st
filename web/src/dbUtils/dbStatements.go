@@ -435,6 +435,7 @@ JOIN sms_devicetype dt ON dcd.device_type_id = dt.devicetype_id
 JOIN sms_device d ON dt.devicetype_id = d.devicetype_id
 JOIN sms_deviceInstance di ON d.device_id = di.device_id
 WHERE di.project_id = ?
+AND FIND_IN_SET(?, dcd.check_type) > 0
 GROUP BY dcd.test_name, dcd.test_description, dcd.applicable_versions, dcd.explanation, dcd.expected_result, dcd.filter_condition, dcd.check_type, dt.type;`
 
 var SELECT_check_by_id = `SELECT 

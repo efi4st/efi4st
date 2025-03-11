@@ -72,7 +72,18 @@
             <div class="d-flex flex-column">
               <a class="btn btn-primary btn-lg mb-2" href="/sms_projects/getiplist/{{project.project_id}}" role="button">IP List</a>
               <a class="btn btn-primary btn-lg mb-2" href="/asas/asas/{{project.project_id}}" role="button">Part List</a>
-              <a class="btn btn-primary btn-lg mb-2" href="/asas/asas/{{project.project_id}}" role="button">Check Lists</a>
+              <form action="" method="GET" class="mb-3">
+                <div class="input-group">
+                  <select class="form-select" id="checkTypeSelect">
+                    <option value="all">All Checklists</option>
+                    <option value="SL1 Abnahme">SL1 Abnahme</option>
+                    <option value="Basic IBN Check">Basic IBN Check</option>
+                    <option value="Production Check">Production Check</option>
+                    <option value="Regular Re-Check">Regular Re-Check</option>
+                  </select>
+                  <a id="checkListButton" class="btn btn-primary btn-lg mb-2" href="#" role="button">Check Lists</a>
+                </div>
+              </form>
               <a class="btn btn-primary btn-lg" href="/asas/asas/{{project.project_id}}" role="button">Update</a>
             </div>
           </div>
@@ -174,5 +185,13 @@
           </div>
         </div>
       </div> <!-- /container -->
-      
+<script>
+  document.getElementById("checkListButton").addEventListener("click", function(event) {
+    event.preventDefault();
+    let projectID = "{{ project.project_id }}";
+    let checkType = document.getElementById("checkTypeSelect").value;
+    let url = "/sms_projects/checklist/" + projectID + "/" + encodeURIComponent(checkType);
+    window.location.href = url;
+  });
+</script>
 {% endblock %}

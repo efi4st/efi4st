@@ -1,0 +1,80 @@
+/* Grundlayout */
+.list-group-item {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Testname */
+.list-group-item h5 {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* Zusatzinfos kompakt & rechtsbündig */
+.test-info {
+    font-size: 0.85rem;
+    text-align: right;
+    color: #666;
+}
+
+/* Beschreibung & Erwartetes Ergebnis */
+.info-card {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 8px;
+}
+
+/* Container für Checkbox & Notes */
+.check-notes-container {
+    display: flex;
+    justify-content: space-between; /* Horizontale Anordnung */
+    align-items: center;
+    gap: 16px; /* Abstand zwischen den Elementen */
+    margin-top: 12px;
+}
+
+/* Notes-Feld - Größer und ohne Hintergrundtext */
+.notes-input {
+    width: 180px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    height: 40px;
+}
+
+/* Checkbox-Bereich */
+.check-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px; /* Abstand zwischen Checkbox und Label */
+}
+
+/* Überschrift für Notes & Checkbox */
+.notes-label,
+.checkbox-label {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+/* Erklärung für Testcase - Unten & Dezenter */
+.explanation {
+    font-size: 0.9rem;
+    color: #555;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px dashed #ccc;
+}

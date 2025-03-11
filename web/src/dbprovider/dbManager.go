@@ -211,7 +211,7 @@ type Manager interface {
 	GetChecksForDeviceType(deviceTypeID int) ([]classes.Sms_DeviceCheckDefinition, error)
 	GetChecksForDevice(deviceID int) ([]classes.Sms_DeviceCheckDefinition, error)
 	DeleteDeviceCheckDefinition(id int) error
-	GetChecksForProject(projectID int) ([]classes.ResultProjectCheck, error)
+	GetChecksForProject(projectID int, checkType string) ([]classes.ResultProjectCheck, error)
 	GetAllDeviceCheckDefinitions() ([]classes.Sms_DeviceCheckDefinition, error)
 	GetDeviceCheckByID(checkID int) (*classes.Sms_DeviceCheckDefinition, error)
 	UpdateDeviceCheck(check classes.Sms_DeviceCheckDefinition) error
@@ -4829,7 +4829,7 @@ func (mgr *manager) DeleteDeviceCheckDefinition(id int) error {
 }
 
 // SELECT Checks für Projekt
-func (mgr *manager) GetChecksForProject(projectID int) ([]classes.ResultProjectCheck, error) {
+func (mgr *manager) GetChecksForProject(projectID int, checkType string) ([]classes.ResultProjectCheck, error) {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_checks_for_project)
 	if err != nil {
 		fmt.Println("Fehler beim Vorbereiten der Query:", err)
@@ -4837,7 +4837,7 @@ func (mgr *manager) GetChecksForProject(projectID int) ([]classes.ResultProjectC
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(projectID)
+	rows, err := stmt.Query(projectID, checkType) // Neuer Parameter für checkType
 	if err != nil {
 		fmt.Println("Fehler beim Abrufen der Daten:", err)
 		return nil, err
@@ -4847,7 +4847,12 @@ func (mgr *manager) GetChecksForProject(projectID int) ([]classes.ResultProjectC
 	var checkDefinitions []classes.ResultProjectCheck
 	for rows.Next() {
 		var checkDef classes.ResultProjectCheck
-		err = rows.Scan(&checkDef.TestName, &checkDef.TestDescription, &checkDef.ApplicableVersions, &checkDef.Explanation, &checkDef.ExpectedResult, &checkDef.FilterCondition, &checkDef.CheckType, &checkDef.DeviceType, &checkDef.InstanceCount, &checkDef.Versions)
+		err = rows.Scan(
+			&checkDef.TestName, &checkDef.TestDescription, &checkDef.ApplicableVersions,
+			&checkDef.Explanation, &checkDef.ExpectedResult, &checkDef.FilterCondition,
+			&checkDef.CheckType, &checkDef.DeviceType, &checkDef.InstanceCount,
+			&checkDef.Versions,
+		)
 		if err != nil {
 			fmt.Println("Fehler beim Scannen der Zeile:", err)
 			continue
@@ -4855,12 +4860,14 @@ func (mgr *manager) GetChecksForProject(projectID int) ([]classes.ResultProjectC
 		checkDefinitions = append(checkDefinitions, checkDef)
 	}
 
+	// ProjectSettings abrufen
 	projectSettings, err := mgr.GetLinkedProjectSettings(projectID)
 	if err != nil {
 		fmt.Println("Fehler beim Abrufen der ProjectSettings:", err)
 		return nil, err
 	}
 
+	// Filterung der Checks basierend auf den ProjectSettings
 	var filteredChecks []classes.ResultProjectCheck
 	for _, checkDef := range checkDefinitions {
 		filterCondition := ""
@@ -4868,7 +4875,10 @@ func (mgr *manager) GetChecksForProject(projectID int) ([]classes.ResultProjectC
 			filterCondition = *checkDef.FilterCondition
 		}
 
-		if evaluateFilterCondition(filterCondition, projectSettings, checkDef.ApplicableVersions, checkDef.DeviceType, checkDef.Versions, checkDef.InstanceCount) {
+		if evaluateFilterCondition(
+			filterCondition, projectSettings, checkDef.ApplicableVersions,
+			checkDef.DeviceType, checkDef.Versions, checkDef.InstanceCount,
+		) {
 			filteredChecks = append(filteredChecks, checkDef)
 		}
 	}

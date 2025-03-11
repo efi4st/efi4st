@@ -22,51 +22,67 @@
         {% endif %}
       </div>
 
-      <div class="container">
-        <div class="row">
-          <h1>Project: {{projectID}}&nbsp;&nbsp;&nbsp;&nbsp; Check List Setup</h1>
+<div class="container">
+  <div class="row">
+    <h1>Project: {{ projectID }} &nbsp;&nbsp;&nbsp;&nbsp; Check List Setup</h1>
+  </div>
+
+  <div class="list-group">
+    {% for check in projectChecks %}
+    <div class="list-group-item py-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <!-- Linke Seite: Testname -->
+        <div>
+          <h5 class="mb-1">{{ check.TestName }}</h5>
         </div>
 
-        <div class="row">
-          <div class="col-md-1">
-          </div>
-          <div class="col-md-10">
-            <table class="table table-striped">
-              <thead>
-              <tr>
-                <th>Test Name</th>
-                <th>Device Type</th>
-                <th>Applicable Versions</th>
-                <th>Test Description</th>
-                <th>Explanation</th>
-                <th>Expected Result</th>
-                <th>Instance Count</th>
-                <th>Versions</th>
-              </tr>
-              </thead>
-              <tbody id="myTable">
-              {% for check in projectChecks %}
-              <tr>
-                <td>{{ check.TestName }}</td>
-                <td>{{ check.DeviceType }}</td>
-                <td>{{ check.ApplicableVersions }}</td>
-                <td>{{ check.TestDescription }}</td>
-                <td>{{ check.Explanation }}</td>
-                <td>{{ check.ExpectedResult }}</td>
-                <td>{{ check.InstanceCount }}</td>
-                <td>{{ check.Versions }}</td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <div class="col-md-1">
-          </div>
-
+        <!-- Rechte Seite: Zusatzinfos -->
+        <div class="test-info">
+          <span><strong>Device:</strong> {{ check.DeviceType }}</span> |
+          <span><strong>Versions:</strong> {{ check.ApplicableVersions }}</span> |
+          <span><strong>Instances:</strong> {{ check.InstanceCount }}</span> |
+          <span><strong>SW Versions:</strong> {{ check.Versions }}</span>
         </div>
-        <a href="/sms_projects/show/{{ projectID }}" class="btn btn-secondary">Back to Project</a>&nbsp;&nbsp;&nbsp;&nbsp; <a href="/sms_projects/downloadiplist/{{projectID}}" class="btn btn-secondary">Download CSV Table</a>&nbsp;&nbsp;&nbsp;&nbsp; <a href="/sms_projects/downloadiplistCustomer/{{projectID}}" class="btn btn-secondary">Download CSV Table Customer</a>
-        <hr>
+      </div>
 
-      </div> <!-- /container -->
+      <!-- Testbeschreibung & Erwartetes Ergebnis -->
+      <div class="mt-2">
+        <div class="info-card">
+          <p class="mb-1"><strong>Description:</strong> {{ check.TestDescription }}</p>
+        </div>
+
+        <div class="info-card">
+          <p class="mb-1"><strong>Expected Result:</strong> {{ check.ExpectedResult }}</p>
+        </div>
+      </div>
+
+      <!-- Checkbox, Notes & Explanation -->
+      <div class="d-flex justify-content-between align-items-center">
+        <p class="explanation"><strong>Explanation:</strong> {{ check.Explanation }}</p>
+
+        <div class="check-notes-container">
+          <!-- Notes Input -->
+          <div class="notes-container">
+            <span class="notes-label">Notes</span>
+            <input type="text" class="notes-input" id="notes-{{ loop.index }}">
+          </div>
+          &nbsp;&nbsp;
+          <!-- Checkbox -->
+          <div class="check-container">
+            <span class="checkbox-label">OK?</span>
+            <input type="checkbox" class="form-check-input" id="check-{{ loop.index }}">
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="text-center mt-4">
+    <a href="/sms_projects/show/{{ projectID }}" class="btn btn-secondary">Back to Project</a>
+    <a href="/sms_projects/downloadCheckList/{{ projectID }}" class="btn btn-primary">Download Check List</a>
+  </div>
+  <hr>
+</div>
       
 {% endblock %}
