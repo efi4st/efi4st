@@ -179,6 +179,9 @@ func irisMain()() {
 	// GET: http://localhost:8144/smssystems/remove/1
 	app.Get("/sms_systems/remove/{id:string}", routes.RemoveSMSSystem)
 
+	// GET: http://localhost:8144/sms_systems/downloadSystemStructureJSON/1
+	app.Get("/sms_systems/downloadSystemStructureJSON/{system_id:string}", routes.DownloadSystemTreeJSON)
+
 	// GET: http://localhost:8144/smsdevices
 	app.Get("/sms_devices", routes.SMSDevice)
 
@@ -508,6 +511,9 @@ func irisMain()() {
 	app.Post("/sms_deviceCheckDefinitions/update/{id:int}", routes.SMSUpdateCheckDefinition)
 
 	app.Get("/sms_deviceCheckDefinitions/edit/{id:int}", routes.SMSEditProjectCheck)
+
+	// GET: http://localhost:8144/sms_statistics
+	app.Get("/sms_statistics", routes.ShowStatistics)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

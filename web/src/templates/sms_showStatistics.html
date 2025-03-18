@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <h2>Verteilung der DLC+ Versionen</h2>
+  <canvas id="systemChart"></canvas>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var ctx = document.getElementById('systemChart').getContext('2d');
+
+      var chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: JSON.parse('{{ system_versions | safe }}'),  // Korrekte JSON-Daten
+          datasets: [{
+            label: 'Anzahl der Projekte',
+            data: JSON.parse('{{ project_counts | safe }}'),  // Korrekte JSON-Daten
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    });
+  </script>
+  <hr>
+</div>
+      
+{% endblock %}

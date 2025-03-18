@@ -78,3 +78,38 @@
     padding-top: 8px;
     border-top: 1px dashed #ccc;
 }
+
+/* Größere Textfelder für lange Texte */
+.large-textarea {
+    height: 150px; /* Höhe des Textfeldes */
+    resize: vertical; /* Benutzer kann das Feld nur vertikal vergrößern/verkleinern */
+    overflow-y: auto; /* Scrollbar, wenn nötig */
+    font-size: 1rem;
+}
+
+.d-flex {
+    display: flex;
+    gap: 10px; /* Abstand zwischen den Dropdowns */
+    align-items: center; /* Vertikal ausrichten */
+}
+
+.me-2 {
+    margin-right: 10px;
+}
+
+.table-styled {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.table-styled th, .table-styled td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.table-styled th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}

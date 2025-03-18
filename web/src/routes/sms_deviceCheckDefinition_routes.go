@@ -8,6 +8,7 @@
 package routes
 
 import (
+	"fmt"
 	"github.com/efi4st/efi4st/classes"
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
@@ -39,11 +40,20 @@ func SMSDeviceCheckDefinitions(ctx iris.Context) {
 func CreateSMSDeviceCheckDefinitions(ctx iris.Context) {
 	deviceTypes := dbprovider.GetDBManager().GetSMSDeviceTypes()
 
-	// Liste der verfügbaren Check-Typen
+	// Check-Typen Liste
 	checkTypes := []string{"SL1 Abnahme", "Basic IBN Check", "Production Check", "Regular Re-Check"}
 
+	// Software-Typen abrufen
+	applicationList, err := dbprovider.GetDBManager().GetSoftwareTypesForCheckList()
+	if err != nil {
+		fmt.Println("Error fetching application list:", err)
+		applicationList = []string{} // Fallback auf leere Liste
+	}
+
+	// Daten an View übergeben
 	ctx.ViewData("deviceTypes", deviceTypes)
-	ctx.ViewData("checkTypes", checkTypes) // ✅ Die Liste an die View übergeben
+	ctx.ViewData("checkTypes", checkTypes)
+	ctx.ViewData("applicationList", applicationList) // ✅ Neu hinzugefügt
 	ctx.View("sms_createDeviceCheckDefinition.html")
 }
 

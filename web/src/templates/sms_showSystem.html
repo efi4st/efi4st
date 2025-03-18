@@ -135,6 +135,9 @@
         <div class="row">
           <div class="col-md-12">
             <h1>Structure:</h1>
+            <a class="btn btn-primary btn-lg mb-2" href="/sms_systems/downloadSystemStructureJSON/{{ system.system_id }}" role="button">
+            Download JSON
+            </a>
             <ul id="myUL">
               <li><span class="caret"><h2>{{system.systemtype_id}} with ID: {{systemTree.version}}</h2></span>
                 {% for device in systemTree.devices %}

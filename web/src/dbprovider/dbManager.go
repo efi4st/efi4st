@@ -9,6 +9,7 @@ package dbprovider
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/efi4st/efi4st/classes"
 	"github.com/efi4st/efi4st/dbUtils"
@@ -16,6 +17,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"log"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -118,6 +120,7 @@ type Manager interface {
 	AddSMSSoftware(softwaretype_id int, version string, license string, thirdParty bool, releaseNote string) error
 	GetSMSSoftware() []classes.Sms_Software
 	GetSMSSoftwareTypes() []classes.Sms_SoftwareType
+	GetSoftwareTypesForCheckList() ([]string, error)
 	GetSMSSoftwareInfo(id int) *classes.Sms_Software
 	RemoveSMSSoftware(id int) error
 	AddSMSComponent(name string, componentType string, version string, license string, thirdParty bool, releaseNote string) error
@@ -152,6 +155,7 @@ type Manager interface {
 	AddSMSManufacturingOrder(system_id int, packageReference string, description string) error
 	GetSMSManufacturingOrderInfo(id int) *classes.Sms_ManufacturingOrder
 	GetSMSSystemTreeForSystem(id int) *classes.Sms_Tree_System
+	GetSMSSystemTreeAsJSON(systemID int) ([]byte, error)
 	// Certification
 	AddSMSCertification(name string, description string) error
 	GetSMSCertification() []classes.Sms_Certification
@@ -215,6 +219,7 @@ type Manager interface {
 	GetAllDeviceCheckDefinitions() ([]classes.Sms_DeviceCheckDefinition, error)
 	GetDeviceCheckByID(checkID int) (*classes.Sms_DeviceCheckDefinition, error)
 	UpdateDeviceCheck(check classes.Sms_DeviceCheckDefinition) error
+	GetSystemVersionStatistics() ([]classes.SystemVersionStats, error)
 }
 
 type manager struct {
@@ -1578,6 +1583,144 @@ func (mgr *manager) GetSMSSystemTreeForSystem(id int) (*classes.Sms_Tree_System)
 	return systemTree
 }
 
+func (mgr *manager) GetSMSSystemTreeAsJSON(systemID int) ([]byte, error) {
+	// 1️⃣ Geräte für das System abrufen
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_DevicePartOfSystemForSystem)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(systemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var systemName string = "System"
+	var systemVersion string = strconv.Itoa(systemID) // Falls du eine echte Version hast, hier ersetzen!
+
+	systemTree := make(map[string]interface{})
+	systemTree[systemName] = map[string]interface{}{
+		"Version": systemVersion,
+		"Devices": []interface{}{},
+	}
+
+	var devices []map[string]interface{}
+	for rows.Next() {
+		var deviceID int
+		var deviceName, deviceVersion, additionalInfo string
+
+		err := rows.Scan(&systemID, &deviceID, &additionalInfo, &deviceName, &deviceVersion)
+		if err != nil {
+			log.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+
+		// 2️⃣ Software für das Device abrufen
+		softwareList, err := mgr.getSoftwareForDevice(deviceID)
+		if err != nil {
+			log.Println("Fehler beim Abrufen der Software:", err)
+			continue
+		}
+
+		device := map[string]interface{}{
+			"Name":    deviceName,
+			"Version": deviceVersion,
+			"Software": softwareList,
+		}
+		devices = append(devices, device)
+	}
+
+	systemTree[systemName].(map[string]interface{})["Devices"] = devices
+
+	// 3️⃣ JSON erzeugen
+	jsonData, err := json.MarshalIndent(systemTree, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonData, nil
+}
+
+// Hilfsfunktion, um Software + Komponenten für ein Gerät zu holen
+func (mgr *manager) getSoftwareForDevice(deviceID int) ([]map[string]interface{}, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_SoftwarePartOfDeviceForDevice)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var softwareList []map[string]interface{}
+	for rows.Next() {
+		var softwareID int
+		var softwareName, softwareVersion, additionalInfo string
+
+		err := rows.Scan(&deviceID, &softwareID, &additionalInfo, &softwareName, &softwareVersion)
+		if err != nil {
+			log.Println("Fehler beim Scannen der Software-Zeile:", err)
+			continue
+		}
+
+		// 3️⃣ Komponenten abrufen
+		components, err := mgr.getComponentsForSoftware(softwareID)
+		if err != nil {
+			log.Println("Fehler beim Abrufen der Komponenten:", err)
+			continue
+		}
+
+		software := map[string]interface{}{
+			"Name":       softwareName,
+			"Version":    softwareVersion,
+			"Components": components,
+		}
+		softwareList = append(softwareList, software)
+	}
+
+	return softwareList, nil
+}
+
+// Hilfsfunktion, um Komponenten für eine Software zu holen
+func (mgr *manager) getComponentsForSoftware(softwareID int) ([]map[string]interface{}, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ComponentPartOfSoftwareForSoftware)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(softwareID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var componentList []map[string]interface{}
+	for rows.Next() {
+		var componentID int
+		var componentName, componentVersion, additionalInfo string
+
+		err := rows.Scan(&softwareID, &componentID, &additionalInfo, &componentName, &componentVersion)
+		if err != nil {
+			log.Println("Fehler beim Scannen der Komponenten-Zeile:", err)
+			continue
+		}
+
+		component := map[string]interface{}{
+			"Name":    componentName,
+			"Version": componentVersion,
+		}
+		componentList = append(componentList, component)
+	}
+
+	return componentList, nil
+}
+
 func (mgr *manager) GetSMSIssuesForSystem(system_id int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage, err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_getIssuesForWholeSystem)
 	if err != nil{
@@ -2666,6 +2809,33 @@ func (mgr *manager) RemoveSMSSoftware(id int) (err error) {
 	stmt.QueryRow(id)
 
 	return err
+}
+
+func (mgr *manager) GetSoftwareTypesForCheckList() ([]string, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_all_SoftwareTypes)
+	if err != nil {
+		fmt.Println("Error preparing statement:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var softwareTypes []string
+	for rows.Next() {
+		var typeName string
+		if err := rows.Scan(&typeName); err != nil {
+			fmt.Println("Error scanning row:", err)
+			continue
+		}
+		softwareTypes = append(softwareTypes, typeName)
+	}
+	return softwareTypes, nil
 }
 
 /////////////////////////////////////////
@@ -4625,13 +4795,11 @@ func (mgr *manager) GetIPsForProject(projectID int) ([]classes.ResultProjectIP, 
 }
 
 func evaluateFilterCondition(filterCondition string, projectSettings []classes.ProjectSetting, applicableVersions string, deviceType string, versions string, instanceCount int) bool {
-	// 1. Check: ApplicableVersions == "all" oder Überschneidung mit Versions
+	// 1️⃣ ApplicableVersions prüfen: "all" oder Übereinstimmung mit Versionen
 	if applicableVersions != "all" {
-		// ApplicableVersions und Versions in Listen umwandeln
 		applicableVersionsList := strings.Split(applicableVersions, ",")
 		deviceVersionsList := strings.Split(versions, ",")
 
-		// Prüfen, ob es eine gemeinsame Version gibt
 		matchFound := false
 		for _, appVersion := range applicableVersionsList {
 			for _, devVersion := range deviceVersionsList {
@@ -4645,22 +4813,22 @@ func evaluateFilterCondition(filterCondition string, projectSettings []classes.P
 			}
 		}
 
-		// Wenn keine Übereinstimmung gefunden wurde, IP rausfiltern
+		// ❌ Falls keine Version passt, Bedingung nicht erfüllt
 		if !matchFound {
 			return false
 		}
 	}
 
-	// 2. Falls keine FilterCondition vorhanden ist, direkt erlauben
+	// 2️⃣ Falls keine FilterCondition vorhanden ist, direkt erlauben
 	if filterCondition == "" {
 		return true
 	}
 
-	// 3. Filterbedingungen auswerten (z.B. "IF appserver", "#3")
+	// 3️⃣ Filterbedingungen auswerten (z.B. "IF appserver", "#3")
 	conditions := strings.Split(filterCondition, " ")
 
 	for _, condition := range conditions {
-		// IF-Filter: Prüfen, ob das Setting existiert
+		// 🔹 IF-Filter: Prüfen, ob das Setting existiert
 		if strings.HasPrefix(condition, "IF") {
 			settingKey := strings.TrimSpace(strings.TrimPrefix(condition, "IF"))
 
@@ -4672,27 +4840,29 @@ func evaluateFilterCondition(filterCondition string, projectSettings []classes.P
 				}
 			}
 
+			// ❌ Falls das Setting nicht existiert, Bedingung nicht erfüllt
 			if !settingExists {
 				return false
 			}
 		}
 
-		// # Filter: Prüfen, ob genug Instanzen existieren
+		// 🔹 #-Filter: Prüfen, ob genug Instanzen existieren
 		if strings.HasPrefix(condition, "#") {
 			requiredCountStr := strings.TrimPrefix(condition, "#")
 			requiredCount, err := strconv.Atoi(requiredCountStr)
 			if err != nil {
-				fmt.Println("Fehler beim Parsen des # Filters:", err)
+				fmt.Println("❌ Fehler beim Parsen des # Filters:", err)
 				continue
 			}
 
+			// ❌ Falls nicht genug Instanzen, Bedingung nicht erfüllt
 			if instanceCount < requiredCount {
 				return false
 			}
 		}
 	}
 
-	// Falls alle Bedingungen erfüllt sind, IP behalten
+	// ✅ Falls alle Bedingungen erfüllt sind, Filterung erfolgreich
 	return true
 }
 
@@ -4830,6 +5000,7 @@ func (mgr *manager) DeleteDeviceCheckDefinition(id int) error {
 
 // SELECT Checks für Projekt
 func (mgr *manager) GetChecksForProject(projectID int, checkType string) ([]classes.ResultProjectCheck, error) {
+	// 1️⃣ SQL-Query vorbereiten
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_checks_for_project)
 	if err != nil {
 		fmt.Println("Fehler beim Vorbereiten der Query:", err)
@@ -4837,13 +5008,15 @@ func (mgr *manager) GetChecksForProject(projectID int, checkType string) ([]clas
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(projectID, checkType) // Neuer Parameter für checkType
+	// 2️⃣ Query ausführen
+	rows, err := stmt.Query(projectID, checkType)
 	if err != nil {
 		fmt.Println("Fehler beim Abrufen der Daten:", err)
 		return nil, err
 	}
 	defer rows.Close()
 
+	// 3️⃣ Checks aus der Datenbank einlesen
 	var checkDefinitions []classes.ResultProjectCheck
 	for rows.Next() {
 		var checkDef classes.ResultProjectCheck
@@ -4860,14 +5033,27 @@ func (mgr *manager) GetChecksForProject(projectID int, checkType string) ([]clas
 		checkDefinitions = append(checkDefinitions, checkDef)
 	}
 
-	// ProjectSettings abrufen
+	// 4️⃣ ProjectSettings abrufen
 	projectSettings, err := mgr.GetLinkedProjectSettings(projectID)
 	if err != nil {
 		fmt.Println("Fehler beim Abrufen der ProjectSettings:", err)
 		return nil, err
 	}
 
-	// Filterung der Checks basierend auf den ProjectSettings
+	// 5️⃣ Device-IPs & VLAN-IPs holen
+	deviceIPs, vlanIPs, err := mgr.GetFilteredDeviceIPsForProject(projectID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Device-IPs:", err)
+		return nil, err
+	}
+
+	// 6️⃣ Umwandlung von vlanIPs (map[int][]string zu map[string][]string)
+	vlanIPsStringKey := make(map[string][]string)
+	for key, value := range vlanIPs {
+		vlanIPsStringKey[strconv.Itoa(key)] = value
+	}
+
+	// 7️⃣ Filterung der Checks + IP- und VLAN-Ersatz
 	var filteredChecks []classes.ResultProjectCheck
 	for _, checkDef := range checkDefinitions {
 		filterCondition := ""
@@ -4875,15 +5061,349 @@ func (mgr *manager) GetChecksForProject(projectID int, checkType string) ([]clas
 			filterCondition = *checkDef.FilterCondition
 		}
 
-		if evaluateFilterCondition(
-			filterCondition, projectSettings, checkDef.ApplicableVersions,
-			checkDef.DeviceType, checkDef.Versions, checkDef.InstanceCount,
-		) {
+		// 🟢 Zuerst IPs ersetzen
+		checkDef.ExpectedResult = replaceIPPlaceholders(checkDef.ExpectedResult, deviceIPs, vlanIPsStringKey, filterCondition)
+
+		// 🟢 Jetzt App-Versionen ersetzen
+		checkDef.ExpectedResult = replaceAppVersionTags(checkDef.ExpectedResult, projectID, mgr)
+
+		// Weiterhin nach der Filter-Bedingung auswerten
+		if evaluateFilterCondition(filterCondition, projectSettings, checkDef.ApplicableVersions, checkDef.DeviceType, checkDef.Versions, checkDef.InstanceCount) {
 			filteredChecks = append(filteredChecks, checkDef)
 		}
 	}
 
+	// Debug-Ausgabe
+	fmt.Println("✅ Final gefilterte Checks:", filteredChecks)
+
 	return filteredChecks, nil
+}
+
+func (mgr *manager) GetAppVersionsForProject(projectID int) ([]classes.AppVersionInfo, error) {
+	// 1️⃣ Query vorbereiten
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_all_app_versions_for_project)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	// 2️⃣ Query ausführen
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Daten:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// 3️⃣ Ergebnisse einlesen
+	var appVersions []classes.AppVersionInfo
+	for rows.Next() {
+		var appInfo classes.AppVersionInfo
+		err := rows.Scan(&appInfo.DeviceName, &appInfo.Name, &appInfo.Version)
+		if err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+		appVersions = append(appVersions, appInfo)
+	}
+
+	return appVersions, nil
+}
+
+func replaceAppVersionTags(input string, projectID int, mgr *manager) string {
+	result := input
+
+	// Prüfen, ob %AppVersion:XYZ% vorhanden ist
+	if !strings.Contains(result, "%AppVersion:") {
+		return result
+	}
+
+	// SQL-Abfrage vorbereiten und ausführen
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_all_app_versions_for_project)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return result
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der Software-Versionen:", err)
+		return result
+	}
+	defer rows.Close()
+
+	// App-Versionen in eine verschachtelte Map speichern
+	appVersions := make(map[string]map[string]map[string][]string)
+
+	for rows.Next() {
+		var deviceType, appName, appVersion string
+		if err := rows.Scan(&deviceType, &appName, &appVersion); err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+
+		if _, exists := appVersions[appName]; !exists {
+			appVersions[appName] = make(map[string]map[string][]string)
+		}
+		if _, exists := appVersions[appName][deviceType]; !exists {
+			appVersions[appName][deviceType] = make(map[string][]string)
+		}
+		appVersions[appName][deviceType][appName] = append(appVersions[appName][deviceType][appName], appVersion)
+	}
+
+	// Regex für %AppVersion:XYZ% Platzhalter
+	re := regexp.MustCompile(`%AppVersion:([\w\s]+)%`)
+	matches := re.FindAllStringSubmatch(result, -1)
+
+	for _, match := range matches {
+		appName := match[1]
+
+		if versionsByDevice, exists := appVersions[appName]; exists {
+			// Erstelle eine HTML-Tabelle mit drei Spalten (Gerätetyp, Software-Name, Version)
+			var tableBuilder strings.Builder
+			tableBuilder.WriteString("<table class=\"table-styled\"><thead><tr><th>Gerätetyp</th><th>Software</th><th>Version(en)</th></tr></thead><tbody>")
+
+			for deviceType, softwareMap := range versionsByDevice {
+				for softwareName, versions := range softwareMap {
+					tableBuilder.WriteString("<tr><td>")
+					tableBuilder.WriteString(deviceType)
+					tableBuilder.WriteString("</td><td>")
+					tableBuilder.WriteString(softwareName)
+					tableBuilder.WriteString("</td><td>")
+					tableBuilder.WriteString(strings.Join(versions, ", ")) // Mehrere Versionen mit Komma trennen
+					tableBuilder.WriteString("</td></tr>")
+				}
+			}
+
+			tableBuilder.WriteString("</tbody></table>")
+
+			// Ersetze den Platzhalter durch die generierte Tabelle
+			result = strings.ReplaceAll(result, match[0], tableBuilder.String())
+		} else {
+			// Falls keine Versionen gefunden wurden, ersetze durch einen Hinweis
+			result = strings.ReplaceAll(result, match[0], "(Keine Version gefunden)")
+		}
+	}
+
+	return result
+}
+
+func replaceDeviceIPTagsAsHTMLTable(input string, deviceIPs map[string][]string) string {
+	result := input
+
+	// Ersetze %DeviceIPs% durch eine HTML-Tabelle
+	if strings.Contains(result, "%DeviceIPs%") {
+		// Tabelle für alle Geräte-IPs erstellen
+		var tableBuilder strings.Builder
+		tableBuilder.WriteString("<table class=\"table-styled\"><thead><tr><th>Gerät</th><th>IP-Adresse</th></tr></thead><tbody>")
+
+		// Iteriere über jedes Gerät und seine IPs
+		for deviceName, ips := range deviceIPs {
+			for _, ip := range ips {
+				tableBuilder.WriteString("<tr><td>")
+				tableBuilder.WriteString(deviceName)
+				tableBuilder.WriteString("</td><td>")
+				tableBuilder.WriteString(ip)
+				tableBuilder.WriteString("</td></tr>")
+			}
+		}
+		tableBuilder.WriteString("</tbody></table>")
+
+		// Ersetze den Tag %DeviceIPs% mit der erzeugten HTML-Tabelle
+		result = strings.ReplaceAll(result, "%DeviceIPs%", tableBuilder.String())
+	}
+
+	// Platzhalter %DeviceIP% ersetzen - erste IP des ersten Geräts
+	if strings.Contains(result, "%DeviceIP%") {
+		for _, ips := range deviceIPs {
+			if len(ips) > 0 {
+				result = strings.ReplaceAll(result, "%DeviceIP%", ips[0]) // Erste IP verwenden
+				break
+			}
+		}
+	}
+
+	// Platzhalter %DeviceIP:#XX% ersetzen - z.B. %DeviceIP:#3%
+	if strings.Contains(result, "%DeviceIP:#") {
+		re := regexp.MustCompile(`%DeviceIP:#(\d+)%`)
+		matches := re.FindAllStringSubmatch(result, -1)
+
+		for _, match := range matches {
+			instanceCountStr := match[1]
+			instanceCount, err := strconv.Atoi(instanceCountStr)
+			if err != nil {
+				fmt.Println("Fehler beim Parsen der Instanznummer:", err)
+				continue
+			}
+
+			// Suche nach der entsprechenden IP für das Gerät (Filter anwenden)
+			count := 0
+			var foundIP bool // Flag, ob eine IP gefunden wurde
+			for _, ips := range deviceIPs {
+				if len(ips) >= instanceCount {
+					result = strings.ReplaceAll(result, match[0], ips[instanceCount-1]) // Die passende IP setzen
+					foundIP = true
+					break
+				}
+				count++
+			}
+
+			// Falls keine IP gefunden wurde, Fallback-Wert verwenden
+			if !foundIP {
+				result = strings.ReplaceAll(result, match[0], "Keine IP gefunden")
+				fmt.Println("Warnung: Keine IP für Filter", instanceCountStr, "gefunden.")
+			}
+		}
+	}
+
+	// Platzhalter %DeviceIPs:#XX% ersetzen - z.B. %DeviceIPs:#EV-PC%
+	if strings.Contains(result, "%DeviceIPs:#") {
+		re := regexp.MustCompile(`%DeviceIPs:#(\w+)%`)
+		matches := re.FindAllStringSubmatch(result, -1)
+
+		for _, match := range matches {
+			deviceName := match[1]
+
+			// Wenn das Gerät existiert, ersetze den Tag durch eine HTML-Tabelle
+			if ips, ok := deviceIPs[deviceName]; ok {
+				var tableBuilder strings.Builder
+				tableBuilder.WriteString("<table class=\"table-styled\"><thead><tr><th>Gerät</th><th>IP-Adresse</th></tr></thead><tbody>")
+
+				// Füge die IPs dieses Geräts in die Tabelle ein
+				for _, ip := range ips {
+					tableBuilder.WriteString("<tr><td>")
+					tableBuilder.WriteString(deviceName)
+					tableBuilder.WriteString("</td><td>")
+					tableBuilder.WriteString(ip)
+					tableBuilder.WriteString("</td></tr>")
+				}
+				tableBuilder.WriteString("</tbody></table>")
+
+				// Ersetze den Platzhalter mit der Tabelle
+				result = strings.ReplaceAll(result, match[0], tableBuilder.String())
+			}
+		}
+	}
+
+	return result
+}
+
+func replaceVlanIPTags(input string, vlanIPs map[string][]string) string {
+	result := input
+
+	// Durch alle VLAN-IDs und die dazugehörigen IPs iterieren
+	for vlanID, ips := range vlanIPs {
+		// Erzeuge eine HTML-Tabelle aus den IPs
+		var ipTableHtml string
+		for _, ip := range ips {
+			ipTableHtml += fmt.Sprintf("<tr><td>%s</td></tr>", ip) // Jede IP als Tabellenzeile
+		}
+
+		// Ersetze das Tag %VLANIPs:XX% mit der HTML-Tabelle
+		tag := fmt.Sprintf("%%VLANIPs:%s%%", vlanID)
+		result = strings.ReplaceAll(result, tag, "<table class=\"table-styled\">"+ipTableHtml+"</table>")
+	}
+
+	return result
+}
+
+func replaceIPPlaceholders(input string, deviceIPs map[string][]string, vlanIPs map[string][]string, filterCondition string) string {
+	result := input
+
+	// Erst die allgemeinen IPs und VLANs ersetzen
+	result = replaceDeviceIPTagsAsHTMLTable(result, deviceIPs)  // Dies behandelt %DeviceIPs% und %DeviceIP%
+	result = replaceVlanIPTags(result, vlanIPs)      // Dies behandelt %VLANIPs:XX%
+
+	// Nun den Filter behandeln (z.B. %DeviceIP:#3%)
+	if strings.Contains(result, "%DeviceIP:") {
+		// Extrahiere die Zahl nach "%DeviceIP:#"
+		re := regexp.MustCompile(`%DeviceIP:#(\d+)%`)
+		matches := re.FindAllStringSubmatch(result, -1)
+
+		// Iteriere über alle gefundenen Matches und ersetze die Tags
+		for _, match := range matches {
+			// `match[1]` ist die Zahl nach "%DeviceIP:#" (z.B. 3)
+			filter := match[1]
+			ip := getDeviceIPForFilter(deviceIPs, filter)
+			if ip != "" {
+				// Ersetze den Tag %DeviceIP:#x% mit der IP
+				result = strings.ReplaceAll(result, match[0], ip)
+			} else {
+				// Wenn keine passende IP gefunden wurde, könnte ein Fallback oder Fehler erfolgen
+				fmt.Println("Keine IP für Filter", filter)
+			}
+		}
+	}
+
+	return result
+}
+
+// Diese Funktion holt die erste IP aus den Device-IPs für den gegebenen Filter
+func getDeviceIPForFilter(deviceIPs map[string][]string, filter string) string {
+	// Filter als Integer interpretieren (z.B. #3 -> 3)
+	filterInt, err := strconv.Atoi(filter)
+	if err != nil {
+		fmt.Println("Fehler beim Parsen des Filters:", err)
+		return ""
+	}
+
+	// Gehe durch alle Geräte und ihre IPs, und gebe die passende IP zurück
+	// In diesem Beispiel nehmen wir einfach die N-te IP des Geräts (Filter #3 -> 3. IP)
+	count := 0
+	for _, ips := range deviceIPs {
+		if count >= filterInt-1 && len(ips) > count {
+			return ips[count]  // Gib die entsprechende IP zurück
+		}
+		count++
+	}
+
+	// Wenn keine passende IP gefunden wurde
+	return ""
+}
+
+func (mgr *manager) GetFilteredDeviceIPsForProject(projectID int) (map[string][]string, map[int][]string, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_filtered_ips_for_project)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	deviceIPs := make(map[string][]string)
+	vlanIPs := make(map[int][]string)
+
+	for rows.Next() {
+		var devicetypeID int
+		var deviceType, applicableVersions, ipAddress, filterCondition, versions string
+		var vlanID sql.NullInt64
+		var instanceCount int
+
+		err = rows.Scan(&devicetypeID, &deviceType, &applicableVersions, &ipAddress, &vlanID, &filterCondition, &instanceCount, &versions)
+		if err != nil {
+			continue
+		}
+
+		projectSettings, err := mgr.GetLinkedProjectSettings(projectID)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if evaluateFilterCondition(filterCondition, projectSettings, applicableVersions, deviceType, versions, instanceCount) {
+			deviceIPs[deviceType] = append(deviceIPs[deviceType], ipAddress)
+			if vlanID.Valid {
+				vlanIPs[int(vlanID.Int64)] = append(vlanIPs[int(vlanID.Int64)], ipAddress)
+			}
+		}
+	}
+
+	return deviceIPs, vlanIPs, nil
 }
 
 // SELECT alle DeviceCheck-Definitionen
@@ -4967,4 +5487,36 @@ func (mgr *manager) UpdateDeviceCheck(check classes.Sms_DeviceCheckDefinition) e
 	fmt.Println("Anzahl der betroffenen Zeilen:", rowsAffected) // Ausgabe der betroffenen Zeilen
 
 	return nil
+}
+
+// Get stats for which system versions are used the most by projects
+func (mgr *manager) GetSystemVersionStatistics() ([]classes.SystemVersionStats, error) {
+	var stats []classes.SystemVersionStats
+
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_statistics_projectsUseSystemVersions)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten der Query:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen der System-Statistiken:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var stat classes.SystemVersionStats
+
+		if err := rows.Scan(&stat.SystemVersion, &stat.ProjectCount); err != nil {
+			fmt.Println("Fehler beim Scannen der Zeile:", err)
+			continue
+		}
+
+		stats = append(stats, stat)
+	}
+
+	return stats, nil
 }

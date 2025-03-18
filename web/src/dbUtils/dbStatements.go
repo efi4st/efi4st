@@ -233,6 +233,7 @@ var SELECT_sms_softwareInfo = `SELECT sms_software.software_id, sms_software.sof
 var INSERT_sms_newSoftware = `INSERT INTO sms_software (softwaretype_id, version, date, license, thirdParty, releaseNote) VALUES (?,?,?,?,?,?);`
 var DELETE_sms_software = `DELETE FROM sms_software WHERE software_id = ?;`
 var SELECT_sms_softwareTypes = `SELECT sms_softwaretype.softwaretype_id, sms_softwaretype.typeName FROM sms_softwaretype;`
+var SELECT_all_SoftwareTypes = `SELECT typeName FROM sms_softwaretype;`
 
 // SMS Component
 var SELECT_sms_components = `SELECT sms_component.component_id, sms_component.name, sms_component.componentType, sms_component.version, sms_component.date, sms_component.license, sms_component.thirdParty, sms_component.releaseNote FROM sms_component;`
@@ -452,3 +453,64 @@ var SELECT_check_by_id = `SELECT
 FROM sms_deviceCheckDefinition c
 JOIN sms_devicetype d ON c.device_type_id = d.devicetype_id
 WHERE c.id = ?;`
+
+var SELECT_filtered_ips_for_project = `SELECT
+d.devicetype_id,
+dt.type AS device_type,
+ip.applicable_versions,
+ip.ip_address,
+ip.vlan_id,
+ip.filter_condition,
+COUNT(di.deviceInstance_id) AS instance_count,
+GROUP_CONCAT(d.version) AS versions
+FROM sms_deviceInstance di
+JOIN sms_device d ON di.device_id = d.device_id
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+JOIN sms_deviceIPDefinition ip ON d.devicetype_id = ip.device_type_id
+WHERE di.project_id = ?
+GROUP BY d.devicetype_id, ip.ip_address, ip.vlan_id, ip.applicable_versions, ip.filter_condition;`
+
+var SELECT_all_app_versions_for_project = `SELECT 
+    sdtype.type AS device_type,
+    sst.typeName AS software_name, 
+    ss.version AS software_version
+FROM sms_softwarePartOfDevice spd
+JOIN sms_device sd ON spd.device_id = sd.device_id
+JOIN sms_devicetype sdtype ON sd.devicetype_id = sdtype.devicetype_id
+JOIN sms_software ss ON spd.software_id = ss.software_id
+JOIN sms_softwaretype sst ON ss.softwaretype_id = sst.softwaretype_id
+JOIN sms_deviceInstance sdi ON sdi.device_id = sd.device_id
+WHERE sdi.project_id = ?;`
+
+var SELECT_statistics_projectsUseSystemVersions = `WITH SystemCounts AS (
+    SELECT
+        sdi.project_id,
+        s.version AS system_version,
+        COUNT(*) AS count
+    FROM sms_deviceInstance sdi
+    JOIN sms_device sd ON sdi.device_id = sd.device_id
+    JOIN sms_devicePartOfSystem sdps ON sd.device_id = sdps.device_id
+    JOIN sms_system s ON sdps.system_id = s.system_id
+    WHERE s.systemtype_id = 1  -- 💡 Filter nur für systemtype_id = 1
+    GROUP BY sdi.project_id, s.version
+),
+MajorityVersions AS (
+    SELECT
+        sc1.project_id,
+        sc1.system_version
+    FROM SystemCounts sc1
+    WHERE (sc1.project_id, sc1.count, sc1.system_version) IN (
+        SELECT
+            project_id,
+            MAX(count) AS max_count,
+            MAX(system_version) AS latest_version
+        FROM SystemCounts
+        GROUP BY project_id
+    )
+)
+SELECT
+    system_version,
+    COUNT(*) AS project_count
+FROM MajorityVersions
+GROUP BY system_version
+ORDER BY system_version ASC;`

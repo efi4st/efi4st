@@ -55,17 +55,46 @@
 
         <div class="form-group">
           <label for="test_description">Description:</label>
-          <input class="form-control" type="text" id="test_description" name="test_description" placeholder="Enter description" />
+          <textarea class="form-control large-textarea" id="test_description" name="test_description" placeholder="Enter description"></textarea>
         </div>
 
         <div class="form-group">
           <label for="explanation">Explanation:</label>
-          <input class="form-control" type="text" id="explanation" name="explanation" placeholder="Enter explanation" />
+          <textarea class="form-control large-textarea" id="explanation" name="explanation" placeholder="Enter explanation"></textarea>
         </div>
 
         <div class="form-group">
           <label for="expected_result">Expected Result:</label>
-          <input class="form-control" type="text" id="expected_result" name="expected_result" placeholder="Enter expected result" />
+          <textarea class="form-control large-textarea" id="expected_result" name="expected_result" placeholder="Enter expected result"></textarea>
+
+          <!-- Flex-Container für die Dropdowns -->
+          <div class="d-flex mt-2">
+
+            <!-- Dropdown für generische Platzhalter -->
+            <div class="me-2">
+              <label for="placeholder-dropdown"><strong>Insert Placeholder:</strong></label>
+              <select id="placeholder-dropdown" class="form-control" onchange="insertPlaceholder()">
+                <option value="">-- Select Placeholder --</option>
+                <option value="%DeviceIP%">%DeviceIP%</option>
+                <option value="%DeviceIP:#XX%">%DeviceIP:#XX%</option>
+                <option value="%DeviceIPs%">%DeviceIPs%</option>
+                <option value="%DeviceIPs:#XX%">%DeviceIPs:#XXs%</option>
+                <option value="%VLANIPs:XX%">%VLANIPs:XX%</option>
+              </select>
+            </div>
+
+            <!-- Dropdown für Application-Namen (dynamisch aus applicationList) -->
+            <div>
+              <label for="app-placeholder-dropdown"><strong>Insert App Placeholder:</strong></label>
+              <select id="app-placeholder-dropdown" class="form-control" onchange="insertAppPlaceholder()">
+                <option value="">-- Select Application --</option>
+                {% for app in applicationList %}
+                <option value="{{ app }}">{{ app }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+          </div>
         </div>
 
         <div class="form-group">
@@ -86,6 +115,37 @@
 
   <hr>
 </div> <!-- /container -->
-      
+<script>
+  function insertPlaceholder() {
+    var textarea = document.getElementById("expected_result");
+    var dropdown = document.getElementById("placeholder-dropdown");
+    var placeholder = dropdown.value;
+
+    if (!placeholder) return;
+
+    insertAtCursor(textarea, placeholder);
+    dropdown.selectedIndex = 0;
+  }
+
+  function insertAppPlaceholder() {
+    var textarea = document.getElementById("expected_result");
+    var dropdown = document.getElementById("app-placeholder-dropdown");
+    var appName = dropdown.value;
+
+    if (!appName) return;
+
+    var placeholder = `%AppVersion:${appName}%`;
+    insertAtCursor(textarea, placeholder);
+    dropdown.selectedIndex = 0;
+  }
+
+  function insertAtCursor(textarea, text) {
+    var startPos = textarea.selectionStart;
+    var endPos = textarea.selectionEnd;
+
+    textarea.value = textarea.value.substring(0, startPos) + text + textarea.value.substring(endPos);
+    textarea.selectionStart = textarea.selectionEnd = startPos + text.length;
+  }
+</script>
 {% endblock %}
 

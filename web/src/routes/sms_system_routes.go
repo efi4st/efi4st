@@ -8,6 +8,7 @@
 package routes
 
 import (
+	"fmt"
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
@@ -90,6 +91,30 @@ func ShowSMSSystem(ctx iris.Context) {
 	ctx.ViewData("deviceIssuesForThisSystem", deviceIssuesForThisSystem)
 	ctx.ViewData("reportsForThisSystem", reportsForThisSystem)
 	ctx.View("sms_showSystem.html")
+}
+
+func DownloadSystemTreeJSON(ctx iris.Context) {
+	// System-ID aus der URL holen
+	systemIDStr := ctx.Params().Get("system_id")
+	systemID, err := strconv.Atoi(systemIDStr)
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("Ungültige System-ID")
+		return
+	}
+
+	// JSON-Daten abrufen
+	jsonData, err := dbprovider.GetDBManager().GetSMSSystemTreeAsJSON(systemID)
+	if err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("Fehler beim Erstellen der JSON-Datei")
+		return
+	}
+
+	// JSON als Datei zurückgeben
+	ctx.ResponseWriter().Header().Set("Content-Type", "application/json")
+	ctx.ResponseWriter().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=system_tree_%d.json", systemID))
+	ctx.Write(jsonData) // JSON-Daten direkt zurückgeben
 }
 
 func RemoveSMSSystem(ctx iris.Context) {
