@@ -514,3 +514,32 @@ SELECT
 FROM MajorityVersions
 GROUP BY system_version
 ORDER BY system_version ASC;`
+
+var SELECT_Devices_and_Software_for_Project = `SELECT 
+    d.device_id, dt.type AS device_name, d.version AS device_version,
+    s.software_id, st.typeName AS software_name, s.version AS software_version,
+    GROUP_CONCAT(DISTINCT CONCAT(sys.version) ORDER BY CAST(sys.version AS DECIMAL) DESC SEPARATOR ', ')
+FROM sms_deviceInstance di
+JOIN sms_device d ON di.device_id = d.device_id
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+LEFT JOIN sms_softwarePartOfDevice spd ON d.device_id = spd.device_id
+LEFT JOIN sms_software s ON spd.software_id = s.software_id
+LEFT JOIN sms_softwaretype st ON s.softwaretype_id = st.softwaretype_id
+LEFT JOIN sms_devicePartOfSystem dps ON d.device_id = dps.device_id
+LEFT JOIN sms_system sys ON dps.system_id = sys.system_id
+WHERE di.project_id = ?
+GROUP BY d.device_id, s.software_id;`
+
+const SELECT_Most_Common_System_Version string = `
+SELECT 
+    s.systemtype_id, 
+    s.system_id, 
+    s.version AS system_version, 
+    COUNT(dps.device_id) AS device_count
+FROM sms_devicePartOfSystem dps
+JOIN sms_system s ON dps.system_id = s.system_id
+JOIN sms_deviceInstance di ON dps.device_id = di.device_id
+WHERE di.project_id = ?
+GROUP BY s.systemtype_id, s.system_id
+ORDER BY device_count DESC
+`

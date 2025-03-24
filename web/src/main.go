@@ -515,6 +515,8 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_statistics
 	app.Get("/sms_statistics", routes.ShowStatistics)
 
+	app.Get("/sms_projectUpdates/show/{id:int}", routes.SMSprojectUpdate)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

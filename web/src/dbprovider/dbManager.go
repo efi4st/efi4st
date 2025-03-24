@@ -220,6 +220,8 @@ type Manager interface {
 	GetDeviceCheckByID(checkID int) (*classes.Sms_DeviceCheckDefinition, error)
 	UpdateDeviceCheck(check classes.Sms_DeviceCheckDefinition) error
 	GetSystemVersionStatistics() ([]classes.SystemVersionStats, error)
+	GetDevicesAndSoftwareForProject(projectID int) ([]classes.DeviceSoftwareInfo, error)
+	getSystemTypeForDevice(deviceID int) (int, error)
 }
 
 type manager struct {
@@ -5519,4 +5521,206 @@ func (mgr *manager) GetSystemVersionStatistics() ([]classes.SystemVersionStats, 
 	}
 
 	return stats, nil
+}
+
+
+func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.DeviceSoftwareInfo, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_Devices_and_Software_for_Project)
+	if err != nil {
+		return nil, fmt.Errorf("Fehler beim Vorbereiten der Query: %v", err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("Fehler beim Abrufen der Geräte und Software: %v", err)
+	}
+	defer rows.Close()
+
+	deviceMap := make(map[int]*classes.DeviceSoftwareInfo)
+
+	for rows.Next() {
+		var dsInfo classes.DeviceSoftwareInfo
+		var systemVersions sql.NullString
+		var softwareID sql.NullInt64
+		var softwareName sql.NullString
+		var softwareVersion sql.NullString
+
+		err := rows.Scan(
+			&dsInfo.DeviceID, &dsInfo.DeviceName, &dsInfo.DeviceVersion,
+			&softwareID, &softwareName, &softwareVersion,
+			&systemVersions,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("Fehler beim Scannen der Zeile: %v", err)
+		}
+
+		dsInfo.SystemVersions = cleanSystemVersions(strings.Split(systemVersions.String, ", "))
+
+		// Systemversionen verarbeiten
+		if systemVersions.Valid {
+			dsInfo.SystemVersions = cleanSystemVersions(strings.Split(systemVersions.String, ", "))
+			fmt.Println("SystemVersions für Device", dsInfo.DeviceID, ":", systemVersions)
+		}
+
+		// Software-Daten setzen, wenn vorhanden
+		if softwareID.Valid {
+			dsInfo.SoftwareID = int(softwareID.Int64)
+		}
+		if softwareName.Valid {
+			dsInfo.SoftwareName = softwareName.String
+		}
+		if softwareVersion.Valid {
+			dsInfo.SoftwareVersion = softwareVersion.String
+		}
+
+		// Prüfen, ob Gerät bereits existiert → Falls ja, Software anhängen
+		if existingDevice, found := deviceMap[dsInfo.DeviceID]; found {
+			if dsInfo.SoftwareID > 0 {
+				existingDevice.SoftwareID = dsInfo.SoftwareID
+				existingDevice.SoftwareName = dsInfo.SoftwareName
+				existingDevice.SoftwareVersion = dsInfo.SoftwareVersion
+			}
+		} else {
+			deviceMap[dsInfo.DeviceID] = &dsInfo
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("Fehler beim Durchlaufen der Zeilen: %v", err)
+	}
+
+	// Häufigste Systemversionen abrufen
+	systemVersionsMap, err := mgr.getMostCommonSystemVersionForSystemType(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("Fehler beim Abrufen der häufigsten Systemversionen: %v", err)
+	}
+
+	// Systemversionen zuweisen
+	var result []classes.DeviceSoftwareInfo
+	for _, ds := range deviceMap {
+		systemTypeID, err := mgr.getSystemTypeForDevice(ds.DeviceID)
+		if err != nil {
+			fmt.Println("Warnung: Kein Systemtyp für DeviceID", ds.DeviceID, err)
+			continue
+		}
+
+		// Falls eine häufigste Version existiert, anfügen
+		if systemTypeID > 0 {
+			if mostCommonVersion, found := systemVersionsMap[systemTypeID]; found {
+				ds.DeviceName = fmt.Sprintf("%s (%s)", ds.DeviceName, mostCommonVersion)
+			}
+		}
+
+		ds.SystemVersions = shortenSystemVersions(ds.SystemVersions)
+		fmt.Println("Gekürzte SystemVersions:", shortenSystemVersions(ds.SystemVersions))
+		result = append(result, *ds)
+	}
+
+	for i := range result {
+		result[i].MostCommonSystemVersion = strings.Join(result[i].SystemVersions, ", ")
+	}
+
+	return result, nil
+}
+
+// Diese Funktion ermittelt den Systemtyp für ein bestimmtes Gerät basierend auf der DeviceID.
+func (mgr *manager) getSystemTypeForDevice(deviceID int) (int, error) {
+	var systemTypeID sql.NullInt64 // <- Ändere das zu sql.NullInt64
+
+	query := `SELECT s.systemtype_id
+              FROM sms_devicePartOfSystem dps
+              JOIN sms_system s ON dps.system_id = s.system_id
+              WHERE dps.device_id = ?`
+
+	row := mgr.db.QueryRow(query, deviceID)
+	err := row.Scan(&systemTypeID)
+
+	if err == sql.ErrNoRows {
+		fmt.Println("⚠️ Kein Systemtyp für DeviceID", deviceID)
+		return 0, nil // <- Keine Fehlerrückgabe, sondern 0 als Fallback
+	} else if err != nil {
+		return 0, fmt.Errorf("Fehler beim Abrufen des SystemTyps für DeviceID %d: %v", deviceID, err)
+	}
+
+	return int(systemTypeID.Int64), nil
+}
+
+func (mgr *manager) getMostCommonSystemVersionForSystemType(projectID int) (map[int]string, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_Most_Common_System_Version)
+	if err != nil {
+		return nil, fmt.Errorf("Fehler beim Vorbereiten der Abfrage zur häufigsten Systemversion: %v", err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("Fehler bei der Ausführung der Abfrage zur häufigsten Systemversion: %v", err)
+	}
+	defer rows.Close()
+
+	systemVersions := make(map[int]string)
+
+	for rows.Next() {
+		var systemTypeID int
+		var systemID int
+		var systemVersion string
+		var deviceCount int
+
+		err := rows.Scan(&systemTypeID, &systemID, &systemVersion, &deviceCount)
+		if err != nil {
+			return nil, fmt.Errorf("Fehler beim Scannen der Zeile der häufigsten Systemversion: %v", err)
+		}
+
+		// Höchste Version für Systemtyp speichern
+		systemVersions[systemTypeID] = systemVersion
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("Fehler beim Durchlaufen der Zeilen zur häufigsten Systemversion: %v", err)
+	}
+
+	return systemVersions, nil
+}
+
+func shortenSystemVersions(versions []string) []string {
+	sort.Slice(versions, func(i, j int) bool {
+		return compareVersions(versions[i], versions[j])
+	})
+
+	if len(versions) > 3 {
+		return versions[:3] // Nur die neuesten 3 behalten
+	}
+	return versions
+}
+
+// Vergleichsfunktion für numerische Versionssortierung
+func compareVersions(v1, v2 string) bool {
+	parts1 := strings.Split(v1, ".")
+	parts2 := strings.Split(v2, ".")
+
+	for i := 0; i < len(parts1) && i < len(parts2); i++ {
+		num1, err1 := strconv.Atoi(parts1[i])
+		num2, err2 := strconv.Atoi(parts2[i])
+
+		if err1 == nil && err2 == nil { // Beide sind Zahlen
+			if num1 != num2 {
+				return num1 > num2
+			}
+		} else { // Fallback: String-Vergleich
+			return parts1[i] > parts2[i]
+		}
+	}
+	return len(parts1) > len(parts2)
+}
+
+func cleanSystemVersions(versions []string) []string {
+	var cleaned []string
+	for _, v := range versions {
+		trimmed := strings.TrimSpace(v)
+		if trimmed != "" {
+			cleaned = append(cleaned, trimmed)
+		}
+	}
+	return cleaned
 }

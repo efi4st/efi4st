@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="container">
+        <h1>Project Update: {{projectInfo.name}} - (ID:{{projectInfo.project_id}})</h1>
+        <div class="row">
+          <table class="table table-bordered">
+            <thead class="table-dark">
+            <tr>
+              <th class="text-start">Device/Software</th>
+              <th>Database</th>
+              <th>Live-System</th>
+              <th>Update-Package</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for entry in deviceSoftwareList %}
+            <!-- Gerät -->
+            <tr>
+              <td class="text-start w-65">
+                <strong>{{ entry.DeviceName }}</strong>
+              </td>
+              <td class="bg-success text-white">
+                {{ entry.DeviceVersion }}
+                {% if entry.MostCommonSystemVersion %}
+                <div class="text-end small fst-italic">
+                  {{ entry.MostCommonSystemVersion }}
+                </div>
+                {% endif %}
+              </td>
+              <td class="bg-secondary text-white">-</td>
+              <td class="bg-secondary text-white">-</td>
+            </tr>
+            <!-- Zugehörige Software -->
+            {% if entry.SoftwareName %}
+            <tr>
+              <td class="text-start w-65 ps-4">↳ {{ entry.SoftwareName }}</td>
+              <td class="bg-primary text-white">
+                {{ entry.SoftwareVersion }}
+                {% if entry.MostCommonSystemVersion %}
+                <div class="text-end small fst-italic">
+                  {{ entry.MostCommonSystemVersion }}
+                </div>
+                {% endif %}
+              </td>
+              <td class="bg-secondary text-white">-</td>
+              <td class="bg-secondary text-white">-</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div> <!-- /container -->
+      
+{% endblock %}
