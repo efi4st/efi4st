@@ -40,6 +40,7 @@
             <tr>
               <td class="text-start w-65">
                 <strong>{{ entry.DeviceName }}</strong>
+                {% if entry.DeviceCount > 1 %} <span class="small">({{ entry.DeviceCount }}x)</span> {% endif %}
               </td>
               <td class="bg-success text-white">
                 {{ entry.DeviceVersion }}

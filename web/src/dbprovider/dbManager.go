@@ -5538,6 +5538,7 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.De
 	defer rows.Close()
 
 	deviceMap := make(map[int]*classes.DeviceSoftwareInfo)
+	var result []classes.DeviceSoftwareInfo
 
 	for rows.Next() {
 		var dsInfo classes.DeviceSoftwareInfo
@@ -5545,25 +5546,23 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.De
 		var softwareID sql.NullInt64
 		var softwareName sql.NullString
 		var softwareVersion sql.NullString
+		var deviceCount int
 
 		err := rows.Scan(
 			&dsInfo.DeviceID, &dsInfo.DeviceName, &dsInfo.DeviceVersion,
 			&softwareID, &softwareName, &softwareVersion,
-			&systemVersions,
+			&systemVersions, &deviceCount,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("Fehler beim Scannen der Zeile: %v", err)
 		}
 
-		dsInfo.SystemVersions = cleanSystemVersions(strings.Split(systemVersions.String, ", "))
+		dsInfo.DeviceCount = deviceCount
 
-		// Systemversionen verarbeiten
 		if systemVersions.Valid {
 			dsInfo.SystemVersions = cleanSystemVersions(strings.Split(systemVersions.String, ", "))
-			fmt.Println("SystemVersions für Device", dsInfo.DeviceID, ":", systemVersions)
 		}
 
-		// Software-Daten setzen, wenn vorhanden
 		if softwareID.Valid {
 			dsInfo.SoftwareID = int(softwareID.Int64)
 		}
@@ -5574,7 +5573,6 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.De
 			dsInfo.SoftwareVersion = softwareVersion.String
 		}
 
-		// Prüfen, ob Gerät bereits existiert → Falls ja, Software anhängen
 		if existingDevice, found := deviceMap[dsInfo.DeviceID]; found {
 			if dsInfo.SoftwareID > 0 {
 				existingDevice.SoftwareID = dsInfo.SoftwareID
@@ -5586,18 +5584,13 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.De
 		}
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("Fehler beim Durchlaufen der Zeilen: %v", err)
-	}
-
-	// Häufigste Systemversionen abrufen
-	systemVersionsMap, err := mgr.getMostCommonSystemVersionForSystemType(projectID)
+	// Systemversionen abrufen
+	systemVersionsMap := make(map[int]string)
+	systemVersionsMap, err = mgr.getMostCommonSystemVersionForSystemType(projectID)
 	if err != nil {
-		return nil, fmt.Errorf("Fehler beim Abrufen der häufigsten Systemversionen: %v", err)
+		fmt.Println("⚠️ Fehler beim Abrufen der häufigsten Systemversionen:", err)
 	}
 
-	// Systemversionen zuweisen
-	var result []classes.DeviceSoftwareInfo
 	for _, ds := range deviceMap {
 		systemTypeID, err := mgr.getSystemTypeForDevice(ds.DeviceID)
 		if err != nil {
@@ -5605,20 +5598,18 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.De
 			continue
 		}
 
-		// Falls eine häufigste Version existiert, anfügen
+		// ✅ Falls eine häufigste Systemversion existiert, wird sie **nur in der ersten Spalte** hinter den Device-Namen geschrieben
 		if systemTypeID > 0 {
 			if mostCommonVersion, found := systemVersionsMap[systemTypeID]; found {
-				ds.DeviceName = fmt.Sprintf("%s (%s)", ds.DeviceName, mostCommonVersion)
+				ds.DeviceName = fmt.Sprintf("%s (belongs to System %s)", ds.DeviceName, mostCommonVersion)
+				ds.MostCommonSystemVersion = mostCommonVersion
 			}
 		}
 
-		ds.SystemVersions = shortenSystemVersions(ds.SystemVersions)
-		fmt.Println("Gekürzte SystemVersions:", shortenSystemVersions(ds.SystemVersions))
-		result = append(result, *ds)
-	}
+		// ✅ **In der zweiten Spalte** nur die gekürzte Liste der neuesten 3 Systemversionen anzeigen
+		ds.MostCommonSystemVersion = strings.Join(shortenSystemVersions(ds.SystemVersions), ", ")
 
-	for i := range result {
-		result[i].MostCommonSystemVersion = strings.Join(result[i].SystemVersions, ", ")
+		result = append(result, *ds)
 	}
 
 	return result, nil
@@ -5660,6 +5651,7 @@ func (mgr *manager) getMostCommonSystemVersionForSystemType(projectID int) (map[
 	defer rows.Close()
 
 	systemVersions := make(map[int]string)
+	systemVersionCounts := make(map[int]int) // Um die Häufigkeit zu speichern
 
 	for rows.Next() {
 		var systemTypeID int
@@ -5672,8 +5664,12 @@ func (mgr *manager) getMostCommonSystemVersionForSystemType(projectID int) (map[
 			return nil, fmt.Errorf("Fehler beim Scannen der Zeile der häufigsten Systemversion: %v", err)
 		}
 
-		// Höchste Version für Systemtyp speichern
-		systemVersions[systemTypeID] = systemVersion
+		// Wenn noch keine Version für diesen SystemTypeID existiert oder die neue Version eine höhere Häufigkeit hat
+		if _, found := systemVersions[systemTypeID]; !found || deviceCount > systemVersionCounts[systemTypeID] {
+			// Höchste Version für Systemtyp speichern
+			systemVersions[systemTypeID] = systemVersion
+			systemVersionCounts[systemTypeID] = deviceCount
+		}
 	}
 
 	if err := rows.Err(); err != nil {

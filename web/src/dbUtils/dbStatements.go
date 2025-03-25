@@ -516,9 +516,14 @@ GROUP BY system_version
 ORDER BY system_version ASC;`
 
 var SELECT_Devices_and_Software_for_Project = `SELECT 
-    d.device_id, dt.type AS device_name, d.version AS device_version,
-    s.software_id, st.typeName AS software_name, s.version AS software_version,
-    GROUP_CONCAT(DISTINCT CONCAT(sys.version) ORDER BY CAST(sys.version AS DECIMAL) DESC SEPARATOR ', ')
+    d.device_id, 
+    dt.type AS device_name, 
+    d.version AS device_version,
+    s.software_id, 
+    st.typeName AS software_name, 
+    s.version AS software_version,
+    GROUP_CONCAT(DISTINCT CONCAT(sys.version) ORDER BY CAST(sys.version AS DECIMAL) DESC SEPARATOR ', ') AS system_versions,
+    COUNT(DISTINCT di.deviceInstance_id) AS device_count
 FROM sms_deviceInstance di
 JOIN sms_device d ON di.device_id = d.device_id
 JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
@@ -541,5 +546,9 @@ JOIN sms_system s ON dps.system_id = s.system_id
 JOIN sms_deviceInstance di ON dps.device_id = di.device_id
 WHERE di.project_id = ?
 GROUP BY s.systemtype_id, s.system_id
-ORDER BY device_count DESC
+ORDER BY 
+    device_count DESC,
+    CAST(SUBSTRING_INDEX(s.version, '.', 1) AS UNSIGNED) DESC,
+    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(s.version, '.', -2), '.', 1) AS UNSIGNED) DESC,
+    CAST(SUBSTRING_INDEX(s.version, '.', -1) AS UNSIGNED) DESC;
 `
