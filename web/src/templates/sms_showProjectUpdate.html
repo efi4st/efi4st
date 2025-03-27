@@ -25,6 +25,13 @@
       <div class="container">
         <h1>Project Update: {{projectInfo.name}} - (ID:{{projectInfo.project_id}})</h1>
         <div class="row">
+          <!-- Warnung über der Tabelle anzeigen, falls das System nicht "clean" ist -->
+          {% if notCleanSystem %}
+          <div class="alert alert-warning">
+            ⚠️ Not a clean System: Some devices do not match the expected system version.
+          </div>
+          {% endif %}
+
           <table class="table table-bordered">
             <thead class="table-dark">
             <tr>
@@ -40,13 +47,26 @@
             <tr>
               <td class="text-start w-65">
                 <strong>{{ entry.DeviceName }}</strong>
-                {% if entry.DeviceCount > 1 %} <span class="small">({{ entry.DeviceCount }}x)</span> {% endif %}
+                {% if entry.DeviceCount > 1 %}
+                <span class="small">({{ entry.DeviceCount }}x)</span>
+                {% endif %}
+                {% if entry.MostCommonSystemVersion %}
+                {% if entry.IsInvalidSystemVersion %}
+                <span class="text-danger small fst-italic">
+              (belongs to System {{ entry.MostCommonSystemVersion }})
+            </span>
+                {% else %}
+                <span class="text-muted small fst-italic">
+              (belongs to System {{ entry.MostCommonSystemVersion }})
+            </span>
+                {% endif %}
+                {% endif %}
               </td>
               <td class="bg-success text-white">
                 {{ entry.DeviceVersion }}
-                {% if entry.MostCommonSystemVersion %}
-                <div class="text-end small fst-italic">
-                  {{ entry.MostCommonSystemVersion }}
+                {% if entry.ShortenedSystemVersions %}
+                <div class="text-end small fst-italic text-muted">
+                  {{ entry.ShortenedSystemVersions }}
                 </div>
                 {% endif %}
               </td>
@@ -54,11 +74,11 @@
               <td class="bg-secondary text-white">-</td>
             </tr>
             <!-- Zugehörige Software -->
-            {% if entry.SoftwareName %}
+            {% for software in entry.SoftwareList %}
             <tr>
-              <td class="text-start w-65 ps-4">↳ {{ entry.SoftwareName }}</td>
+              <td class="text-start w-65 ps-4">↳ {{ software.SoftwareName }}</td>
               <td class="bg-primary text-white">
-                {{ entry.SoftwareVersion }}
+                {{ software.SoftwareVersion }}
                 {% if entry.MostCommonSystemVersion %}
                 <div class="text-end small fst-italic">
                   {{ entry.MostCommonSystemVersion }}
@@ -68,7 +88,7 @@
               <td class="bg-secondary text-white">-</td>
               <td class="bg-secondary text-white">-</td>
             </tr>
-            {% endif %}
+            {% endfor %}
             {% endfor %}
             </tbody>
           </table>

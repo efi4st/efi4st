@@ -29,7 +29,7 @@ func SMSprojectUpdate(ctx iris.Context) {
 	ctx.ViewData("projectInfo", projectInfo)
 
 	// Geräte + Software abrufen
-	deviceSoftwareList, err := dbprovider.GetDBManager().GetDevicesAndSoftwareForProject(projectID)
+	deviceSoftwareList, notCleanSystem, err := dbprovider.GetDBManager().GetDevicesAndSoftwareForProject(projectID)
 	if err != nil {
 		ctx.ViewData("error", "Error fetching device/software list!")
 		ctx.View("sms_showProjectUpdate.html")
@@ -37,6 +37,7 @@ func SMSprojectUpdate(ctx iris.Context) {
 	}
 
 	ctx.ViewData("deviceSoftwareList", deviceSoftwareList)
+	ctx.ViewData("notCleanSystem", notCleanSystem) // 🆕 Flag für die View setzen
 
 	ctx.View("sms_showProjectUpdate.html")
 }
