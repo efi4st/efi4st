@@ -8,6 +8,7 @@
 package routes
 
 import (
+	"github.com/efi4st/efi4st/classes"
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
@@ -24,20 +25,23 @@ func SMSprojectUpdate(ctx iris.Context) {
 		return
 	}
 
-	// Projekt-Infos abrufen
 	projectInfo := dbprovider.GetDBManager().GetSMSProjectInfo(projectID)
 	ctx.ViewData("projectInfo", projectInfo)
 
-	// Geräte + Software abrufen
-	deviceSoftwareList, notCleanSystem, err := dbprovider.GetDBManager().GetDevicesAndSoftwareForProject(projectID)
+	systemTypeMap, notCleanSystem, err := dbprovider.GetDBManager().GetDevicesAndSoftwareForProject(projectID)
 	if err != nil {
 		ctx.ViewData("error", "Error fetching device/software list!")
 		ctx.View("sms_showProjectUpdate.html")
 		return
 	}
 
-	ctx.ViewData("deviceSoftwareList", deviceSoftwareList)
-	ctx.ViewData("notCleanSystem", notCleanSystem) // 🆕 Flag für die View setzen
+	convertedMap := make(map[string][]classes.DeviceSoftwareInfo)
+	for key, value := range systemTypeMap {
+		convertedMap[strconv.Itoa(key)] = value // int → string
+	}
+
+	ctx.ViewData("systemTypeMap", convertedMap)
+	ctx.ViewData("notCleanSystem", notCleanSystem) // Für den "Not a clean System" Hinweis
 
 	ctx.View("sms_showProjectUpdate.html")
 }

@@ -27,11 +27,11 @@
         <div class="row">
           <!-- Warnung über der Tabelle anzeigen, falls das System nicht "clean" ist -->
           {% if notCleanSystem %}
-          <div class="alert alert-warning">
-            ⚠️ Not a clean System: Some devices do not match the expected system version.
-          </div>
+          <div class="alert alert-warning">⚠️ Not a clean System: Some devices do not match the expected system version.</div>
           {% endif %}
 
+          {% for systemType, deviceSoftwareList in systemTypeMap %}
+          <h4 class="mt-4">System Type {{ systemType }}</h4>
           <table class="table table-bordered">
             <thead class="table-dark">
             <tr>
@@ -43,7 +43,6 @@
             </thead>
             <tbody>
             {% for entry in deviceSoftwareList %}
-            <!-- Gerät -->
             <tr>
               <td class="text-start w-65">
                 <strong>{{ entry.DeviceName }}</strong>
@@ -53,12 +52,12 @@
                 {% if entry.MostCommonSystemVersion %}
                 {% if entry.IsInvalidSystemVersion %}
                 <span class="text-danger small fst-italic">
-              (belongs to System {{ entry.MostCommonSystemVersion }})
-            </span>
+                (belongs to System {{ entry.MostCommonSystemVersion }})
+              </span>
                 {% else %}
                 <span class="text-muted small fst-italic">
-              (belongs to System {{ entry.MostCommonSystemVersion }})
-            </span>
+                (belongs to System {{ entry.MostCommonSystemVersion }})
+              </span>
                 {% endif %}
                 {% endif %}
               </td>
@@ -66,14 +65,13 @@
                 {{ entry.DeviceVersion }}
                 {% if entry.ShortenedSystemVersions %}
                 <div class="text-end small fst-italic text-muted">
-                  {{ entry.ShortenedSystemVersions }}
+                  Systems:{{ entry.ShortenedSystemVersions }}
                 </div>
                 {% endif %}
               </td>
               <td class="bg-secondary text-white">-</td>
               <td class="bg-secondary text-white">-</td>
             </tr>
-            <!-- Zugehörige Software -->
             {% for software in entry.SoftwareList %}
             <tr>
               <td class="text-start w-65 ps-4">↳ {{ software.SoftwareName }}</td>
@@ -92,6 +90,7 @@
             {% endfor %}
             </tbody>
           </table>
+          {% endfor %}
         </div>
       </div> <!-- /container -->
       

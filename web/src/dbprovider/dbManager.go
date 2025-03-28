@@ -220,7 +220,7 @@ type Manager interface {
 	GetDeviceCheckByID(checkID int) (*classes.Sms_DeviceCheckDefinition, error)
 	UpdateDeviceCheck(check classes.Sms_DeviceCheckDefinition) error
 	GetSystemVersionStatistics() ([]classes.SystemVersionStats, error)
-	GetDevicesAndSoftwareForProject(projectID int) ([]classes.DeviceSoftwareInfo, bool, error)
+	GetDevicesAndSoftwareForProject(projectID int) (map[int][]classes.DeviceSoftwareInfo, bool, error)
 	getSystemTypeForDevice(deviceID int) (int, error)
 }
 
@@ -5524,7 +5524,7 @@ func (mgr *manager) GetSystemVersionStatistics() ([]classes.SystemVersionStats, 
 }
 
 
-func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.DeviceSoftwareInfo, bool, error) {
+func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) (map[int][]classes.DeviceSoftwareInfo, bool, error) {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_Devices_and_Software_for_Project)
 	if err != nil {
 		return nil, false, fmt.Errorf("Fehler beim Vorbereiten der Query: %v", err)
@@ -5538,8 +5538,8 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.De
 	defer rows.Close()
 
 	deviceMap := make(map[int]*classes.DeviceSoftwareInfo)
-	var result []classes.DeviceSoftwareInfo
-	notCleanSystem := false // 🆕 Flag für "Not a clean System"
+	systemTypeMap := make(map[int][]classes.DeviceSoftwareInfo) // 🆕 Map für Systemtypen
+	notCleanSystem := false
 
 	for rows.Next() {
 		var dsInfo classes.DeviceSoftwareInfo
@@ -5560,21 +5560,18 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.De
 
 		dsInfo.DeviceCount = deviceCount
 
-		// Systemversionen hinzufügen
 		if systemVersions.Valid {
 			dsInfo.SystemVersions = cleanSystemVersions(strings.Split(systemVersions.String, ", "))
 		}
 
-		// Software-Details zuweisen
 		if softwareID.Valid {
 			dsInfo.SoftwareList = append(dsInfo.SoftwareList, classes.SoftwareInfo{
-				SoftwareID:   int(softwareID.Int64),
-				SoftwareName: softwareName.String,
-				SoftwareVersion: softwareVersion.String,
+				SoftwareID:       int(softwareID.Int64),
+				SoftwareName:     softwareName.String,
+				SoftwareVersion:  softwareVersion.String,
 			})
 		}
 
-		// Gerät in die Map einfügen oder bestehende Software anhängen
 		if existingDevice, found := deviceMap[dsInfo.DeviceID]; found {
 			existingDevice.SoftwareList = append(existingDevice.SoftwareList, dsInfo.SoftwareList...)
 			existingDevice.SystemVersions = append(existingDevice.SystemVersions, dsInfo.SystemVersions...)
@@ -5583,7 +5580,6 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.De
 		}
 	}
 
-	// Häufigste Systemversionen abrufen
 	systemVersionsMap, err := mgr.getMostCommonSystemVersionForSystemType(projectID)
 	if err != nil {
 		fmt.Println("⚠️ Fehler beim Abrufen der häufigsten Systemversionen:", err)
@@ -5592,30 +5588,32 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) ([]classes.De
 	for _, ds := range deviceMap {
 		systemTypeID, err := mgr.getSystemTypeForDevice(ds.DeviceID)
 		if err != nil {
+			fmt.Printf("⚠️ Fehler beim Abrufen des SystemTyps für DeviceID %d: %v\n", ds.DeviceID, err)
+		}
+		fmt.Printf("✅ Device %d gehört zu SystemType %d\n", ds.DeviceID, systemTypeID)
+		if err != nil {
 			fmt.Println("Warnung: Kein Systemtyp für DeviceID", ds.DeviceID, err)
 			continue
 		}
 
 		if systemTypeID > 0 {
 			if mostCommonVersion, found := systemVersionsMap[systemTypeID]; found {
-				ds.MostCommonSystemVersion = mostCommonVersion // ✅ Die richtige errechnete Systemversion
+				ds.MostCommonSystemVersion = mostCommonVersion
 
-				// **Jetzt gegen ALLE Systemversionen des Geräts prüfen**
 				if !contains(ds.SystemVersions, mostCommonVersion) {
-					ds.IsInvalidSystemVersion = true // 🆕 Markierung setzen
-					notCleanSystem = true            // 🆕 Globales Flag setzen
+					ds.IsInvalidSystemVersion = true
+					notCleanSystem = true
 				}
 			}
 		}
 
-		// ✅ NEUE Variable für die GUI: Nur die 3 neuesten Versionen anzeigen
 		ds.ShortenedSystemVersions = strings.Join(shortenSystemVersions(ds.SystemVersions), ", ")
 
-		result = append(result, *ds)
+		// **🆕 Geräte nach Systemtyp gruppieren**
+		systemTypeMap[systemTypeID] = append(systemTypeMap[systemTypeID], *ds)
 	}
 
-
-	return result, notCleanSystem, nil
+	return systemTypeMap, notCleanSystem, nil
 }
 
 func contains(versions []string, version string) bool {
