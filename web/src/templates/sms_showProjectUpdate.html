@@ -22,76 +22,92 @@
         {% endif %}
       </div>
 
-      <div class="container">
-        <h1>Project Update: {{projectInfo.name}} - (ID:{{projectInfo.project_id}})</h1>
-        <div class="row">
-          <!-- Warnung über der Tabelle anzeigen, falls das System nicht "clean" ist -->
-          {% if notCleanSystem %}
-          <div class="alert alert-warning">⚠️ Not a clean System: Some devices do not match the expected system version.</div>
-          {% endif %}
+<div class="container">
+  <h1>Project Update: {{ projectInfo.name }} - (ID: {{ projectInfo.project_id }})</h1>
+  <div class="row">
+    {% for systemType, deviceSoftwareList in systemTypeMap %}
 
-          {% for systemType, deviceSoftwareList in systemTypeMap %}
-          <h4 class="mt-4">System Type {{ systemType }}</h4>
-          <table class="table table-bordered">
-            <thead class="table-dark">
-            <tr>
-              <th class="text-start">Device/Software</th>
-              <th>Database</th>
-              <th>Live-System</th>
-              <th>Update-Package</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for entry in deviceSoftwareList %}
-            <tr>
-              <td class="text-start w-65">
-                <strong>{{ entry.DeviceName }}</strong>
-                {% if entry.DeviceCount > 1 %}
-                <span class="small">({{ entry.DeviceCount }}x)</span>
-                {% endif %}
-                {% if entry.MostCommonSystemVersion %}
-                {% if entry.IsInvalidSystemVersion %}
-                <span class="text-danger small fst-italic">
-                (belongs to System {{ entry.MostCommonSystemVersion }})
-              </span>
-                {% else %}
-                <span class="text-muted small fst-italic">
-                (belongs to System {{ entry.MostCommonSystemVersion }})
-              </span>
-                {% endif %}
-                {% endif %}
-              </td>
-              <td class="bg-success text-white">
-                {{ entry.DeviceVersion }}
-                {% if entry.ShortenedSystemVersions %}
-                <div class="text-end small fst-italic text-muted">
-                  Systems:{{ entry.ShortenedSystemVersions }}
-                </div>
-                {% endif %}
-              </td>
-              <td class="bg-secondary text-white">-</td>
-              <td class="bg-secondary text-white">-</td>
-            </tr>
-            {% for software in entry.SoftwareList %}
-            <tr>
-              <td class="text-start w-65 ps-4">↳ {{ software.SoftwareName }}</td>
-              <td class="bg-primary text-white">
-                {{ software.SoftwareVersion }}
-                {% if entry.MostCommonSystemVersion %}
-                <div class="text-end small fst-italic">
-                  {{ entry.MostCommonSystemVersion }}
-                </div>
-                {% endif %}
-              </td>
-              <td class="bg-secondary text-white">-</td>
-              <td class="bg-secondary text-white">-</td>
-            </tr>
-            {% endfor %}
-            {% endfor %}
-            </tbody>
-          </table>
-          {% endfor %}
-        </div>
-      </div> <!-- /container -->
+    {# System Type Name holen #}
+    <h4 class="mt-4">System Type:
+      {% for item in systemTypeNameList %}
+      {% if item.Key == systemType %}
+      {{ item.Value }}
+      {% endif %}
+      {% endfor %}
+    </h4>
+
+    {# Clean-Status holen #}
+    {% for item in systemTypeCleanList %}
+    {% if item.Key == systemType %}
+    {% if item.Value == false %}
+    <div class="alert alert-warning">
+      ⚠️ Not a clean System: Some devices in this system type do not match the expected system version.
+    </div>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+
+    {# Tabelle beginnt hier #}
+    <table class="table table-bordered">
+      <thead class="table-dark">
+      <tr>
+        <th class="text-start">Device/Software</th>
+        <th>Database</th>
+        <th>Live-System</th>
+        <th>Update-Package</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for entry in deviceSoftwareList %}
+      <tr>
+        <td class="text-start w-65">
+          <strong>{{ entry.DeviceName }}</strong>
+          {% if entry.DeviceCount > 1 %}
+          <span class="small">({{ entry.DeviceCount }}x)</span>
+          {% endif %}
+          {% if entry.MostCommonSystemVersion %}
+          {% if entry.IsInvalidSystemVersion %}
+          <span class="text-danger small fst-italic">
+                                        (belongs to System {{ entry.MostCommonSystemVersion }})
+                                    </span>
+          {% else %}
+          <span class="text-muted small fst-italic">
+                                        (belongs to System {{ entry.MostCommonSystemVersion }})
+                                    </span>
+          {% endif %}
+          {% endif %}
+        </td>
+        <td class="bg-success text-white">
+          {{ entry.DeviceVersion }}
+          {% if entry.ShortenedSystemVersions %}
+          <div class="text-end small fst-italic text-muted">
+            Systems: {{ entry.ShortenedSystemVersions }}
+          </div>
+          {% endif %}
+        </td>
+        <td class="bg-secondary text-white">-</td>
+        <td class="bg-secondary text-white">-</td>
+      </tr>
+      {% for software in entry.SoftwareList %}
+      <tr>
+        <td class="text-start w-65 ps-4">↳ {{ software.SoftwareName }}</td>
+        <td class="bg-primary text-white">
+          {{ software.SoftwareVersion }}
+          {% if entry.MostCommonSystemVersion %}
+          <div class="text-end small fst-italic">
+            {{ entry.MostCommonSystemVersion }}
+          </div>
+          {% endif %}
+        </td>
+        <td class="bg-secondary text-white">-</td>
+        <td class="bg-secondary text-white">-</td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endfor %}
+  </div>
+</div>
       
 {% endblock %}

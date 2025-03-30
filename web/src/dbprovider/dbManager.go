@@ -222,6 +222,8 @@ type Manager interface {
 	GetSystemVersionStatistics() ([]classes.SystemVersionStats, error)
 	GetDevicesAndSoftwareForProject(projectID int) (map[int][]classes.DeviceSoftwareInfo, bool, error)
 	getSystemTypeForDevice(deviceID int) (int, error)
+	GetSystemTypeName(systemTypeID int) (string, error)
+	GetMostCommonSystemVersionForSystemType(projectID int) (map[int]string, error)
 }
 
 type manager struct {
@@ -5580,7 +5582,7 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) (map[int][]cl
 		}
 	}
 
-	systemVersionsMap, err := mgr.getMostCommonSystemVersionForSystemType(projectID)
+	systemVersionsMap, err := mgr.GetMostCommonSystemVersionForSystemType(projectID)
 	if err != nil {
 		fmt.Println("⚠️ Fehler beim Abrufen der häufigsten Systemversionen:", err)
 	}
@@ -5647,7 +5649,7 @@ func (mgr *manager) getSystemTypeForDevice(deviceID int) (int, error) {
 	return int(systemTypeID.Int64), nil
 }
 
-func (mgr *manager) getMostCommonSystemVersionForSystemType(projectID int) (map[int]string, error) {
+func (mgr *manager) GetMostCommonSystemVersionForSystemType(projectID int) (map[int]string, error) {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_Most_Common_System_Version)
 	if err != nil {
 		return nil, fmt.Errorf("Fehler beim Vorbereiten der Abfrage zur häufigsten Systemversion: %v", err)
@@ -5729,4 +5731,20 @@ func cleanSystemVersions(versions []string) []string {
 		}
 	}
 	return cleaned
+}
+
+func (mgr *manager) GetSystemTypeName(systemTypeID int) (string, error) {
+	var systemTypeName sql.NullString
+
+	query := `SELECT type FROM sms_systemtype WHERE systemtype_id = ?`
+	row := mgr.db.QueryRow(query, systemTypeID)
+	err := row.Scan(&systemTypeName)
+
+	if err == sql.ErrNoRows {
+		return "Unknown System Type", nil
+	} else if err != nil {
+		return "", fmt.Errorf("Fehler beim Abrufen des SystemType-Namens für ID %d: %v", systemTypeID, err)
+	}
+
+	return systemTypeName.String, nil
 }
