@@ -41,7 +41,7 @@
     {% if item.Key == systemType %}
     {% if item.Value == false %}
     <div class="alert alert-warning">
-      ⚠️ Not a clean System: Some devices in this system type do not match the expected system version.
+      ⚠️ Misconfigured System?: Inaccurate device versions!
     </div>
     {% endif %}
     {% endif %}
@@ -59,7 +59,7 @@
       </thead>
       <tbody>
       {% for entry in deviceSoftwareList %}
-      <tr>
+      <tr class="bg-lightgrey"> <!-- Set device background color -->
         <td class="text-start w-65">
           <strong>{{ entry.DeviceName }}</strong>
           {% if entry.DeviceCount > 1 %}
@@ -68,16 +68,16 @@
           {% if entry.MostCommonSystemVersion %}
           {% if entry.IsInvalidSystemVersion %}
           <span class="text-danger small fst-italic">
-                                        (belongs to System {{ entry.MostCommonSystemVersion }})
-                                    </span>
+                (belongs to System {{ entry.MostCommonSystemVersion }})
+              </span>
           {% else %}
           <span class="text-muted small fst-italic">
-                                        (belongs to System {{ entry.MostCommonSystemVersion }})
-                                    </span>
+                (belongs to System {{ entry.MostCommonSystemVersion }})
+              </span>
           {% endif %}
           {% endif %}
         </td>
-        <td class="bg-success text-white">
+        <td >
           {{ entry.DeviceVersion }}
           {% if entry.ShortenedSystemVersions %}
           <div class="text-end small fst-italic text-muted">
@@ -89,13 +89,13 @@
         <td class="bg-secondary text-white">-</td>
       </tr>
       {% for software in entry.SoftwareList %}
-      <tr>
+      <tr class="bg-lightergrey"> <!-- Set software background color -->
         <td class="text-start w-65 ps-4">↳ {{ software.SoftwareName }}</td>
-        <td class="bg-primary text-white">
+        <td>
           {{ software.SoftwareVersion }}
           {% if entry.MostCommonSystemVersion %}
           <div class="text-end small fst-italic">
-            {{ entry.MostCommonSystemVersion }}
+            Systems: {{ entry.MostCommonSystemVersion }}
           </div>
           {% endif %}
         </td>
