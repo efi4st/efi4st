@@ -53,5 +53,7 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(sms_projectSettingsLink_schema)		// SMS
 	db.MustExec(sms_deviceIPDefinition_schema)		// SMS
 	db.MustExec(sms_deviceCheckDefinition_schema)	// SMS
+	db.MustExec(sms_update_schema)					// SMS
+	db.MustExec(sms_update_package_schema)			// SMS
 }
 

@@ -1,0 +1,111 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h2>Edit SMS Update</h2>
+      <form action="/sms_updates/update/{{ update.ID }}" method="post">
+
+        <div class="form-group">
+          <label for="from_system_id">From System:</label>
+          <select class="form-control" id="from_system_id" name="from_system_id">
+            {% for system in systems %}
+            <option value="{{ system.SystemID }}"
+                    {% if update.FromSystemID == system.SystemID %}selected{% endif %}>
+              {{ system.SystemType }} - {{ system.Version }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="to_system_id">To System:</label>
+          <select class="form-control" id="to_system_id" name="to_system_id">
+            {% for system in systems %}
+            <option value="{{ system.SystemID }}"
+                    {% if update.ToSystemID == system.SystemID %}selected{% endif %}>
+              {{ system.SystemType }} - {{ system.Version }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="mandatory_system_id">Mandatory System:</label>
+          <select class="form-control" id="mandatory_system_id" name="mandatory_system_id">
+            {% for system in systems %}
+            <option value="{{ system.SystemID }}"
+                    {% if update.MandatorySystemID == system.SystemID %}selected{% endif %}>
+              {{ system.SystemType }} - {{ system.Version }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="update_type">Update Type:</label>
+          <select class="form-control" id="update_type" name="update_type">
+            {% for updateType in updateTypes %}
+            <option value="{{ updateType }}"
+                    {% if update.UpdateType == updateType %}selected{% endif %}>
+              {{ updateType }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="project_name">Project Name:</label>
+          <input class="form-control" type="text" id="project_name" name="project_name"
+                 value="{{ update.ProjectName }}" placeholder="Enter project name" />
+        </div>
+
+        <div class="form-group">
+          <label for="external_issue_link">External Issue Link:</label>
+          <input class="form-control" type="text" id="external_issue_link" name="external_issue_link"
+                 value="{{ update.IssueLink }}" placeholder="Enter external issue link" />
+        </div>
+
+        <div class="form-group">
+          <label for="additional_info">Additional Information:</label>
+          <textarea class="form-control" id="additional_info" name="additional_info"
+                    rows="3">{{ update.AdditionalInfo }}</textarea>
+        </div>
+
+        <div class="form-group form-check">
+          <input class="form-check-input" type="checkbox" id="is_approved" name="is_approved"
+                 {% if update.IsApproved %}checked{% endif %}>
+          <label class="form-check-label" for="is_approved">Is Approved</label>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Changes</button>
+        <a href="/sms_updates/show/{{ update.ID }}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+      
+{% endblock %}
+

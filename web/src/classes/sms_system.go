@@ -53,3 +53,11 @@ func (s *Sms_System) Date() string {
 func (s *Sms_System) SetDate(date string) {
 	s.date = date
 }
+
+type Sms_System_Query struct {
+	SystemID     int    `db:"system_id"`
+	SystemTypeID string `db:"systemtype_id"`
+	SystemType   string `db:"system_type"` // Den systemType aus der sms_systemtype Tabelle
+	Version      string `db:"version"`
+	Date         string `db:"date"`
+}

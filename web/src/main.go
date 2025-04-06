@@ -517,6 +517,42 @@ func irisMain()() {
 
 	app.Get("/sms_projectUpdates/show/{id:int}", routes.SMSprojectUpdate)
 
+	// GET: http://localhost:8144/sms_updates
+	app.Get("/sms_updates", routes.SMSUpdates)
+
+	// GET: http://localhost:8144/sms_updates/create
+	app.Get("/sms_updates/create", routes.CreateSMSUpdate)
+
+	// POST: http://localhost:8144/sms_updates/add
+	app.Post("/sms_updates/add", routes.AddSMSUpdate)
+
+	// POST: http://localhost:8144/sms_updates/add
+	app.Post("/sms_updates/update/{id:string}", routes.SMSUpdateEditPost)
+
+	// GET: http://localhost:8144/sms_updates
+	app.Get("/sms_updates/edit/{id:string}", routes.EditSMSUpdateForm)
+
+	// GET: http://localhost:8144/sms_updates/show/1
+	app.Get("/sms_updates/show/{id:string}", routes.ShowSMSUpdateDetails)
+
+	// GET: http://localhost:8144/sms_updates/remove/1
+	app.Get("/sms_updates/remove/{id:string}", routes.RemoveSMSUpdate)
+
+	// GET: http://localhost:8144/sms_update_packages
+	app.Get("/sms_update_packages", routes.SMSUpdatePackages)
+
+	// GET: http://localhost:8144/sms_update_packages/create
+	app.Get("/sms_update_packages/create", routes.CreateSMSUpdatePackage)
+
+	// POST: http://localhost:8144/sms_update_packages/add
+	app.Post("/sms_update_packages/add", routes.AddSMSUpdatePackage)
+
+	// GET: http://localhost:8144/sms_update_packages/show/1
+	app.Get("/sms_update_packages/show/{id:string}", routes.ShowSMSUpdatePackage)
+
+	// GET: http://localhost:8144/sms_update_packages/remove/1
+	app.Get("/sms_update_packages/remove/{id:string}", routes.RemoveSMSUpdatePackage)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

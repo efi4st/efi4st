@@ -224,6 +224,19 @@ type Manager interface {
 	getSystemTypeForDevice(deviceID int) (int, error)
 	GetSystemTypeName(systemTypeID int) (string, error)
 	GetMostCommonSystemVersionForSystemType(projectID int) (map[int]string, error)
+	// sms_update
+	AddSMSUpdate(fromSystemID, toSystemID, mandatorySystemID int, updateType, additionalInfo string, isApproved bool, externalIssueLink, projectName string) error
+	GetAllSMSUpdates() ([]classes.Sms_Update, error)
+	GetSMSUpdateByID(updateID int) (*classes.Sms_UpdateDetails, error)
+	UpdateSMSUpdate(update classes.Sms_UpdateDetails) error
+	DeleteSMSUpdate(updateID int) error
+	// sms_update_package
+	AddSMSUpdatePackage(updateID, deviceTypeID int, packageIdentifier, packageVersion, packageName, updatePackageFile, creator string, packageDescription *string, isTested bool) error
+	GetAllSMSUpdatePackages() ([]classes.Sms_UpdatePackage, error)
+	GetSMSUpdatePackageByID(packageID int) (*classes.Sms_UpdatePackage, error)
+	UpdateSMSUpdatePackage(pkg classes.Sms_UpdatePackage) error
+	DeleteSMSUpdatePackage(packageID int) error
+	GetAllSystems() ([]classes.Sms_System_Query, error)
 }
 
 type manager struct {
@@ -5747,4 +5760,245 @@ func (mgr *manager) GetSystemTypeName(systemTypeID int) (string, error) {
 	}
 
 	return systemTypeName.String, nil
+}
+
+
+////////////////////////////////
+//
+// sms_update
+//
+//////////////////////////////
+func (mgr *manager) AddSMSUpdate(fromSystemID, toSystemID, mandatorySystemID int, updateType, additionalInfo string, isApproved bool, externalIssueLink, projectName string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_update)  // Hier wird die SQL-Anweisung aus dbUtils verwendet
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(fromSystemID, toSystemID, mandatorySystemID, updateType, additionalInfo, isApproved, externalIssueLink, projectName)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func (mgr *manager) GetAllSMSUpdates() ([]classes.Sms_Update, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_all_sms_updates)  // Abfrage mit 10 Feldern
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var updates []classes.Sms_Update
+	for rows.Next() {
+		var update classes.Sms_Update
+		err = rows.Scan(
+			&update.ID,
+			&update.UpdateType,
+			&update.IsApproved,
+			&update.CreatedAt,
+			&update.FromSystemType,
+			&update.FromSystemVersion,
+			&update.ToSystemType,
+			&update.ToSystemVersion,
+			&update.MandatorySystemType,
+			&update.MandatorySystemVersion,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		updates = append(updates, update)
+	}
+	return updates, nil
+}
+
+func (mgr *manager) GetSMSUpdateByID(updateID int) (*classes.Sms_UpdateDetails, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_update_by_id_with_systems)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var update classes.Sms_UpdateDetails
+	err = stmt.QueryRow(updateID).Scan(
+		&update.ID,
+		&update.FromSystemID,
+		&update.ToSystemID,
+		&update.MandatorySystemID,
+		&update.UpdateType,
+		&update.AdditionalInfo,
+		&update.IsApproved,
+		&update.IssueLink,
+		&update.ProjectName,
+		&update.CreatedAt,
+		&update.FromSystemTypeID,
+		&update.FromSystemType,
+		&update.FromSystemVersion,
+		&update.ToSystemTypeID,
+		&update.ToSystemType,
+		&update.ToSystemVersion,
+		&update.MandatorySystemTypeID,
+		&update.MandatorySystemType,
+		&update.MandatorySystemVersion,
+	)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return &update, nil
+}
+
+func (mgr *manager) UpdateSMSUpdate(update classes.Sms_UpdateDetails) error {
+	// Vorbereiten des Statements mit der aus der dbutils ausgelagerten Query
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_sms_update)
+	if err != nil {
+		fmt.Println("Fehler beim Vorbereiten des Updates:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	// Ausführen des Updates mit den IDs und anderen Details
+	_, err = stmt.Exec(
+		update.FromSystemID,
+		update.ToSystemID,
+		update.MandatorySystemID,
+		update.UpdateType,
+		update.AdditionalInfo,
+		update.IsApproved,
+		update.IssueLink,
+		update.ProjectName,
+		update.ID,
+	)
+
+	if err != nil {
+		fmt.Println("Fehler beim Ausführen des Updates:", err)
+		return err
+	}
+
+	return nil
+}
+
+func (mgr *manager) DeleteSMSUpdate(updateID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_update)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(updateID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+
+//////////////////
+//
+// sms_update_package
+//
+//////////////////
+func (mgr *manager) AddSMSUpdatePackage(updateID, deviceTypeID int, packageIdentifier, packageVersion, packageName, updatePackageFile, creator string, packageDescription *string, isTested bool) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_update_package)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(updateID, deviceTypeID, packageIdentifier, packageVersion, packageName, packageDescription, updatePackageFile, creator, isTested)
+	return err
+}
+
+func (mgr *manager) GetAllSMSUpdatePackages() ([]classes.Sms_UpdatePackage, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_all_sms_update_packages)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var packages []classes.Sms_UpdatePackage
+	for rows.Next() {
+		var pkg classes.Sms_UpdatePackage
+		err = rows.Scan(&pkg.ID, &pkg.UpdateID, &pkg.DeviceTypeID, &pkg.PackageIdentifier, &pkg.PackageVersion, &pkg.PackageName, &pkg.PackageDescription, &pkg.UpdatePackageFile, &pkg.Creator, &pkg.IsTested, &pkg.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		packages = append(packages, pkg)
+	}
+	return packages, nil
+}
+
+func (mgr *manager) GetSMSUpdatePackageByID(packageID int) (*classes.Sms_UpdatePackage, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_update_package_by_id)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var pkg classes.Sms_UpdatePackage
+	err = stmt.QueryRow(packageID).Scan(&pkg.ID, &pkg.UpdateID, &pkg.DeviceTypeID, &pkg.PackageIdentifier, &pkg.PackageVersion, &pkg.PackageName, &pkg.PackageDescription, &pkg.UpdatePackageFile, &pkg.Creator, &pkg.IsTested, &pkg.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &pkg, nil
+}
+
+func (mgr *manager) UpdateSMSUpdatePackage(pkg classes.Sms_UpdatePackage) error {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_sms_update_package)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(pkg.UpdateID, pkg.DeviceTypeID, pkg.PackageIdentifier, pkg.PackageVersion, pkg.PackageName, pkg.PackageDescription, pkg.UpdatePackageFile, pkg.Creator, pkg.IsTested, pkg.ID)
+	return err
+}
+
+func (mgr *manager) DeleteSMSUpdatePackage(packageID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_update_package)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(packageID)
+	return err
+}
+
+func (mgr *manager) GetAllSystems() ([]classes.Sms_System_Query, error) {
+	// Verwende die ausgelagerte SQL-Abfrage
+	rows, err := mgr.db.Query(dbUtils.SELECT_all_systems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var systems []classes.Sms_System_Query
+	for rows.Next() {
+		var system classes.Sms_System_Query
+		// Scannen der Daten in das neue Struct
+		err := rows.Scan(&system.SystemID, &system.SystemTypeID, &system.SystemType, &system.Version, &system.Date)
+		if err != nil {
+			return nil, err
+		}
+		systems = append(systems, system)
+	}
+	return systems, nil
 }

@@ -8,8 +8,6 @@
       <div class="col-md-3"></div>
       <div class="col-md-8">
         <h1 class="display-3" ></h1>
-        <h4 hidden class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for security testing / fuzzing.</h4>
-        <p hidden><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
       </div>
       <div class="col-md-1"></div>
     </div>
@@ -72,7 +70,7 @@
           </li>
 
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Config
             </a>
             <div class="dropdown-menu bg-dark">
@@ -83,7 +81,7 @@
           </li>
 
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Doc
             </a>
             <div class="dropdown-menu bg-dark">
@@ -95,7 +93,7 @@
 
           <!-- Misc Dropdown -->
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Misc
             </a>
             <div class="dropdown-menu bg-dark">
@@ -111,49 +109,51 @@
   </div>
 </div>
 <hr>
+
 <div class="container">
   <div class="row">
-    <p>
-      <a class="btn btn-primary btn-lg" href="/sms_deviceCheckDefinitions/createSMSDeviceCheckDefinition" role="button">New Check &raquo;</a>
-    </p>
+    <p><a class="btn btn-primary btn-lg" href="/sms_updates/create" role="button">New Update &raquo;</a></p>
   </div>
 
   <div class="row">
-    <div class="col-md-12">
-      <h2>Check Definitions:</h2>
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+      <h2>Updates:</h2>
       <input class="form-control" id="myInput" type="text" placeholder="Search..">
-      <br>
       <table class="table">
         <thead>
         <tr>
-          <th>Test Name</th>
-          <th>Device Type</th>
-          <th>CheckTypes</th>
-          <th>Applicable Versions</th>
-          <th>Filter</th>
-          <th>Description</th>
+          <th>Created</th>
+          <th>Created</th>
+          <th>From Version</th>
+          <th>To Version</th>
+          <th>Type</th>
+          <th>Approved</th>
           <th><i class="fa fa-trash-o"></i></th>
         </tr>
         </thead>
         <tbody id="myTable">
-        {% for check in deviceCheckDefinitionsList %}
-        <tr>
-          <td><a href="/sms_deviceCheckDefinitions/show/{{ check.ID }}">{{ check.TestName }}</a></td>
-          <td>{{ check.DeviceTypeName }}</td>
-          <td>{{ check.CheckType }}</td>
-          <td>{{ check.ApplicableVersions }}</td>
-          <td>{{ check.FilterCondition }}</td>
-          <td>{{ check.TestDescription|truncatechars:13 }}</td>
+        {% for update in updateList %}
+        <tr>>
+          <td><a href="/sms_updates/show/{{ update.ID }}">{{ update.ID }}</a></td>
+          <td>{{ update.CreatedAt|truncatechars:13 }}</td>
+          <td>{{ update.FromSystemType }} - {{ update.FromSystemVersion }}</td>
+          <td>{{ update.ToSystemType }} - {{ update.ToSystemVersion }}</td>
+          <td>{{ update.UpdateType }}</td>
           <td>
-            <a href="/sms_deviceCheckDefinitions/remove/{{check.ID}}" class="button">
-              <i class="fa fa-close"></i>
-            </a>
+            {% if update.IsApproved %}
+            ✅
+            {% else %}
+            ❌
+            {% endif %}
           </td>
+          <td><a href="/sms_updates/remove/{{ update.ID }}" class="button"><i class="fa fa-close"></i></a></td>
         </tr>
         {% endfor %}
         </tbody>
       </table>
     </div>
+    <div class="col-md-2"></div>
   </div>
 
   <hr>

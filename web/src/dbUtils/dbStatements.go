@@ -552,3 +552,75 @@ ORDER BY
     CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(s.version, '.', -2), '.', 1) AS UNSIGNED) DESC,
     CAST(SUBSTRING_INDEX(s.version, '.', -1) AS UNSIGNED) DESC;
 `
+
+// sms_update
+var INSERT_sms_update = `INSERT INTO sms_update (from_system_id, to_system_id, mandatory_system_id, update_type, additional_info, is_approved, external_issue_link, project_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW());`
+var SELECT_all_sms_updates = `SELECT
+    u.update_id AS update_id,
+    u.update_type,
+    u.is_approved,
+    u.created_at,
+    fstype.type AS from_system_type,
+    fs.version AS from_system_version,
+    tstype.type AS to_system_type,
+    ts.version AS to_system_version, 
+    mstype.type AS mandatory_system_type,
+    ms.version AS mandatory_system_version
+FROM sms_update u
+LEFT JOIN sms_system fs ON u.from_system_id = fs.system_id
+LEFT JOIN sms_systemtype fstype ON fs.systemtype_id = fstype.systemtype_id
+LEFT JOIN sms_system ts ON u.to_system_id = ts.system_id
+LEFT JOIN sms_systemtype tstype ON ts.systemtype_id = tstype.systemtype_id
+LEFT JOIN sms_system ms ON u.mandatory_system_id = ms.system_id
+LEFT JOIN sms_systemtype mstype ON ms.systemtype_id = mstype.systemtype_id;`
+var SELECT_sms_update_by_id = `SELECT update_id, from_system_id, to_system_id, mandatory_system_id, update_type, additional_info, is_approved, external_issue_link, project_name, created_at FROM sms_update WHERE update_id = ?;`
+var UPDATE_sms_update = `
+UPDATE sms_update
+SET 
+  from_system_id = ?,
+  to_system_id = ?,
+  mandatory_system_id = ?,
+  update_type = ?,
+  additional_info = ?,
+  is_approved = ?,
+  external_issue_link = ?,
+  project_name = ?
+WHERE update_id = ?;`
+var DELETE_sms_update = `DELETE FROM sms_update WHERE update_id = ?;`
+var SELECT_all_systems = `SELECT s.system_id, s.systemtype_id, st.type, s.version, s.date FROM sms_system s JOIN sms_systemtype st ON s.systemtype_id = st.systemtype_id;`
+var SELECT_sms_update_by_id_with_systems = `SELECT
+    u.update_id AS update_id,
+    u.from_system_id,
+    u.to_system_id,
+    u.mandatory_system_id,
+    u.update_type,
+    u.additional_info,
+    u.is_approved,
+    u.external_issue_link AS issue_link,
+    u.project_name,
+    u.created_at,
+    fs.systemtype_id AS from_systemtype_id,
+    fstype.type AS from_system_name,  -- Systemname holen
+    fs.version AS from_system_version,
+    ts.systemtype_id AS to_systemtype_id,
+    tstype.type AS to_system_name,  -- Systemname holen
+    ts.version AS to_system_version,
+    ms.systemtype_id AS mandatory_systemtype_id,
+    mstype.type AS mandatory_system_name,  -- Systemname holen
+    ms.version AS mandatory_system_version
+FROM sms_update u
+LEFT JOIN sms_system fs ON u.from_system_id = fs.system_id
+LEFT JOIN sms_systemtype fstype ON fs.systemtype_id = fstype.systemtype_id  -- Join für Systemname
+LEFT JOIN sms_system ts ON u.to_system_id = ts.system_id
+LEFT JOIN sms_systemtype tstype ON ts.systemtype_id = tstype.systemtype_id  -- Join für Systemname
+LEFT JOIN sms_system ms ON u.mandatory_system_id = ms.system_id
+LEFT JOIN sms_systemtype mstype ON ms.systemtype_id = mstype.systemtype_id  -- Join für Systemname
+WHERE u.update_id = ?;`
+
+
+// sms_update_package
+var INSERT_sms_update_package = `INSERT INTO sms_update_package (update_id, device_type_id, package_identifier, package_version, package_name, package_description, update_package_file, creator, is_tested, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW());`
+var SELECT_all_sms_update_packages = `SELECT package_id, update_id, device_type_id, package_identifier, package_version, package_name, package_description, update_package_file, creator, is_tested, created_at FROM sms_update_package;`
+var SELECT_sms_update_package_by_id = `SELECT package_id, update_id, device_type_id, package_identifier, package_version, package_name, package_description, update_package_file, creator, is_tested, created_at FROM sms_update_package WHERE package_id = ?;`
+var UPDATE_sms_update_package = `UPDATE sms_update_package SET update_id = ?, device_type_id = ?, package_identifier = ?, package_version = ?, package_name = ?, package_description = ?, update_package_file = ?, creator = ?, is_tested = ? WHERE package_id = ?;`
+var DELETE_sms_update_package = `DELETE FROM sms_update_package WHERE package_id = ?;`

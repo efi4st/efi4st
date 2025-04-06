@@ -518,3 +518,38 @@ CREATE TABLE IF NOT EXISTS sms_deviceCheckDefinition (
     CONSTRAINT fk_devicecheckdefinition_deviceType FOREIGN KEY (device_type_id) 
         REFERENCES sms_devicetype(devicetype_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;`
+
+var sms_update_schema = `
+CREATE TABLE IF NOT EXISTS sms_update (
+    update_id INT(11) NOT NULL AUTO_INCREMENT,
+    from_system_id INT(11) NOT NULL,
+    to_system_id INT(11) NOT NULL,
+    mandatory_system_id INT(11) NOT NULL,  -- NEU: Pflichtsystemversion für das Update
+    update_type ENUM('security', 'bugfix', 'feature', 'maintenance') NOT NULL DEFAULT 'bugfix',
+    additional_info VARCHAR(255) DEFAULT NULL,
+    is_approved BOOLEAN DEFAULT FALSE,
+    external_issue_link VARCHAR(255) DEFAULT NULL,  -- NEU: Link zu einem externen Ticket-System
+    project_name VARCHAR(255) DEFAULT NULL,  -- NEU: Optional, falls das Update projektspezifisch ist
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (update_id),
+    CONSTRAINT sms_update_ibfk_1 FOREIGN KEY (from_system_id) REFERENCES sms_system (system_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    CONSTRAINT sms_update_ibfk_2 FOREIGN KEY (to_system_id) REFERENCES sms_system (system_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    CONSTRAINT sms_update_ibfk_3 FOREIGN KEY (mandatory_system_id) REFERENCES sms_system (system_id) ON DELETE NO ACTION ON UPDATE CASCADE  -- NEU: Beziehung zur Pflichtversion
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;`
+
+var sms_update_package_schema = `
+CREATE TABLE IF NOT EXISTS sms_update_package (
+    package_id INT(11) NOT NULL AUTO_INCREMENT,
+    update_id INT(11) NOT NULL,
+    device_type_id INT(11) NOT NULL,
+    package_identifier VARCHAR(100) NOT NULL UNIQUE,
+    package_version VARCHAR(50) NOT NULL,
+    package_name VARCHAR(255) NOT NULL,
+    package_description TEXT DEFAULT NULL,
+    update_package_file VARCHAR(255) NOT NULL,
+    creator VARCHAR(255) NOT NULL,
+    is_tested BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (package_id),
+    CONSTRAINT sms_update_package_ibfk_1 FOREIGN KEY (update_id) REFERENCES sms_update (update_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;`
