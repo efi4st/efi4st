@@ -230,6 +230,7 @@ type Manager interface {
 	GetSMSUpdateByID(updateID int) (*classes.Sms_UpdateDetails, error)
 	UpdateSMSUpdate(update classes.Sms_UpdateDetails) error
 	DeleteSMSUpdate(updateID int) error
+	GetSMSUpdateDetailsForProject(projectID int) ([]classes.Sms_UpdateDetails, error)
 	// sms_update_package
 	AddSMSUpdatePackage(updateID, deviceTypeID int, packageIdentifier, packageVersion, packageName, updatePackageFile, creator string, packageDescription *string, isTested bool) error
 	GetAllSMSUpdatePackages() ([]classes.Sms_UpdatePackage, error)
@@ -5903,6 +5904,57 @@ func (mgr *manager) DeleteSMSUpdate(updateID int) error {
 	return err
 }
 
+func (mgr *manager) GetSMSUpdateDetailsForProject(projectID int) ([]classes.Sms_UpdateDetails, error) {
+	// Bereite die SQL-Abfrage vor
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_update_details_for_project)
+	if err != nil {
+		fmt.Println("Prepare failed:", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	// Führe die SQL-Abfrage aus
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		fmt.Println("Query failed:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Slice für die Ergebnisse
+	var updates []classes.Sms_UpdateDetails
+	for rows.Next() {
+		var update classes.Sms_UpdateDetails
+
+		// Mappe die Ergebnisse auf das Struct
+		err := rows.Scan(
+			&update.ID,
+			&update.UpdateType,
+			&update.IsApproved,
+			&update.CreatedAt,
+			&update.FromSystemType,
+			&update.FromSystemVersion,
+			&update.ToSystemType,
+			&update.ToSystemVersion,
+			&update.MandatorySystemType,
+			&update.MandatorySystemVersion,
+			&update.ProjectName,
+			&update.FromSystemTypeID,
+			&update.ToSystemTypeID,
+			&update.MandatorySystemTypeID,
+		)
+		if err != nil {
+			log.Println("Row Scan failed:", err)
+			return nil, err
+		}
+
+		// Füge das Update der Liste hinzu
+		updates = append(updates, update)
+	}
+
+	// Gib die Liste zurück
+	return updates, nil
+}
 
 //////////////////
 //

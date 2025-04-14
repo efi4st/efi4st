@@ -27,27 +27,46 @@
   <div class="row">
     {% for systemType, deviceSoftwareList in systemTypeMap %}
 
-    {# System Type Name holen #}
-    <h4 class="mt-4">System Type:
-      {% for item in systemTypeNameList %}
-      {% if item.Key == systemType %}
-      {{ item.Value }}
+    {# SystemType-Name bestimmen (ohne set oder namespace) #}
+    {% for item in systemTypeNameList %}
+    {% if item.Key == systemType %}
+    {% with item.Value as systemTypeName %}
+
+    <div class="d-flex justify-content-between align-items-start mt-4 mb-2">
+      <h4 class="mb-0">System Type: {{ systemTypeName }}</h4>
+
+      {# CLEAN STATUS — wird nun mittig eingebaut, falls nötig #}
+      {% for item in systemTypeCleanList %}
+      {% if item.Key == systemType and not item.Value %}
+      <div class="alert alert-warning py-1 px-3 mb-0 mx-auto text-center">
+        ⚠️ Misconfigured System?: Inaccurate device versions!
+      </div>
       {% endif %}
       {% endfor %}
-    </h4>
 
-    {# Clean-Status holen #}
-    {% for item in systemTypeCleanList %}
-    {% if item.Key == systemType %}
-    {% if item.Value == false %}
-    <div class="alert alert-warning">
-      ⚠️ Misconfigured System?: Inaccurate device versions!
+      {# DROPDOWN: Nur Updates für den aktuellen SystemType anzeigen #}
+      {% for updateGroup in systemTypeUpdates %}
+      {% if updateGroup.SystemTypeName == systemTypeName %}
+      <form method="get" action="" class="ms-auto">
+        <input type="hidden" name="system_type_id" value="{{ systemType }}" />
+        <div class="mb-0">
+          <label for="updateSelect{{ systemType }}" class="me-2">Update auswählen:</label>
+          <select name="update_id" id="updateSelect{{ systemType }}" onchange="this.form.submit()" class="form-select d-inline-block w-auto">
+            <option value="">-- Kein Update ausgewählt --</option>
+            {% for update in updateGroup.Updates %}
+            <option value="{{ update.ID }}">
+              Nach {{ update.ToSystemVersion }} ({{ update.UpdateType }})
+              {% if update.ProjectName %} [Projekt: {{ update.ProjectName }}] {% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+      {% endif %}
+      {% endfor %}
     </div>
-    {% endif %}
-    {% endif %}
-    {% endfor %}
 
-    {# Tabelle beginnt hier #}
+    {# TABELLE START #}
     <table class="table table-bordered">
       <thead class="table-dark">
       <tr>
@@ -59,7 +78,7 @@
       </thead>
       <tbody>
       {% for entry in deviceSoftwareList %}
-      <tr class="bg-lightgrey"> <!-- Set device background color -->
+      <tr class="bg-lightgrey">
         <td class="text-start w-65">
           <strong>{{ entry.DeviceName }}</strong>
           {% if entry.DeviceCount > 1 %}
@@ -67,17 +86,13 @@
           {% endif %}
           {% if entry.MostCommonSystemVersion %}
           {% if entry.IsInvalidSystemVersion %}
-          <span class="text-danger small fst-italic">
-                (belongs to System {{ entry.MostCommonSystemVersion }})
-              </span>
+          <span class="text-danger small fst-italic">(belongs to System {{ entry.MostCommonSystemVersion }})</span>
           {% else %}
-          <span class="text-muted small fst-italic">
-                (belongs to System {{ entry.MostCommonSystemVersion }})
-              </span>
+          <span class="text-muted small fst-italic">(belongs to System {{ entry.MostCommonSystemVersion }})</span>
           {% endif %}
           {% endif %}
         </td>
-        <td >
+        <td>
           {{ entry.DeviceVersion }}
           {% if entry.ShortenedSystemVersions %}
           <div class="text-end small fst-italic text-muted">
@@ -88,8 +103,9 @@
         <td class="bg-secondary text-white">-</td>
         <td class="bg-secondary text-white">-</td>
       </tr>
+
       {% for software in entry.SoftwareList %}
-      <tr class="bg-lightergrey"> <!-- Set software background color -->
+      <tr class="bg-lightergrey">
         <td class="text-start w-65 ps-4">↳ {{ software.SoftwareName }}</td>
         <td>
           {{ software.SoftwareVersion }}
@@ -106,6 +122,10 @@
       {% endfor %}
       </tbody>
     </table>
+
+    {% endwith %}
+    {% endif %}
+    {% endfor %}
     {% endfor %}
   </div>
 </div>

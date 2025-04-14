@@ -617,6 +617,38 @@ LEFT JOIN sms_system ms ON u.mandatory_system_id = ms.system_id
 LEFT JOIN sms_systemtype mstype ON ms.systemtype_id = mstype.systemtype_id  -- Join für Systemname
 WHERE u.update_id = ?;`
 
+var SELECT_sms_update_details_for_project = `
+SELECT
+    u.update_id,
+    u.update_type,
+    u.is_approved,
+    u.created_at,
+    fstype.type AS from_system_type,
+    fs.version AS from_system_version,
+    tstype.type AS to_system_type,
+    ts.version AS to_system_version,
+    mstype.type AS mandatory_system_type,
+    ms.version AS mandatory_system_version,
+    u.project_name,
+    fstype.systemtype_id AS from_system_type_id,
+    tstype.systemtype_id AS to_system_type_id,
+    mstype.systemtype_id AS mandatory_system_type_id
+FROM sms_deviceInstance di
+JOIN sms_device d ON di.device_id = d.device_id
+JOIN sms_devicePartOfSystem dps ON dps.device_id = d.device_id
+JOIN sms_system ps ON ps.system_id = dps.system_id  -- System aus dem Projekt
+JOIN sms_systemtype pst ON pst.systemtype_id = ps.systemtype_id
+JOIN sms_update u ON u.from_system_id = ps.system_id
+JOIN sms_system fs ON u.from_system_id = fs.system_id
+JOIN sms_systemtype fstype ON fs.systemtype_id = fstype.systemtype_id
+JOIN sms_system ts ON u.to_system_id = ts.system_id
+JOIN sms_systemtype tstype ON ts.systemtype_id = tstype.systemtype_id
+JOIN sms_system ms ON u.mandatory_system_id = ms.system_id
+JOIN sms_systemtype mstype ON ms.systemtype_id = mstype.systemtype_id
+WHERE di.project_id = ?
+  AND ts.version > fs.version  -- Nur Updates auf höhere Versionen
+GROUP BY u.update_id;
+`
 
 // sms_update_package
 var INSERT_sms_update_package = `INSERT INTO sms_update_package (update_id, device_type_id, package_identifier, package_version, package_name, package_description, update_package_file, creator, is_tested, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW());`

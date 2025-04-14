@@ -9,6 +9,7 @@ package routes
 
 import (
 	"fmt"
+	"github.com/efi4st/efi4st/classes"
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
@@ -25,11 +26,18 @@ type KeyBool struct {
 	Value bool
 }
 
+type SystemTypeUpdate struct {
+	SystemTypeID   int
+	SystemTypeName string
+	Updates        []classes.Sms_UpdateDetails
+}
+
 func SMSprojectUpdate(ctx iris.Context) {
+	// Projekt-ID aus den URL-Parametern holen
 	id := ctx.Params().Get("id")
 	projectID, err := strconv.Atoi(id)
 	if err != nil {
-		ctx.ViewData("error", "Error: converting project ID!")
+		ctx.ViewData("error", "Fehler beim Konvertieren der Projekt-ID!")
 		ctx.View("sms_showProjectUpdate.html")
 		return
 	}
@@ -38,23 +46,25 @@ func SMSprojectUpdate(ctx iris.Context) {
 	projectInfo := dbprovider.GetDBManager().GetSMSProjectInfo(projectID)
 	ctx.ViewData("projectInfo", projectInfo)
 
-	// Geräte, Software und Systemtypen abrufen
+	// Geräte, Software und Systemtypen für das Projekt holen
 	systemTypeMap, _, err := dbprovider.GetDBManager().GetDevicesAndSoftwareForProject(projectID)
 	if err != nil {
-		ctx.ViewData("error", "Error fetching device/software list!")
+		ctx.ViewData("error", "Fehler beim Abrufen der Geräte-/Software-Liste!")
 		ctx.View("sms_showProjectUpdate.html")
 		return
 	}
 
-	// Listen für Template erstellen
+	// Listen für die Template-Daten erstellen
 	var systemTypeNameList []KeyValue
 	var systemTypeCleanList []KeyBool
 
+	// Häufigste Versionen der Systemtypen für das Projekt holen
 	systemVersionsMap, err := dbprovider.GetDBManager().GetMostCommonSystemVersionForSystemType(projectID)
 	if err != nil {
 		fmt.Println("⚠️ Fehler beim Abrufen der häufigsten Systemversionen:", err)
 	}
 
+	// Clean-Status und Systemnamen für jeden Systemtyp ermitteln
 	for systemTypeID, devices := range systemTypeMap {
 		isClean := true
 		if mostCommonVersion, found := systemVersionsMap[systemTypeID]; found {
@@ -66,33 +76,55 @@ func SMSprojectUpdate(ctx iris.Context) {
 			}
 		}
 
-		// SystemType-Clean-Status speichern
 		systemTypeCleanList = append(systemTypeCleanList, KeyBool{Key: systemTypeID, Value: isClean})
 
-		// SystemType-Namen abrufen
+		// Systemtyp-Namen holen
 		systemTypeName, err := dbprovider.GetDBManager().GetSystemTypeName(systemTypeID)
 		if err != nil {
 			fmt.Println("⚠️ Fehler beim Abrufen des SystemType-Namens für ID", systemTypeID, err)
-			systemTypeName = fmt.Sprintf("Unknown (ID %d)", systemTypeID) // Fallback
+			systemTypeName = fmt.Sprintf("Unbekannt (ID %d)", systemTypeID)
 		}
 		systemTypeNameList = append(systemTypeNameList, KeyValue{Key: systemTypeID, Value: systemTypeName})
 	}
 
-	fmt.Println("DEBUG: SystemTypeNameList:")
-	for _, item := range systemTypeNameList {
-		fmt.Printf("  - Key: %d, Value: %s\n", item.Key, item.Value)
+	// Alle Updates für das Projekt holen
+	allUpdates, err := dbprovider.GetDBManager().GetSMSUpdateDetailsForProject(projectID)
+	if err != nil {
+		fmt.Println("⚠️ Fehler beim Holen der Update-Details:", err)
+		ctx.ViewData("error", "Fehler beim Holen der Updates!")
+		ctx.View("sms_showProjectUpdate.html")
+		return
 	}
 
-	fmt.Println("DEBUG: SystemTypeCleanList:")
-	for _, item := range systemTypeCleanList {
-		fmt.Printf("  - Key: %d, Value: %v\n", item.Key, item.Value)
+	// Updates nach SystemTypeID gruppieren
+	updateMap := make(map[int][]classes.Sms_UpdateDetails)
+
+	for _, update := range allUpdates {
+		updateMap[update.ToSystemTypeID] = append(updateMap[update.ToSystemTypeID], update)
 	}
 
-	// Daten an Template übergeben
+	// Finales Mapping der Updates je SystemTypeID erstellen
+	var systemTypeUpdates []SystemTypeUpdate
+	for _, kv := range systemTypeNameList {
+		systemTypeID := kv.Key
+		systemTypeName := kv.Value
+
+		// SystemTypeUpdate für diesen Systemtyp erstellen
+		systemTypeUpdates = append(systemTypeUpdates, SystemTypeUpdate{
+			SystemTypeID:   systemTypeID,
+			SystemTypeName: systemTypeName,
+			Updates:        updateMap[systemTypeID], // Updates für diesen Systemtyp
+		})
+	}
+
+	// Debugging: Ausgeben der systemTypeUpdates zur Überprüfung
+	fmt.Println("SystemTypeUpdates:", systemTypeUpdates)
+	ctx.ViewData("systemTypeUpdates", systemTypeUpdates)
 	ctx.ViewData("systemTypeMap", systemTypeMap)
 	ctx.ViewData("systemTypeNameList", systemTypeNameList)
 	ctx.ViewData("systemTypeCleanList", systemTypeCleanList)
 
+	// Template anzeigen
 	ctx.View("sms_showProjectUpdate.html")
 }
 
