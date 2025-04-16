@@ -55,12 +55,7 @@ func NewSms_DeviceFromDB(device_id int, devicetype_id string, version string, da
 }
 
 // DeviceSoftwareInfo speichert Informationen zu einem Gerät und der zugehörigen Software.
-type SoftwareInfo struct {
-	SoftwareID     int    // Software-ID
-	SoftwareName   string // Software-Name
-	SoftwareVersion string // Software-Version
-}
-
+// DeviceSoftwareInfo - Information über das Gerät und seine Software
 type DeviceSoftwareInfo struct {
 	DeviceID                int
 	DeviceName              string
@@ -69,6 +64,15 @@ type DeviceSoftwareInfo struct {
 	SoftwareList            []SoftwareInfo
 	SystemVersions          []string
 	MostCommonSystemVersion string
-	IsInvalidSystemVersion  bool   // 🆕 Markierung für falsche Systemversion
-	ShortenedSystemVersions string // 🆕 NEUE Variable für die gekürzten Versionen
+	IsInvalidSystemVersion  bool
+	ShortenedSystemVersions string
+	UpdateVersion           string  // Neues Feld für die Update-Version
+}
+
+// SoftwareInfo - Information über die Software eines Geräts
+type SoftwareInfo struct {
+	SoftwareID       int
+	SoftwareName     string
+	SoftwareVersion  string
+	UpdateVersion    string  // Neues Feld für Software-Update-Version
 }

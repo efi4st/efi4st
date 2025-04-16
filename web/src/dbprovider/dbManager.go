@@ -231,6 +231,8 @@ type Manager interface {
 	UpdateSMSUpdate(update classes.Sms_UpdateDetails) error
 	DeleteSMSUpdate(updateID int) error
 	GetSMSUpdateDetailsForProject(projectID int) ([]classes.Sms_UpdateDetails, error)
+	GetDevicesBySystemID(systemID int) ([]classes.DeviceSoftwareVersion, error)
+	GetSoftwareBySystemID(systemID int) ([]classes.DeviceSoftwareVersion, error)
 	// sms_update_package
 	AddSMSUpdatePackage(updateID, deviceTypeID int, packageIdentifier, packageVersion, packageName, updatePackageFile, creator string, packageDescription *string, isTested bool) error
 	GetAllSMSUpdatePackages() ([]classes.Sms_UpdatePackage, error)
@@ -5942,6 +5944,9 @@ func (mgr *manager) GetSMSUpdateDetailsForProject(projectID int) ([]classes.Sms_
 			&update.FromSystemTypeID,
 			&update.ToSystemTypeID,
 			&update.MandatorySystemTypeID,
+			&update.FromSystemID,
+			&update.ToSystemID,
+			&update.MandatorySystemID,
 		)
 		if err != nil {
 			log.Println("Row Scan failed:", err)
@@ -6053,4 +6058,83 @@ func (mgr *manager) GetAllSystems() ([]classes.Sms_System_Query, error) {
 		systems = append(systems, system)
 	}
 	return systems, nil
+}
+
+// GetDevicesBySystemID gibt eine Liste von Geräten zurück, die zu einem bestimmten System gehören.
+func (mgr *manager) GetDevicesBySystemID(systemID int) ([]classes.DeviceSoftwareVersion, error) {
+	query := dbUtils.Select_device_versions_for_system
+	fmt.Println("Abruf der Geräte für System-ID:", systemID)
+
+
+	var devices []classes.DeviceSoftwareVersion
+	rows, err := mgr.db.Query(query, systemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var device classes.DeviceSoftwareVersion
+		if err := rows.Scan(&device.DeviceID, &device.DeviceName, &device.DeviceVersion); err != nil {
+			return nil, err
+		}
+		devices = append(devices, device)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	fmt.Println("Gefundene Geräte:", devices)
+
+	return devices, nil
+}
+
+func (mgr *manager) GetSoftwareBySystemID(systemID int) ([]classes.DeviceSoftwareVersion, error) {
+	query := dbUtils.Select_software_versions_for_system
+	fmt.Println("Abruf der Software für System-ID:", systemID)
+
+	rows, err := mgr.db.Query(query, systemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Gruppieren nach DeviceID
+	softwareMap := make(map[int]*classes.DeviceSoftwareVersion)
+
+	for rows.Next() {
+		var deviceID int
+		var deviceName string
+		var softwareName string
+		var softwareVersion string
+
+		if err := rows.Scan(&deviceID, &deviceName, &softwareName, &softwareVersion); err != nil {
+			return nil, err
+		}
+
+		if _, ok := softwareMap[deviceID]; !ok {
+			softwareMap[deviceID] = &classes.DeviceSoftwareVersion{
+				DeviceID:     deviceID,
+				DeviceName:   deviceName,
+				SoftwareList: []classes.SoftwareInfo{},
+			}
+		}
+
+		softwareMap[deviceID].SoftwareList = append(
+			softwareMap[deviceID].SoftwareList,
+			classes.SoftwareInfo{
+				SoftwareName:    softwareName,
+				SoftwareVersion: softwareVersion,
+			},
+		)
+	}
+
+	var software []classes.DeviceSoftwareVersion
+	for _, entry := range softwareMap {
+		software = append(software, *entry)
+	}
+
+	fmt.Println("Gefundene Software:", software)
+	return software, nil
 }

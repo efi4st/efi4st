@@ -632,7 +632,13 @@ SELECT
     u.project_name,
     fstype.systemtype_id AS from_system_type_id,
     tstype.systemtype_id AS to_system_type_id,
-    mstype.systemtype_id AS mandatory_system_type_id
+    mstype.systemtype_id AS mandatory_system_type_id,
+
+    -- 👇 Hier neu:
+    fs.system_id AS from_system_id,
+    ts.system_id AS to_system_id,
+    ms.system_id AS mandatory_system_id
+
 FROM sms_deviceInstance di
 JOIN sms_device d ON di.device_id = d.device_id
 JOIN sms_devicePartOfSystem dps ON dps.device_id = d.device_id
@@ -649,6 +655,19 @@ WHERE di.project_id = ?
   AND ts.version > fs.version  -- Nur Updates auf höhere Versionen
 GROUP BY u.update_id;
 `
+var Select_device_versions_for_system = `SELECT d.device_id, dt.type, d.version
+FROM sms_device d
+JOIN sms_devicePartOfSystem ds ON ds.device_id = d.device_id
+JOIN sms_devicetype dt ON dt.devicetype_id = d.devicetype_id
+WHERE ds.system_id = ?;`
+var Select_software_versions_for_system = `SELECT d.device_id, dt.type, st.typeName, s.version
+FROM sms_device d
+JOIN sms_devicePartOfSystem dps ON dps.device_id = d.device_id
+JOIN sms_softwarePartOfDevice spd ON spd.device_id = d.device_id
+JOIN sms_software s ON s.software_id = spd.software_id
+JOIN sms_softwaretype st ON st.softwaretype_id = s.softwaretype_id
+JOIN sms_devicetype dt ON dt.devicetype_id = d.devicetype_id
+WHERE dps.system_id = ?;`
 
 // sms_update_package
 var INSERT_sms_update_package = `INSERT INTO sms_update_package (update_id, device_type_id, package_identifier, package_version, package_name, package_description, update_package_file, creator, is_tested, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW());`

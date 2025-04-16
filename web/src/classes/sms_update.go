@@ -44,3 +44,15 @@ type Sms_UpdateDetails struct {
 	MandatorySystemVersion string  // Version des Mandatory-Systems
 }
 
+type DeviceSoftwareVersion struct {
+	DeviceID        int
+	DeviceName      string
+	DeviceVersion   string
+	DeviceCount     int
+	SoftwareList    []SoftwareInfo
+	SystemVersions  []string
+	MostCommonSystemVersion string
+	IsInvalidSystemVersion bool
+	ShortenedSystemVersions string
+}
+

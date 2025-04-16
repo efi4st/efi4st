@@ -101,7 +101,18 @@
           {% endif %}
         </td>
         <td class="bg-secondary text-white">-</td>
-        <td class="bg-secondary text-white">-</td>
+        <td class="bg-secondary text-white">
+          {% set foundUpdate = false %}
+          {% for deviceUpdate in devicesForUpdate %}
+          {% if deviceUpdate.DeviceName == entry.DeviceName %}
+          <span>{{ deviceUpdate.DeviceVersion }}</span>
+          {% set foundUpdate = true %}
+          {% endif %}
+          {% endfor %}
+          {% if not foundUpdate %}
+          <span>No update found</span>
+          {% endif %}
+        </td>
       </tr>
 
       {% for software in entry.SoftwareList %}
@@ -116,18 +127,44 @@
           {% endif %}
         </td>
         <td class="bg-secondary text-white">-</td>
-        <td class="bg-secondary text-white">-</td>
+        <td class="bg-secondary text-white">
+          {% set foundUpdate = false %}
+          {% for softwareUpdate in softwareForUpdate %}
+          {% if softwareUpdate.SoftwareName == software.SoftwareName %}
+          <span>{{ softwareUpdate.SoftwareVersion }}</span>
+          {% set foundUpdate = true %}
+          {% endif %}
+          {% endfor %}
+          {% if not foundUpdate %}
+          <span>No update found</span>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
       {% endfor %}
       </tbody>
     </table>
-
     {% endwith %}
     {% endif %}
     {% endfor %}
     {% endfor %}
   </div>
+  <div>
+    <h4>Devices for Update:</h4>
+    <ul>
+      {% for device in devicesForUpdate %}
+      <li>{{ device.DeviceName }} - {{ device.DeviceVersion }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div>
+    <h4>Software for Update:</h4>
+    <ul>
+      {% for software in softwareForUpdate %}
+      <li>{{ software.SoftwareName }} - {{ software.SoftwareVersion }}</li>
+      {% endfor %}
+    </ul>
+  </div>
 </div>
-      
 {% endblock %}
