@@ -208,6 +208,20 @@ func SMSprojectUpdate(ctx iris.Context) {
 		}
 	}
 
+	// Map zur schnelleren Zuordnung nach DeviceID
+	deviceMap := make(map[int]*classes.DeviceSoftwareVersion)
+	for i := range devicesForUpdate {
+		device := &devicesForUpdate[i]
+		deviceMap[device.DeviceID] = device
+	}
+
+	// Software zur jeweiligen Device hinzufügen
+	for _, swDevice := range softwareForUpdate {
+		if dev, found := deviceMap[swDevice.DeviceID]; found {
+			dev.SoftwareList = append(dev.SoftwareList, swDevice.SoftwareList...)
+		}
+	}
+
 	log.Printf("Devices for Update: %+v", devicesForUpdate)
 	log.Printf("Software for Update: %+v", softwareForUpdate)
 

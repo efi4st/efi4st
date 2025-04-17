@@ -5627,6 +5627,13 @@ func (mgr *manager) GetDevicesAndSoftwareForProject(projectID int) (map[int][]cl
 
 		ds.ShortenedSystemVersions = strings.Join(shortenSystemVersions(ds.SystemVersions), ", ")
 
+		for i, sw := range ds.SoftwareList {
+			// Aktuell gibt es keine separate Liste von SystemVersions für Software, daher:
+			// Fallback auf dieselbe wie vom Device, falls nichts Spezifischeres vorhanden ist
+			sw.ShortenedSystemVersions = strings.Join(shortenSystemVersions(ds.SystemVersions), ", ")
+			ds.SoftwareList[i] = sw // wichtig, da sw eine Kopie ist!
+		}
+
 		// **🆕 Geräte nach Systemtyp gruppieren**
 		systemTypeMap[systemTypeID] = append(systemTypeMap[systemTypeID], *ds)
 	}
@@ -5708,14 +5715,24 @@ func (mgr *manager) GetMostCommonSystemVersionForSystemType(projectID int) (map[
 }
 
 func shortenSystemVersions(versions []string) []string {
-	sort.Slice(versions, func(i, j int) bool {
-		return compareVersions(versions[i], versions[j])
-	})
+	unique := make(map[string]bool)
+	var deduped []string
 
-	if len(versions) > 3 {
-		return versions[:3] // Nur die neuesten 3 behalten
+	for _, v := range versions {
+		if !unique[v] {
+			unique[v] = true
+			deduped = append(deduped, v)
+		}
 	}
-	return versions
+
+	// Optional: sortieren
+	// sort.Strings(deduped)
+
+	// Begrenzen auf max. 3 Einträge
+	if len(deduped) > 3 {
+		return deduped[:3]
+	}
+	return deduped
 }
 
 // Vergleichsfunktion für numerische Versionssortierung

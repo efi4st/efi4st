@@ -71,8 +71,9 @@ type DeviceSoftwareInfo struct {
 
 // SoftwareInfo - Information über die Software eines Geräts
 type SoftwareInfo struct {
-	SoftwareID       int
-	SoftwareName     string
-	SoftwareVersion  string
-	UpdateVersion    string  // Neues Feld für Software-Update-Version
+	SoftwareID              int
+	SoftwareName            string
+	SoftwareVersion         string
+	UpdateVersion           string
+	ShortenedSystemVersions string // 👈 HINZUGEFÜGT
 }

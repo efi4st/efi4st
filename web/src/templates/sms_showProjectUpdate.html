@@ -23,11 +23,10 @@
       </div>
 
 <div class="container">
-  <h1>Project Update: {{ projectInfo.name }} - (ID: {{ projectInfo.project_id }})</h1>
+  <h1>Project Update: {{ projectInfo.name }} (ID: {{ projectInfo.project_id }})</h1>
+
   <div class="row">
     {% for systemType, deviceSoftwareList in systemTypeMap %}
-
-    {# SystemType-Name bestimmen (ohne set oder namespace) #}
     {% for item in systemTypeNameList %}
     {% if item.Key == systemType %}
     {% with item.Value as systemTypeName %}
@@ -35,7 +34,6 @@
     <div class="d-flex justify-content-between align-items-start mt-4 mb-2">
       <h4 class="mb-0">System Type: {{ systemTypeName }}</h4>
 
-      {# CLEAN STATUS — wird nun mittig eingebaut, falls nötig #}
       {% for item in systemTypeCleanList %}
       {% if item.Key == systemType and not item.Value %}
       <div class="alert alert-warning py-1 px-3 mb-0 mx-auto text-center">
@@ -44,29 +42,25 @@
       {% endif %}
       {% endfor %}
 
-      {# DROPDOWN: Nur Updates für den aktuellen SystemType anzeigen #}
       {% for updateGroup in systemTypeUpdates %}
       {% if updateGroup.SystemTypeName == systemTypeName %}
       <form method="get" action="" class="ms-auto">
         <input type="hidden" name="system_type_id" value="{{ systemType }}" />
-        <div class="mb-0">
-          <label for="updateSelect{{ systemType }}" class="me-2">Update auswählen:</label>
-          <select name="update_id" id="updateSelect{{ systemType }}" onchange="this.form.submit()" class="form-select d-inline-block w-auto">
-            <option value="">-- Kein Update ausgewählt --</option>
-            {% for update in updateGroup.Updates %}
-            <option value="{{ update.ID }}">
-              Nach {{ update.ToSystemVersion }} ({{ update.UpdateType }})
-              {% if update.ProjectName %} [Projekt: {{ update.ProjectName }}] {% endif %}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
+        <label for="updateSelect{{ systemType }}" class="me-2">Update auswählen:</label>
+        <select name="update_id" id="updateSelect{{ systemType }}" onchange="this.form.submit()" class="form-select d-inline-block w-auto">
+          <option value="">-- Kein Update ausgewählt --</option>
+          {% for update in updateGroup.Updates %}
+          <option value="{{ update.ID }}" {% if selectedUpdate and selectedUpdate.ID == update.ID %}selected{% endif %}>
+            Nach {{ update.ToSystemVersion }} ({{ update.UpdateType }})
+            {% if update.ProjectName %} [Projekt: {{ update.ProjectName }}] {% endif %}
+          </option>
+          {% endfor %}
+        </select>
       </form>
       {% endif %}
       {% endfor %}
     </div>
 
-    {# TABELLE START #}
     <table class="table table-bordered">
       <thead class="table-dark">
       <tr>
@@ -102,16 +96,13 @@
         </td>
         <td class="bg-secondary text-white">-</td>
         <td class="bg-secondary text-white">
-          {% set foundUpdate = false %}
-          {% for deviceUpdate in devicesForUpdate %}
-          {% if deviceUpdate.DeviceName == entry.DeviceName %}
-          <span>{{ deviceUpdate.DeviceVersion }}</span>
-          {% set foundUpdate = true %}
+          {% set updated = false %}
+          {% for update in devicesForUpdate %}
+          {% if update.DeviceName == entry.DeviceName %}
+          {{ update.DeviceVersion }}
+          {% set updated = true %}
           {% endif %}
           {% endfor %}
-          {% if not foundUpdate %}
-          <span>No update found</span>
-          {% endif %}
         </td>
       </tr>
 
@@ -120,24 +111,25 @@
         <td class="text-start w-65 ps-4">↳ {{ software.SoftwareName }}</td>
         <td>
           {{ software.SoftwareVersion }}
-          {% if entry.MostCommonSystemVersion %}
-          <div class="text-end small fst-italic">
-            Systems: {{ entry.MostCommonSystemVersion }}
+          {% if software.ShortenedSystemVersions %}
+          <div class="text-end small fst-italic text-muted">
+            Systems: {{ software.ShortenedSystemVersions }}
           </div>
           {% endif %}
         </td>
         <td class="bg-secondary text-white">-</td>
         <td class="bg-secondary text-white">
-          {% set foundUpdate = false %}
-          {% for softwareUpdate in softwareForUpdate %}
-          {% if softwareUpdate.SoftwareName == software.SoftwareName %}
-          <span>{{ softwareUpdate.SoftwareVersion }}</span>
-          {% set foundUpdate = true %}
+          {% set swUpdated = false %}
+          {% for update in devicesForUpdate %}
+          {% if update.DeviceName == entry.DeviceName %}
+          {% for sw in update.SoftwareList %}
+          {% if sw.SoftwareName == software.SoftwareName %}
+          {{ sw.SoftwareVersion }}
+          {% set swUpdated = true %}
           {% endif %}
           {% endfor %}
-          {% if not foundUpdate %}
-          <span>No update found</span>
           {% endif %}
+          {% endfor %}
         </td>
       </tr>
       {% endfor %}
@@ -148,23 +140,6 @@
     {% endif %}
     {% endfor %}
     {% endfor %}
-  </div>
-  <div>
-    <h4>Devices for Update:</h4>
-    <ul>
-      {% for device in devicesForUpdate %}
-      <li>{{ device.DeviceName }} - {{ device.DeviceVersion }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-
-  <div>
-    <h4>Software for Update:</h4>
-    <ul>
-      {% for software in softwareForUpdate %}
-      <li>{{ software.SoftwareName }} - {{ software.SoftwareVersion }}</li>
-      {% endfor %}
-    </ul>
   </div>
 </div>
 {% endblock %}
