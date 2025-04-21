@@ -553,6 +553,30 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_update_packages/remove/1
 	app.Get("/sms_update_packages/remove/{id:string}", routes.RemoveSMSUpdatePackage)
 
+	// GET: http://localhost:8144/sms_update_centers
+	app.Get("/sms_update_centers", routes.SMSUpdateCenters)
+
+	// GET: http://localhost:8144/sms_update_centers/create
+	app.Get("/sms_update_centers/create", routes.CreateSMSUpdateCenter)
+
+	// POST: http://localhost:8144/sms_update_centers/add
+	app.Post("/sms_update_centers/add", routes.AddSMSUpdateCenter)
+
+	// GET: http://localhost:8144/sms_update_centers/show/{id:string}
+	app.Get("/sms_update_centers/show/{id:string}", routes.ShowSMSUpdateCenter)
+
+	// GET: http://localhost:8144/sms_update_centers/remove/{id:string}
+	app.Get("/sms_update_centers/remove/{id:string}", routes.RemoveSMSUpdateCenter)
+
+	// GET: http://localhost:8144/sms_update_centers/edit/{id:string}
+	app.Get("/sms_update_centers/edit/{id:string}", routes.EditSMSUpdateCenter)
+
+	// POST: http://localhost:8144/sms_update_centers/update
+	app.Post("/sms_update_centers/update/{id:string}", routes.UpdateSMSUpdateCenter)
+
+	// POST: http://localhost:8144/sms_update_centers/update_last_contact/{id:string}
+	app.Post("/sms_update_centers/ping/{id:string}", routes.PingSMSUpdateCenter)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

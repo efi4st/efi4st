@@ -240,6 +240,14 @@ type Manager interface {
 	UpdateSMSUpdatePackage(pkg classes.Sms_UpdatePackage) error
 	DeleteSMSUpdatePackage(packageID int) error
 	GetAllSystems() ([]classes.Sms_System_Query, error)
+	// sms_update_center
+	AddSMSUpdateCenter(projectID, updaterID int, updaterType, version, environment, status, description, note, owner string) error
+	GetAllSMSUpdateCenters() ([]classes.Sms_UpdateCenter, error)
+	GetSMSUpdateCenterByID(updateCenterID int) (*classes.Sms_UpdateCenter, error)
+	GetSMSUpdateCentersByProject(projectID int) ([]classes.Sms_UpdateCenter, error)
+	UpdateSMSUpdateCenter(center classes.Sms_UpdateCenter) error
+	DeleteSMSUpdateCenter(updateCenterID int) error
+	UpdateSMSUpdateCenterLastContact(id int, lastContact *time.Time) error
 }
 
 type manager struct {
@@ -6154,4 +6162,118 @@ func (mgr *manager) GetSoftwareBySystemID(systemID int) ([]classes.DeviceSoftwar
 
 	fmt.Println("Gefundene Software:", software)
 	return software, nil
+}
+
+/////////////////////////////
+//
+// sms_update_center
+//
+/////////////////////////////
+func (mgr *manager) AddSMSUpdateCenter(projectID, updaterID int, updaterType, version, environment, status, description, note, owner string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_update_center)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(projectID, updaterID, updaterType, version, environment, status, description, note, owner, nil) // last_contact
+	return err
+}
+
+func (mgr *manager) GetAllSMSUpdateCenters() ([]classes.Sms_UpdateCenter, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_all_sms_update_centers)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var centers []classes.Sms_UpdateCenter
+	for rows.Next() {
+		var center classes.Sms_UpdateCenter
+		err = rows.Scan(&center.ID, &center.ProjectID, &center.UpdaterID, &center.UpdaterType, &center.Version, &center.Environment, &center.Status, &center.Description, &center.Note, &center.Owner, &center.LastContact, &center.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		centers = append(centers, center)
+	}
+	return centers, nil
+}
+
+func (mgr *manager) GetSMSUpdateCenterByID(updateCenterID int) (*classes.Sms_UpdateCenter, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_update_center_by_id)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var center classes.Sms_UpdateCenter
+	err = stmt.QueryRow(updateCenterID).Scan(&center.ID, &center.ProjectID, &center.UpdaterID, &center.UpdaterType, &center.Version, &center.Environment, &center.Status, &center.Description, &center.Note, &center.Owner, &center.LastContact, &center.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &center, nil
+}
+
+func (mgr *manager) GetSMSUpdateCentersByProject(projectID int) ([]classes.Sms_UpdateCenter, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_update_centers_by_project)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var centers []classes.Sms_UpdateCenter
+	for rows.Next() {
+		var center classes.Sms_UpdateCenter
+		err = rows.Scan(&center.ID, &center.ProjectID, &center.UpdaterID, &center.UpdaterType, &center.Version, &center.Environment, &center.Status, &center.Description, &center.Note, &center.Owner, &center.LastContact, &center.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		centers = append(centers, center)
+	}
+	return centers, nil
+}
+
+func (mgr *manager) UpdateSMSUpdateCenter(center classes.Sms_UpdateCenter) error {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_sms_update_center)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(center.ProjectID, center.UpdaterID, center.UpdaterType, center.Version, center.Environment, center.Status, center.Description, center.Note, center.Owner, center.LastContact, center.ID)
+	return err
+}
+
+func (mgr *manager) DeleteSMSUpdateCenter(updateCenterID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_update_center)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(updateCenterID)
+	return err
+}
+
+func (mgr *manager) UpdateSMSUpdateCenterLastContact(id int, lastContact *time.Time) error {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_sms_update_center_last_contact)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(lastContact, id)
+	return err
 }

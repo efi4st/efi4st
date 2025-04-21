@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-2"></div>
+
+    <div class="col-md-8">
+      <h2>Update Center #{{ center.ID }}</h2>
+
+      <table class="table table-bordered">
+        <tbody>
+        <tr><th>Project ID</th><td>{{ center.ProjectID }}</td></tr>
+        <tr><th>Updater ID</th><td>{{ center.UpdaterID }}</td></tr>
+        <tr><th>Updater Type</th><td>{{ center.UpdaterType }}</td></tr>
+        <tr><th>Version</th><td>{{ center.Version }}</td></tr>
+        <tr><th>Environment</th><td>{{ center.Environment }}</td></tr>
+        <tr><th>Status</th><td>{{ center.Status }}</td></tr>
+        <tr><th>Description</th><td>{{ center.Description }}</td></tr>
+        <tr><th>Note</th><td>{{ center.Note }}</td></tr>
+        <tr><th>Owner</th><td>{{ center.Owner }}</td></tr>
+        <tr><th>Last Contact</th><td>{{ center.LastContact }}</td></tr>
+        <tr><th>Created At</th><td>{{ center.CreatedAt }}</td></tr>
+        </tbody>
+      </table>
+
+      <div class="mb-3">
+        <form action="/sms_update_centers/ping/{{ center.ID }}" method="post" style="display:inline-block;">
+          <button class="btn btn-success" type="submit">📡 Ping</button>
+        </form>
+
+        <a href="/sms_update_centers/edit/{{ center.ID }}" class="btn btn-warning">✏️ Edit</a>
+        <a href="/sms_update_centers" class="btn btn-secondary">Back to List</a>
+      </div>
+
+      <hr />
+
+    </div>
+
+    <div class="col-md-2"></div>
+  </div>
+</div>
+      
+{% endblock %}

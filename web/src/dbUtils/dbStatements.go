@@ -675,3 +675,38 @@ var SELECT_all_sms_update_packages = `SELECT package_id, update_id, device_type_
 var SELECT_sms_update_package_by_id = `SELECT package_id, update_id, device_type_id, package_identifier, package_version, package_name, package_description, update_package_file, creator, is_tested, created_at FROM sms_update_package WHERE package_id = ?;`
 var UPDATE_sms_update_package = `UPDATE sms_update_package SET update_id = ?, device_type_id = ?, package_identifier = ?, package_version = ?, package_name = ?, package_description = ?, update_package_file = ?, creator = ?, is_tested = ? WHERE package_id = ?;`
 var DELETE_sms_update_package = `DELETE FROM sms_update_package WHERE package_id = ?;`
+
+// sms_update_center
+var INSERT_sms_update_center = `
+INSERT INTO sms_update_center 
+(project_id, updater_id, updater_type, version, environment, status, description, note, owner, last_contact, created_at) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW());`
+
+var SELECT_all_sms_update_centers = `
+SELECT update_center_id, project_id, updater_id, updater_type, version, environment, status, description, note, owner, last_contact, created_at 
+FROM sms_update_center;
+`
+var SELECT_sms_update_center_by_id = `
+SELECT update_center_id, project_id, updater_id, updater_type, version, environment, status, description, note, owner, last_contact, created_at 
+FROM sms_update_center 
+WHERE update_center_id = ?;
+`
+var UPDATE_sms_update_center = `
+UPDATE sms_update_center 
+SET project_id = ?, updater_id = ?, updater_type = ?, version = ?, environment = ?, status = ?, description = ?, note = ?, owner = ?, last_contact = ? 
+WHERE update_center_id = ?;
+`
+var DELETE_sms_update_center = `
+DELETE FROM sms_update_center WHERE update_center_id = ?;`
+
+var SELECT_sms_update_centers_by_project = `
+SELECT update_center_id, project_id, updater_id, updater_type, version, environment, status, description, note, owner, last_contact, created_at
+FROM sms_update_center
+WHERE project_id = ?;
+`
+
+var UPDATE_sms_update_center_last_contact = `
+UPDATE sms_update_center
+SET last_contact = ?
+WHERE update_center_id = ?;
+`

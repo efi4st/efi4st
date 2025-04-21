@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-2"></div>
+
+    <div class="col-md-8">
+      <h2>Edit Update Center #{{ updateCenter.ID }}</h2>
+
+      <form action="/sms_update_centers/update/{{ updateCenter.ID }}" method="post">
+        <div class="form-group">
+          <label for="project_id">Project:</label>
+          <select class="form-control" id="project_id" name="project_id">
+            {% for project in projectList %}
+            <option value="{{ project.Project_id }}" {% if project.Project_id == updateCenter.ProjectID %}selected{% endif %}>
+              {{ project.Name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="updater_id">Updater ID:</label>
+          <input class="form-control" type="number" id="updater_id" name="updater_id" value="{{ updateCenter.UpdaterID }}" />
+        </div>
+
+        <div class="form-group">
+          <label for="updater_type">Updater Type:</label>
+          <input class="form-control" type="text" id="updater_type" name="updater_type" value="{{ updateCenter.UpdaterType }}" />
+        </div>
+
+        <div class="form-group">
+          <label for="version">Version:</label>
+          <input class="form-control" type="text" id="version" name="version" value="{{ updateCenter.Version }}" />
+        </div>
+
+        <div class="form-group">
+          <label for="environment">Environment:</label>
+          <select class="form-control" id="environment" name="environment">
+            <option value="staging" {% if updateCenter.Environment == "staging" %}selected{% endif %}>Staging</option>
+            <option value="production" {% if updateCenter.Environment == "production" %}selected{% endif %}>Production</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="status">Status:</label>
+          <input class="form-control" type="text" id="status" name="status" value="{{ updateCenter.Status }}" />
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description:</label>
+          <textarea class="form-control" id="description" name="description">{{ updateCenter.Description }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="note">Note:</label>
+          <input class="form-control" type="text" id="note" name="note" value="{{ updateCenter.Note }}" />
+        </div>
+
+        <div class="form-group">
+          <label for="owner">Owner:</label>
+          <input class="form-control" type="text" id="owner" name="owner" value="{{ updateCenter.Owner }}" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+        <a href="/sms_update_centers/show/{{ updateCenter.ID }}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+
+    <div class="col-md-2"></div>
+  </div>
+</div>
+      
+{% endblock %}
+

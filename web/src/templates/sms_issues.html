@@ -66,6 +66,7 @@
               <a class="dropdown-item text-light" href="/sms_certifications">Certifications</a>
               <a class="dropdown-item text-light" href="/sms_securityReports">Reports</a>
               <a class="dropdown-item text-light" href="/sms_updates">Updates</a>
+              <a class="dropdown-item text-light" href="/sms_update_centers">UpdateCenter</a>
             </div>
           </li>
 
@@ -144,7 +145,7 @@
                 <td>{{ issue.Criticality }}</td>
                 <td>{{ issue.cve }}</td>
                 <td>{{ issue.date|truncatechars:13  }}</td>
-                <td><a href="/sms_projects/remove/{{project.project_id}}" class="button"><i class="fa fa-close"></i></a></td>
+                <td><a href="/sms_projects/remove/{{project.Project_id}}" class="button"><i class="fa fa-close"></i></a></td>
               </tr>
               {% endfor %}
               </tbody>

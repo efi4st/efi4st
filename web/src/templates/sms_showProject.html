@@ -24,23 +24,23 @@
 
       <div class="container">
         <div class="row">
-          <h1>{{project.name}}&nbsp;&nbsp;&nbsp;&nbsp;</h1> <h3>Customer: &nbsp;{{project.customer}}</h3>
+          <h1>{{project.Name}}&nbsp;&nbsp;&nbsp;&nbsp;</h1> <h3>Customer: &nbsp;{{project.Customer}}</h3>
         </div>
 
         <div class="row">
           <div class="col-md-4">
             <ul class="list-group">
-              <li class="list-group-item">Name: {{project.name}}</li>
-              <li class="list-group-item">Customer: {{project.customer}}</li>
-              <li class="list-group-item">Date: {{project.date|truncatechars:13}}</li>
-              <li class="list-group-item">Type: {{project.projecttype}}</li>
-              <li class="list-group-item">Reference: {{project.reference}}</li>
-              <li class="list-group-item">Active: {{project.active}}</li>
+              <li class="list-group-item">Name: {{project.Name}}</li>
+              <li class="list-group-item">Customer: {{project.Customer}}</li>
+              <li class="list-group-item">Date: {{project.Date|truncatechars:13}}</li>
+              <li class="list-group-item">Type: {{project.Projecttype}}</li>
+              <li class="list-group-item">Reference: {{project.Reference}}</li>
+              <li class="list-group-item">Active: {{project.Active}}</li>
             </ul>
           </div>
 
           <div class="col-md-8">
-            <h2>Included Systems:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="btn btn-primary btn-lg" href="/sms_projectBOM/createSMSProjectBOMForProject/{{project.project_id}}" role="button" align=right>Add</a></h2>
+            <h2>Included Systems:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="btn btn-primary btn-lg" href="/sms_projectBOM/createSMSProjectBOMForProject/{{project.Project_id}}" role="button" align=right>Add</a></h2>
             <table class="table">
               <thead>
               <tr>
@@ -70,8 +70,8 @@
           <div class="col-md-4">
             <h2>Functions:</h2>
             <div class="d-flex flex-column">
-              <a class="btn btn-primary btn-lg mb-2" href="/sms_projects/getiplist/{{project.project_id}}" role="button">IP List</a>
-              <a class="btn btn-primary btn-lg mb-2" href="/asas/asas/{{project.project_id}}" role="button">Part List</a>
+              <a class="btn btn-primary btn-lg mb-2" href="/sms_projects/getiplist/{{project.Project_id}}" role="button">IP List</a>
+              <a class="btn btn-primary btn-lg mb-2" href="/asas/asas/{{project.Project_id}}" role="button">Part List</a>
               <form action="" method="GET" class="mb-3">
                 <div class="input-group">
                   <select class="form-select" id="checkTypeSelect">
@@ -84,11 +84,11 @@
                   <a id="checkListButton" class="btn btn-primary btn-lg mb-2" href="#" role="button">Check Lists</a>
                 </div>
               </form>
-              <a class="btn btn-primary btn-lg" href="/sms_projectUpdates/show/{{project.project_id}}" role="button">Update</a>
+              <a class="btn btn-primary btn-lg" href="/sms_projectUpdates/show/{{project.Project_id}}" role="button">Update</a>
             </div>
           </div>
           <div class="col-md-4">
-            <h3>Project Settings:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="/sms_projectSettingsLink/createSMSProjectSettingsLink/{{project.project_id}}" class="btn btn-primary">Add</a></h3>
+            <h3>Project Settings:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="/sms_projectSettingsLink/createSMSProjectSettingsLink/{{project.Project_id}}" class="btn btn-primary">Add</a></h3>
             <table class="table">
               <thead>
               <tr>
@@ -117,7 +117,7 @@
         <hr>
         <div class="row">
           <div class="col-md-8">
-            <h2>DeviceInstances:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="btn btn-primary btn-lg" href="/sms_deviceInstances/createSMSDeviceInstanceForProject/{{project.project_id}}" role="button" align=right>Add</a></h2>
+            <h2>DeviceInstances:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="btn btn-primary btn-lg" href="/sms_deviceInstances/createSMSDeviceInstanceForProject/{{project.Project_id}}" role="button" align=right>Add</a></h2>
             <table class="table">
               <thead>
               <tr>
@@ -188,7 +188,7 @@
 <script>
   document.getElementById("checkListButton").addEventListener("click", function(event) {
     event.preventDefault();
-    let projectID = "{{ project.project_id }}";
+    let projectID = "{{ project.Project_id }}";
     let checkType = document.getElementById("checkTypeSelect").value;
     let url = "/sms_projects/checklist/" + projectID + "/" + encodeURIComponent(checkType);
     window.location.href = url;

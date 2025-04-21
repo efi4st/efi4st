@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-2"></div>
+
+    <div class="col-md-8">
+      <h2>Create a New Update Center</h2>
+      <form action="/sms_update_centers/add" method="post">
+        <div class="form-group">
+          <label for="ProjectID">Project:</label>
+          <select class="form-control" id="ProjectID" name="ProjectID">
+            {% for project in projectList %}
+            <option value="{{ project.Project_id }}">{{ project.Name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="UpdaterID">Updater ID:</label>
+          <input class="form-control" type="text" id="UpdaterID" name="UpdaterID" placeholder="Enter updater ID" required />
+        </div>
+
+        <div class="form-group">
+          <label for="UpdaterType">Updater Type:</label>
+          <input class="form-control" type="text" id="UpdaterType" name="UpdaterType" placeholder="e.g. desktop-client, mobile-agent" required />
+        </div>
+
+        <div class="form-group">
+          <label for="Version">Version:</label>
+          <input class="form-control" type="text" id="Version" name="Version" placeholder="Optional version info" />
+        </div>
+
+        <div class="form-group">
+          <label for="Environment">Environment:</label>
+          <select class="form-control" id="Environment" name="Environment">
+            <option value="staging">Staging</option>
+            <option value="production">Production</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="Note">Note:</label>
+          <textarea class="form-control" id="Note" name="Note" placeholder="Optional notes or comments"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create Update Center</button>
+        <a href="/sms_update_centers" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+
+    <div class="col-md-2"></div>
+  </div>
+
+  <hr>
+</div>
+
+{% endblock %}
+

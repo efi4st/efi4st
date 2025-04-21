@@ -553,3 +553,22 @@ CREATE TABLE IF NOT EXISTS sms_update_package (
     PRIMARY KEY (package_id),
     CONSTRAINT sms_update_package_ibfk_1 FOREIGN KEY (update_id) REFERENCES sms_update (update_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;`
+
+var sms_update_center_schema = `
+CREATE TABLE IF NOT EXISTS sms_update_center (
+    update_center_id INT(11) NOT NULL AUTO_INCREMENT,
+    project_id INT(11) NOT NULL,
+    updater_id INT(11) NOT NULL,
+    updater_type VARCHAR(50) NOT NULL, -- z. B. 'salt', 'ansible', 'custom'
+    version VARCHAR(50) DEFAULT NULL,
+    environment ENUM('staging', 'production') NOT NULL DEFAULT 'staging',
+    status VARCHAR(50) DEFAULT 'active',
+    description TEXT DEFAULT NULL,
+    note VARCHAR(255) DEFAULT NULL,
+    owner VARCHAR(255) DEFAULT NULL,
+    last_contact TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (update_center_id),
+    CONSTRAINT sms_update_center_project_fk FOREIGN KEY (project_id) REFERENCES sms_project (project_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`

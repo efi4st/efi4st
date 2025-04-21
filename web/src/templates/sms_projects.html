@@ -68,6 +68,7 @@
               <a class="dropdown-item text-light" href="/sms_certifications">Certifications</a>
               <a class="dropdown-item text-light" href="/sms_securityReports">Reports</a>
               <a class="dropdown-item text-light" href="/sms_updates">Updates</a>
+              <a class="dropdown-item text-light" href="/sms_update_centers">UpdateCenter</a>
             </div>
           </li>
 
@@ -137,12 +138,12 @@
               <tbody id="myTable">
               {% for project in projectList %}
               <tr>
-                <td>{{ project.date|truncatechars:13 }}</td>
-                <td><a href="/sms_projects/show/{{ project.project_id }}">{{ project.name }}</a></td>
-                <td>{{ project.projecttype }}</td>
-                <td>{{ project.reference }}</td>
-                <td>{{ project.active }}</td>
-                <td><a href="/sms_projects/remove/{{project.project_id}}" class="button"><i class="fa fa-close"></i></a></td>
+                <td>{{ project.Date|truncatechars:13 }}</td>
+                <td><a href="/sms_projects/show/{{ project.Project_id }}">{{ project.Name }}</a></td>
+                <td>{{ project.Projecttype }}</td>
+                <td>{{ project.Reference }}</td>
+                <td>{{ project.Active }}</td>
+                <td><a href="/sms_projects/remove/{{project.Project_id}}" class="button"><i class="fa fa-close"></i></a></td>
               </tr>
               {% endfor %}
               </tbody>

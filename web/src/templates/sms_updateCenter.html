@@ -21,6 +21,7 @@
             </div>
           {% endif %}
         </div>
+
 <div class="container">
   <div class="row">
     <nav class="navbar navbar-expand-md" style="background-color: #343a40; border-radius: 5px; margin-top: 20px;">
@@ -70,7 +71,7 @@
           </li>
 
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Config
             </a>
             <div class="dropdown-menu bg-dark">
@@ -81,7 +82,7 @@
           </li>
 
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Doc
             </a>
             <div class="dropdown-menu bg-dark">
@@ -93,7 +94,7 @@
 
           <!-- Misc Dropdown -->
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Misc
             </a>
             <div class="dropdown-menu bg-dark">
@@ -108,51 +109,50 @@
 
   </div>
 </div>
-
 <hr>
 
-      <div class="container">
-        <div class="row">
-          <p><a class="btn btn-primary btn-lg" href="/sms_certifications/createSMSCertification" role="button">New Certification &raquo;</a></p>
-        </div>
+<div class="container">
+  <div class="row">
+    <p><a class="btn btn-primary btn-lg" href="/sms_update_centers/create" role="button">New Update Center &raquo;</a></p>
+  </div>
 
-        <div class="row">
-          <div class="col-md-2">
-          </div>
-          <div class="col-md-8">
-            <h2>Certifications:</h2>
-            <input class="form-control" id="myInput" type="text" placeholder="Search..">
-            <br>
-            <table class="table">
-              <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Date</th>
-                <th>Description</th>
-                <th><i class="fa fa-trash-o"></i></th>
-              </tr>
-              </thead>
-              <tbody id="myTable">
-              {% for certification in certificationList %}
-              <tr>
-                <td>{{ certification.certification_id }}</td>
-                <td><a href="/sms_certifications/show/{{ certification.certification_id }}">{{ certification.name }}</a></td>
-                <td>{{ certification.date|truncatechars:13 }}</td>
-                <td>{{ certification.description }}</td>
-                <td><a href="/sms_certifications/remove/{{certification.certification_id}}" class="button"><i class="fa fa-close"></i></a></td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <div class="col-md-2">
-          </div>
-        </div>
+  <div class="row">
+    <div class="col-md-1"></div>
+    <div class="col-md-10">
+      <h2>Update Centers:</h2>
+      <input class="form-control" id="myInput" type="text" placeholder="Search..">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Project</th>
+          <th>Updater ID</th>
+          <th>Version</th>
+          <th>Env</th>
+          <th>Last Contact</th>
+          <th><i class="fa fa-trash-o"></i></th>
+        </tr>
+        </thead>
+        <tbody id="myTable">
+        {% for center in centerList %}
+        <tr>
+          <td><a href="/sms_update_centers/show/{{ center.ID }}">{{ center.ID }}</a></td>
+          <td><a href="/sms_projects/show/{{ center.ProjectID }}">{{ center.ProjectID }}</a></td>
+          <td>{{ center.UpdaterID }}</td>
+          <td>{{ center.Version }}</td>
+          <td>{{ center.Environment }}</td>
+          <td>{{ center.LastContact }}</td>
+          <td><a href="/sms_update_centers/remove/{{ center.ID }}" class="button"><i class="fa fa-close"></i></a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="col-md-1"></div>
+  </div>
 
-        <hr>
-
-      </div> <!-- /container -->
+  <hr>
+</div> <!-- /container -->
       
 {% endblock %}
 
