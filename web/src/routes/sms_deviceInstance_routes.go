@@ -13,6 +13,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
 	"strconv"
+	"time"
 )
 
 func SMSDeviceInstance(ctx iris.Context) {
@@ -105,12 +106,88 @@ func ShowSMSDeviceInstance(ctx iris.Context) {
 	if err != nil {
 		ctx.ViewData("error", "Error: Error getting issues for device instance!")
 	}
+
+	availableVersions, err := dbprovider.GetDBManager().GetAllVersionsForDevice(deviceModel.Device_id)
+	if err != nil {
+		ctx.ViewData("error", "Could not get available versions for this device.")
+	}
+
+	ctx.ViewData("availableDeviceVersions", availableVersions)
+	ctx.ViewData("availableDeviceVersions", availableVersions)
 	ctx.ViewData("deviceModel", deviceModel)
 	ctx.ViewData("deviceInstanceId", i)
 	ctx.ViewData("deviceInstanceUpdateHistories", deviceInstanceUpdateHistories)
 	ctx.ViewData("deviceInstance", deviceInstance)
 	ctx.ViewData("issuesForThisDeviceInstance", issuesForThisDeviceInstance)
 	ctx.View("sms_showDeviceInstance.html")
+}
+
+func UpgradeSMSDeviceInstance(ctx iris.Context) {
+	idStr := ctx.Params().Get("id")
+	newDevIDStr := ctx.PostValue("newDeviceID")
+
+	deviceInstanceID, err := strconv.Atoi(idStr)
+	if err != nil {
+		ctx.ViewData("error", "Invalid instance ID.")
+		ctx.Redirect("/sms_deviceInstances/show/" + idStr)
+		return
+	}
+
+	newDeviceID, err := strconv.Atoi(newDevIDStr)
+	if err != nil {
+		ctx.ViewData("error", "Invalid new device ID.")
+		ctx.Redirect("/sms_deviceInstances/show/" + idStr)
+		return
+	}
+
+	// Aktuelle Device-Version ermitteln (vor dem Update)
+	oldDevice, err := dbprovider.GetDBManager().GetDeviceForInstance(deviceInstanceID)
+	if err != nil {
+		ctx.ViewData("error", "Could not fetch current device for update log.")
+		ctx.Redirect("/sms_deviceInstances/show/" + idStr)
+		return
+	}
+
+	// Neue Device-Version ermitteln
+	newDevice, err := dbprovider.GetDBManager().GetDeviceByID(newDeviceID)
+	if err != nil {
+		ctx.ViewData("error", "Failed to fetch new device details.")
+		ctx.Redirect("/sms_deviceInstances/show/" + idStr)
+		return
+	}
+
+	// Update durchführen
+	err = dbprovider.GetDBManager().UpgradeDeviceInstance(deviceInstanceID, newDeviceID)
+	if err != nil {
+		ctx.ViewData("error", "Upgrade failed.")
+		ctx.Redirect("/sms_deviceInstances/show/" + idStr)
+		return
+	}
+
+	// Optional: Benutzer ermitteln
+	user := ctx.Values().GetString("user")
+	if user == "" {
+		user = "system"
+	}
+
+	// Beschreibung fürs Log
+	description := fmt.Sprintf(
+		"Upgraded from version %s (Device ID %d) to version %s (Device ID %d)",
+		oldDevice.Version, oldDevice.Device_id,
+		newDevice.Version, newDevice.Device_id,
+	)
+
+	// Zeitstempel setzen
+	now := time.Now().Format("2006-01-02")
+
+	// Log-Eintrag anlegen
+	err = dbprovider.GetDBManager().InsertUpdateHistory(deviceInstanceID, user, "DeviceUpgrade", now, description)
+	if err != nil {
+		ctx.ViewData("error", "Upgrade succeeded, but could not log update history.")
+	}
+
+	// Weiterleitung zurück zur Detailansicht
+	ctx.Redirect("/sms_deviceInstances/show/" + idStr)
 }
 
 func RemoveSMSDeviceInstance(ctx iris.Context) {

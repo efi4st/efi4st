@@ -124,6 +124,14 @@ var SELECT_sms_deviceInfo = `SELECT sms_device.device_id, sms_device.version, sm
 var INSERT_sms_newDevice = `INSERT INTO sms_device (devicetype_id, version, date) VALUES (?,?,?);`
 var DELETE_sms_device = `DELETE FROM sms_device WHERE device_id = ?;`
 var SELECT_sms_deviceTypes = `SELECT sms_devicetype.devicetype_id, sms_devicetype.type FROM sms_devicetype;`
+var SELECT_sms_allDevicesForType = `SELECT device_id, devicetype_id, version, date
+FROM sms_device
+WHERE devicetype_id = (
+  SELECT devicetype_id
+  FROM sms_device
+  WHERE device_id = ?
+)
+ORDER BY date DESC;`
 
 // SMS DeviceInstance
 var SELECT_sms_deviceInstances = `SELECT sms_deviceInstance.deviceInstance_id, sms_deviceInstance.project_id, sms_deviceInstance.device_id, sms_deviceInstance.serialnumber, sms_deviceInstance.provisioner, sms_deviceInstance.configuration, sms_deviceInstance.date, sms_project.name, sms_device.devicetype_id, sms_device.version, sms_devicetype.type FROM sms_deviceInstance LEFT JOIN sms_project ON sms_deviceInstance.project_id = sms_project.project_id LEFT JOIN sms_device ON sms_deviceInstance.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id ; `
@@ -226,6 +234,7 @@ var SELECT_sms_artefactTypes = `SELECT sms_artefacttype.artefacttype_id, sms_art
 var SELECT_sms_releaseNoteForDevice = `SELECT sms_releasenote.releasenote_id, sms_releasenote.device_id, sms_releasenote.type, sms_releasenote.date, sms_releasenote.details FROM sms_releasenote WHERE device_id = ? `
 var INSERT_sms_newReleaseNote = `INSERT INTO sms_releasenote (device_id, type, date, details) VALUES (?,?,?,?);`
 var SELECT_sms_ReleaseNoteInfo = `SELECT sms_releasenote.releasenote_id, sms_releasenote.device_id, sms_releasenote.type, sms_releasenote.date, sms_releasenote.details FROM sms_releasenote WHERE releasenote_id = ?`
+var Insert_automatic_device_update = `INSERT INTO sms_updateHistory (deviceInstance_id, user, updateType, date, description) VALUES (?, ?, ?, ?, ?)`
 
 // SMS Software
 var SELECT_sms_softwares = `SELECT sms_software.software_id, sms_software.softwaretype_id, sms_software.version, sms_software.date, sms_softwaretype.typeName, sms_software.license, sms_software.thirdParty, sms_software.releaseNote FROM sms_software LEFT JOIN sms_softwaretype ON sms_software.softwaretype_id = sms_softwaretype.softwaretype_id `

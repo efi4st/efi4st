@@ -212,6 +212,8 @@ func irisMain()() {
 	// GET: http://localhost:8144/smsdeviceInstances/show/1
 	app.Get("/sms_deviceInstances/show/{id:string}", routes.ShowSMSDeviceInstance)
 
+	app.Post("/sms_deviceInstances/upgrade/{id:string}", routes.UpgradeSMSDeviceInstance)
+
 	// GET: http://localhost:8144/smsdeviceInstances/remove/1
 	app.Get("/sms_deviceInstances/remove/{id:string}", routes.RemoveSMSDeviceInstance)
 

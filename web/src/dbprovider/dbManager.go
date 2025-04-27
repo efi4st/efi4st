@@ -86,11 +86,16 @@ type Manager interface {
 	GetSMSDeviceInstances() []classes.Sms_DeviceInstance
 	GetSMSDeviceInstanceInfo(id int) *classes.Sms_DeviceInstance
 	RemoveSMSDeviceInstances(id int) error
+	UpgradeDeviceInstance(instanceID int, newDeviceID int) error
+	GetAllVersionsForDevice(deviceID int) ([]classes.Sms_Device, error)
 	GetDeviceInstanceListForProject(id int) []classes.Sms_DeviceInstance
 	GetSMSIssuesForDeviceInstance(deviceInstanceID int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage, err error)
 	GetSMSUpdateHistoryForDevice(id int) []classes.Sms_UpdateHistory
 	AddSMSUpdateHistory(deviceInstance_id int, user string, updateType string, description string) error
 	GetSMSUdateHistoryInfo(id int) *classes.Sms_UpdateHistory
+	InsertUpdateHistory(deviceInstanceID int, user string, updateType string, date string, description string) error
+	GetDeviceByID(deviceID int) (classes.Sms_Device, error)
+	GetDeviceForInstance(deviceInstanceID int) (classes.Sms_Device, error)
 	AddSMSIssue(name string, issueType string, reference string, criticality int, cve string, description string) error
 	GetSMSIssues() []classes.Sms_Issue
 	GetSMSIssueInfo(id int) *classes.Sms_Issue
@@ -1963,6 +1968,37 @@ func (mgr *manager) RemoveSMSDeviceInstances(id int) (err error) {
 	return err
 }
 
+func (mgr *manager) GetAllVersionsForDevice(deviceID int) ([]classes.Sms_Device, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_allDevicesForType)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var versions []classes.Sms_Device
+	for rows.Next() {
+		var d classes.Sms_Device
+		err := rows.Scan(&d.Device_id, &d.Devicetype_id, &d.Version, &d.Date)
+		if err != nil {
+			return nil, err
+		}
+		versions = append(versions, d)
+	}
+
+	return versions, nil
+}
+
+func (mgr *manager) UpgradeDeviceInstance(instanceID int, newDeviceID int) error {
+	_, err := mgr.db.Exec("UPDATE sms_deviceInstance SET device_id = ? WHERE deviceInstance_id = ?", newDeviceID, instanceID)
+	return err
+}
+
 func (mgr *manager) GetSMSIssuesForDeviceInstance(deviceInstanceID int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage, err error) {
 	// Prepare the query
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_issuesForDeviceInstance)
@@ -2067,6 +2103,56 @@ func (mgr *manager) GetSMSUdateHistoryInfo(id int) (*classes.Sms_UpdateHistory) 
 	var updateHistory = classes.NewSms_UpdateHistoryFromDB(dbId, dbDeviceInstance_id, "", dbUser, dbUpdateType, dbDate.String(), dbDescription)
 
 	return updateHistory
+}
+
+func (mgr *manager) InsertUpdateHistory(deviceInstanceID int, user string, updateType string, date string, description string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.Insert_automatic_device_update)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(deviceInstanceID, user, updateType, date, description)
+	return err
+}
+
+func (mgr *manager) GetDeviceForInstance(deviceInstanceID int) (classes.Sms_Device, error) {
+	var device classes.Sms_Device
+
+	query := `
+		SELECT d.device_id, d.devicetype_id, d.version, d.date
+		FROM sms_deviceInstance di
+		JOIN sms_device d ON di.device_id = d.device_id
+		WHERE di.deviceInstance_id = ?
+	`
+
+	err := mgr.db.QueryRow(query, deviceInstanceID).Scan(
+		&device.Device_id,
+		&device.Devicetype_id,
+		&device.Version,
+		&device.Date,
+	)
+
+	return device, err
+}
+
+func (mgr *manager) GetDeviceByID(deviceID int) (classes.Sms_Device, error) {
+	var device classes.Sms_Device
+
+	query := `
+		SELECT device_id, devicetype_id, version, date
+		FROM sms_device
+		WHERE device_id = ?
+	`
+
+	err := mgr.db.QueryRow(query, deviceID).Scan(
+		&device.Device_id,
+		&device.Devicetype_id,
+		&device.Version,
+		&device.Date,
+	)
+
+	return device, err
 }
 
 /////////////////////////////////////////

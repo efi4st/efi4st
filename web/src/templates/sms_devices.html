@@ -135,10 +135,10 @@
               <tbody id="myTable">
               {% for device in deviceList %}
               <tr>
-                <td>{{ device.date|truncatechars:13 }}</td>
-                <td><a href="/sms_devices/show/{{ device.device_id }}">{{ device.devicetype_id }}</a></td>
-                <td>{{ device.version }}</td>
-                <td><a href="/sms_devices/remove/{{device.device_id}}" class="button"><i class="fa fa-close"></i></a></td>
+                <td>{{ device.Date|truncatechars:13 }}</td>
+                <td><a href="/sms_devices/show/{{ device.Device_id }}">{{ device.Devicetype_id }}</a></td>
+                <td>{{ device.Version }}</td>
+                <td><a href="/sms_devices/remove/{{device.Device_id}}" class="button"><i class="fa fa-close"></i></a></td>
               </tr>
               {% endfor %}
               </tbody>

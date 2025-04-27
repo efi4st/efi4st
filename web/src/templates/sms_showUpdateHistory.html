@@ -27,10 +27,10 @@
         <div class="row">
           <div class="col-md-5">
             <ul class="list-group">
-              <li class="list-group-item">ID: {{updateLog.updateHistory_id}}</li>
-              <li class="list-group-item">Device: <a href="/sms_deviceInstances/show/{{ updateLog.deviceInstance_id }}">{{ updateLog.deviceInstance_id }}</a></li>
-              <li class="list-group-item">User: {{updateLog.user}}</li>
-              <li class="list-group-item">Type: {{updateLog.updateType}}</li>
+              <li class="list-group-item">ID: {{updateLog.UpdateHistory_id}}</li>
+              <li class="list-group-item">Device: <a href="/sms_deviceInstances/show/{{ updateLog.DeviceInstance_id }}">{{ updateLog.DeviceInstance_id }}</a></li>
+              <li class="list-group-item">User: {{updateLog.User}}</li>
+              <li class="list-group-item">Type: {{updateLog.UpdateType}}</li>
 
             </ul>
           </div>
@@ -45,12 +45,12 @@
 
         <div class="row">
           <div class="col-md-3">
-            <h3>{{updateLog.date|truncatechars:13 }}</h3>
+            <h3>{{updateLog.Date|truncatechars:13 }}</h3>
 
           </div>
           <div class="col-md-9">
             <h2>Description:</h2>
-            <textarea id="textfeld_01_id" name="textfeld_01" rows="6" cols="85" readonly>{{updateLog.description}}</textarea>
+            <textarea id="textfeld_01_id" name="textfeld_01" rows="6" cols="85" readonly>{{updateLog.Description}}</textarea>
           </div>
 
         </div>
