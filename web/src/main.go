@@ -588,6 +588,18 @@ func irisMain()() {
 	// GET: Artefakt-Zuordnung von einer Device-Instanz entfernen
 	app.Get("/sms_artefactPartOfDeviceInstance/remove/{deviceInstanceId:string}/{artefactId:string}", routes.RemoveSMSArtefactPartOfDeviceInstance)
 
+	// GET: Zeigt Formular zur Verknüpfung eines Artefakts mit einem System
+	// Beispiel: http://localhost:8144/sms_artefactPartOfSystem/createSMSArtefactPartOfSystem/1
+	app.Get("/sms_artefactPartOfSystem/createSMSArtefactPartOfSystem/{id:string}", routes.CreateSMSArtefactPartOfSystem)
+
+	// POST: Fügt eine Artefakt-System-Verknüpfung hinzu
+	// Beispiel: http://localhost:8144/sms_artefactPartOfSystem/addSMSArtefactPartOfSystem
+	app.Post("/sms_artefactPartOfSystem/addSMSArtefactPartOfSystem", routes.AddSMSArtefactPartOfSystem)
+
+	// GET: Entfernt eine Artefakt-System-Verknüpfung (benötigt Query-Parameter)
+	// Beispiel: http://localhost:8144/sms_artefactPartOfSystem/remove?system_id=1&artefact_id=4
+	app.Get("/sms_artefactPartOfSystem/remove", routes.RemoveSMSArtefactPartOfSystem)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

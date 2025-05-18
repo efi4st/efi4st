@@ -588,3 +588,14 @@ CREATE TABLE IF NOT EXISTS sms_artefactPartOfDeviceInstance (
 	CONSTRAINT sms_artefactPartOfDeviceInstance_ibfk_2 FOREIGN KEY (artefact_id) REFERENCES sms_artefact (artefact_id) ON UPDATE CASCADE ON DELETE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_artefactPartOfSystem_schema = `
+CREATE TABLE IF NOT EXISTS sms_artefactPartOfSystem (
+system_id INT(11) NOT NULL,
+artefact_id INT(11) NOT NULL,
+additionalInfo VARCHAR(150) DEFAULT NULL,
+PRIMARY KEY (system_id, artefact_id),
+CONSTRAINT sms_artefactPartOfSystem_ibfk_1 FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+CONSTRAINT sms_artefactPartOfSystem_ibfk_2 FOREIGN KEY (artefact_id) REFERENCES sms_artefact (artefact_id) ON UPDATE CASCADE ON DELETE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`

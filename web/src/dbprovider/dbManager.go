@@ -259,6 +259,11 @@ type Manager interface {
 	GetSMSArtefactPartOfDeviceInstanceForArtefact(artefactID int) []classes.Sms_ArtefactPartOfDeviceInstanceDetailed
 	RemoveSMSArtefactPartOfDeviceInstance(deviceInstanceID int, artefactID int) error
 	GetSMSArtefactPartOfDeviceInstanceDetailedForDeviceInstance(deviceInstanceID int) []classes.Sms_ArtefactPartOfDeviceInstanceDetailed
+	// ArtefactPartOfSystem
+	AddSMSArtefactPartOfSystem(system_id int, artefact_id int, additionalInfo string) (err error)
+	GetSMSArtefactPartOfSystemForSystem(system_id int) (artefactsPartOfSystem []classes.Sms_ArtefactPartOfSystem)
+	GetSMSArtefactPartOfSystemForArtefact(artefact_id int) (systemsParentOfArtefact []classes.Sms_ArtefactPartOfSystem)
+	RemoveSMSArtefactPartOfSystem(system_id int, artefact_id int) (err error)
 }
 
 type manager struct {
@@ -6730,4 +6735,86 @@ func (mgr *manager) GetSMSArtefactPartOfDeviceInstanceDetailedForDeviceInstance(
 	}
 
 	return artefacts
+}
+
+/////////////////////////////////////////
+//   SMS ArtefactPartOfSystem
+/////////////////////////////////////////
+func (mgr *manager) AddSMSArtefactPartOfSystem(system_id int, artefact_id int, additionalInfo string) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newArtefactPartOfSystem)
+	if err != nil {
+		fmt.Print(err)
+		return err
+	}
+
+	rows, err := stmt.Query(system_id, artefact_id, additionalInfo)
+	if rows == nil {
+		fmt.Println("rows should be null AddSMSArtefactPartOfSystem -> insert query")
+	}
+	return err
+}
+
+func (mgr *manager) GetSMSArtefactPartOfSystemForSystem(system_id int) (artefactsPartOfSystem []classes.Sms_ArtefactPartOfSystem) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ArtefactPartOfSystemForSystem)
+	if err != nil {
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(system_id)
+
+	var (
+		dbSystem_id      int
+		dbArtefact_id    int
+		dbAdditionalInfo string
+		dbArtefactType   string
+		dbVersion        string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSystem_id, &dbArtefact_id, &dbAdditionalInfo, &dbArtefactType, &dbVersion)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		artefact := classes.NewSms_ArtefactPartOfSystem(dbSystem_id, dbArtefact_id, dbAdditionalInfo, dbArtefactType, dbVersion)
+		artefactsPartOfSystem = append(artefactsPartOfSystem, *artefact)
+	}
+
+	return artefactsPartOfSystem
+}
+
+func (mgr *manager) GetSMSArtefactPartOfSystemForArtefact(artefact_id int) (systemsParentOfArtefact []classes.Sms_ArtefactPartOfSystem) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ArtefactPartOfSystemForArtefact)
+	if err != nil {
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(artefact_id)
+
+	var (
+		dbSystem_id      int
+		dbArtefact_id    int
+		dbAdditionalInfo string
+		dbSystemType     string
+		dbVersion        string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbSystem_id, &dbArtefact_id, &dbAdditionalInfo, &dbSystemType, &dbVersion)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		system := classes.NewSms_ArtefactPartOfSystem(dbSystem_id, dbArtefact_id, dbAdditionalInfo, dbSystemType, dbVersion)
+		systemsParentOfArtefact = append(systemsParentOfArtefact, *system)
+	}
+
+	return systemsParentOfArtefact
+}
+
+func (mgr *manager) RemoveSMSArtefactPartOfSystem(system_id int, artefact_id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_ArtefactPartOfSystem)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(system_id, artefact_id)
+	return err
 }

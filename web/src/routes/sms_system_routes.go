@@ -61,14 +61,13 @@ func AddSMSSystem(ctx iris.Context) {
 }
 
 func ShowSMSSystem(ctx iris.Context) {
-
 	id := ctx.Params().Get("id")
-
 	i, err := strconv.Atoi(id)
 
 	ctx.ViewData("error", "")
-	if err !=nil {
-		ctx.ViewData("error", "Error: Error parsing project Id!")
+	if err != nil {
+		ctx.ViewData("error", "Error: Error parsing system Id!")
+		return
 	}
 
 	system := dbprovider.GetDBManager().GetSMSSystemInfo(i)
@@ -79,10 +78,17 @@ func ShowSMSSystem(ctx iris.Context) {
 	if err != nil {
 		ctx.ViewData("error", "Error: Error matching certificates!")
 	}
+
 	deviceIssuesForThisSystem, err := dbprovider.GetDBManager().GetSMSIssuesForSystem(i)
-	reportsForThisSystem, err := dbprovider.GetDBManager().GetReportsForLinkedObject(i,"sms_system")
+	reportsForThisSystem, err := dbprovider.GetDBManager().GetReportsForLinkedObject(i, "sms_system")
 
+	// 🔽 Artefakte unter dem System abrufen
+	artefactsUnderSystem := dbprovider.GetDBManager().GetSMSArtefactPartOfSystemForSystem(i)
 
+	// 🔼 Artefakte als ViewData bereitstellen
+	ctx.ViewData("artefactsUnderSystem", artefactsUnderSystem)
+
+	// Bestehende ViewData
 	ctx.ViewData("systemTree", systemTree)
 	ctx.ViewData("systemManufacturingOrders", systemManufacturingOrders)
 	ctx.ViewData("devicesUnderSystem", devicesUnderSystem)
@@ -90,6 +96,7 @@ func ShowSMSSystem(ctx iris.Context) {
 	ctx.ViewData("systemHasCertificates", systemHasCertificates)
 	ctx.ViewData("deviceIssuesForThisSystem", deviceIssuesForThisSystem)
 	ctx.ViewData("reportsForThisSystem", reportsForThisSystem)
+
 	ctx.View("sms_showSystem.html")
 }
 

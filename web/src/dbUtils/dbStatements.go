@@ -814,3 +814,36 @@ JOIN sms_deviceInstance di ON di.deviceinstance_id = apdi.deviceInstance_id
 JOIN sms_device d ON d.device_id = di.device_id
 JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
 WHERE apdi.deviceInstance_id = ?`;
+
+// ArtefactPartOfSystem
+var INSERT_sms_newArtefactPartOfSystem = `
+INSERT INTO sms_artefactPartOfSystem (system_id, artefact_id, additionalInfo)
+VALUES (?,?,?);
+`
+var DELETE_sms_ArtefactPartOfSystem = `
+DELETE FROM sms_artefactPartOfSystem
+WHERE system_id = ? AND artefact_id = ?;
+`
+var SELECT_sms_ArtefactPartOfSystemForSystem = `
+SELECT sms_artefactPartOfSystem.system_id,
+       sms_artefactPartOfSystem.artefact_id,
+       sms_artefactPartOfSystem.additionalInfo,
+       sms_artefacttype.artefactType,
+       sms_artefact.version
+FROM sms_artefactPartOfSystem
+LEFT JOIN sms_artefact ON sms_artefactPartOfSystem.artefact_id = sms_artefact.artefact_id
+LEFT JOIN sms_artefacttype ON sms_artefact.artefacttype_id = sms_artefacttype.artefacttype_id
+WHERE sms_artefactPartOfSystem.system_id = ?;
+`
+
+var SELECT_sms_ArtefactPartOfSystemForArtefact = `
+SELECT sms_artefactPartOfSystem.system_id,
+       sms_artefactPartOfSystem.artefact_id,
+       sms_artefactPartOfSystem.additionalInfo,
+       sms_systemtype.type,
+       sms_system.version
+FROM sms_artefactPartOfSystem
+LEFT JOIN sms_system ON sms_artefactPartOfSystem.system_id = sms_system.system_id
+LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id
+WHERE sms_artefactPartOfSystem.artefact_id = ?;
+`

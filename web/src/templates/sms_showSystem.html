@@ -198,6 +198,44 @@
           </div>
 
         </div>
+        <hr>
+        <hr>
+        <div class="row">
+          <div class="col-md-6">
+            <h2>Artefacts (System-wide):</h2>
+            <p>
+              <a class="btn btn-primary btn-lg" href="/sms_artefactPartOfSystem/createSMSArtefactPartOfSystem/{{system.System_id}}" role="button">Add</a>
+            </p>
+
+            <table class="table">
+              <thead>
+              <tr>
+                <th>Artefact Type</th>
+                <th>Version</th>
+                <th>Del</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for artefact in artefactsUnderSystem %}
+              <tr>
+                <td>
+                  <a href="/sms_artefacts/show/{{ artefact.Artefact_id }}">{{ artefact.ArtefactType }}</a>
+                </td>
+                <td>{{ artefact.Version }}</td>
+                <td>
+                  <a class="btn btn-danger" href="/sms_artefactPartOfSystem/remove?system_id={{ system.System_id }}&artefact_id={{ artefact.Artefact_id }}">Delete</a>
+                </td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+
+          </div>
+          <div class="col-md-6">
+
+          </div>
+
+        </div>
       </div> <!-- /container -->
 <hr>
 
