@@ -1650,77 +1650,167 @@ func (mgr *manager) RemoveSMSSystem(id int) (err error) {
 	return err
 }
 
-func (mgr *manager) GetSMSSystemTreeForSystem(id int) (*classes.Sms_Tree_System){
-	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_DevicePartOfSystemForSystem)
-	if err != nil{
-		fmt.Print(err)
-	}
-	rows, err := stmt.Query(id)
+func (mgr *manager) GetSMSSystemTreeForSystem(id int) *classes.Sms_Tree_System {
 
-	var ( 	db1System_id int
-		db1Device_id int
-		db1AdditionalInfo string
-		db1Name string
-		db1Version string
-	)
+	// System-Version abfragen
+	var systemVersion string
+	err := mgr.db.QueryRow("SELECT version FROM sms_system WHERE system_id = ?", id).Scan(&systemVersion)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Devices abfragen
+	stmtDevices, err := mgr.db.Prepare(dbUtils.SELECT_sms_DevicePartOfSystemForSystem)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rowsDevices, err := stmtDevices.Query(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rowsDevices.Close()
 
 	var deviceList []classes.Sms_Tree_Device
-	for rows.Next() {
-		err := rows.Scan(&db1System_id, &db1Device_id, &db1AdditionalInfo, &db1Name, &db1Version)
 
-		stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_SoftwarePartOfDeviceForDevice)
-		if err != nil{
-			fmt.Print(err)
-		}
-		rows, err := stmt.Query(db1Device_id)
-
-		var ( 	db2Device_id int
-			db2Software_id int
-			db2AdditionalInfo string
-			db2Name string
-			db2Version string
+	for rowsDevices.Next() {
+		var (
+			db1System_id     int
+			db1Device_id     int
+			db1AdditionalInfo string
+			db1Name          string
+			db1Version       string
 		)
-
-		var applicationList []classes.Sms_Tree_Application
-		for rows.Next() {
-			err := rows.Scan(&db2Device_id, &db2Software_id, &db2AdditionalInfo, &db2Name, &db2Version)
-
-			stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ComponentPartOfSoftwareForSoftware)
-			if err != nil{
-				fmt.Print(err)
-			}
-			rows, err := stmt.Query(db2Software_id)
-
-			var ( 	db3Software_id int
-				db3Component_id int
-				db3AdditionalInfo string
-				db3Name string
-				db3Version string
-			)
-			var componentList []classes.Sms_Tree_Component
-			for rows.Next() {
-				err := rows.Scan(&db3Software_id, &db3Component_id, &db3AdditionalInfo, &db3Name, &db3Version)
-
-				var treeComp = classes.NewSms_Tree_Component(db3Name, db3Version)
-				componentList=append(componentList, *treeComp)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-			var treeSoft = classes.NewSms_Tree_Application(db2Name, db2Version, componentList)
-			applicationList=append(applicationList, *treeSoft)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-		var treeDev = classes.NewSms_Tree_Device(db1Name, db1Version, applicationList)
-		deviceList=append(deviceList, *treeDev)
+		err := rowsDevices.Scan(&db1System_id, &db1Device_id, &db1AdditionalInfo, &db1Name, &db1Version)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// Softwares für dieses Device abfragen
+		stmtSoft, err := mgr.db.Prepare(dbUtils.SELECT_sms_SoftwarePartOfDeviceForDevice)
+		if err != nil {
+			log.Fatal(err)
+		}
+		rowsSoft, err := stmtSoft.Query(db1Device_id)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rowsSoft.Close()
+
+		var applicationList []classes.Sms_Tree_Application
+		for rowsSoft.Next() {
+			var (
+				db2Device_id      int
+				db2Software_id    int
+				db2AdditionalInfo string
+				db2Name          string
+				db2Version       string
+			)
+			err := rowsSoft.Scan(&db2Device_id, &db2Software_id, &db2AdditionalInfo, &db2Name, &db2Version)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// Komponenten für diese Software abfragen
+			stmtComp, err := mgr.db.Prepare(dbUtils.SELECT_sms_ComponentPartOfSoftwareForSoftware)
+			if err != nil {
+				log.Fatal(err)
+			}
+			rowsComp, err := stmtComp.Query(db2Software_id)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer rowsComp.Close()
+
+			var componentList []classes.Sms_Tree_Component
+			for rowsComp.Next() {
+				var (
+					db3Software_id    int
+					db3Component_id   int
+					db3AdditionalInfo string
+					db3Name          string
+					db3Version       string
+				)
+				err := rowsComp.Scan(&db3Software_id, &db3Component_id, &db3AdditionalInfo, &db3Name, &db3Version)
+				if err != nil {
+					log.Fatal(err)
+				}
+				componentList = append(componentList, *classes.NewSms_Tree_Component(db3Name, db3Version))
+			}
+
+			applicationList = append(applicationList, *classes.NewSms_Tree_Application(db2Name, db2Version, componentList))
+		}
+
+		// Artefakte für das Device abfragen
+		stmtArtefactsDevice, err := mgr.db.Prepare(dbUtils.SELECT_sms_ArtefactPartOfDeviceForDevice)
+		if err != nil {
+			log.Fatal(err)
+		}
+		rowsArtefactsDevice, err := stmtArtefactsDevice.Query(db1Device_id)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rowsArtefactsDevice.Close()
+
+		var artefactList []classes.Sms_Tree_Artefact
+		for rowsArtefactsDevice.Next() {
+			var (
+				deviceID         int
+				artefactID       int
+				additionalInfo   string
+				artefactName     string
+				artefactVersion  string
+			)
+			err := rowsArtefactsDevice.Scan(&deviceID, &artefactID, &additionalInfo, &artefactName, &artefactVersion)
+			if err != nil {
+				log.Fatal(err)
+			}
+			artefactList = append(artefactList, *classes.NewSms_Tree_Artefact(artefactName, artefactVersion))
+		}
+
+		deviceList = append(deviceList, *classes.NewSms_Tree_Device(db1Name, db1Version, applicationList, artefactList))
 	}
 
-	var systemTree = classes.NewSms_Tree_System("System:", strconv.Itoa(id), deviceList)
+	// Artefakte für das System abfragen
+	stmtArtefactsSystem, err := mgr.db.Prepare(dbUtils.SELECT_sms_ArtefactPartOfSystemForSystem)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rowsArtefactsSystem, err := stmtArtefactsSystem.Query(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rowsArtefactsSystem.Close()
+
+	var systemArtefacts []classes.Sms_Tree_Artefact
+	for rowsArtefactsSystem.Next() {
+		var (
+			systemID         int
+			artefactID       int
+			additionalInfo   string
+			artefactName     string
+			artefactVersion  string
+		)
+		err := rowsArtefactsSystem.Scan(&systemID, &artefactID, &additionalInfo, &artefactName, &artefactVersion)
+		if err != nil {
+			log.Fatal(err)
+		}
+		systemArtefacts = append(systemArtefacts, *classes.NewSms_Tree_Artefact(artefactName, artefactVersion))
+	}
+
+	systemTree := classes.NewSms_Tree_System("System:", systemVersion, deviceList, systemArtefacts)
+
+	// Debug-Prints
+	//log.Printf("DEBUG SystemTree: System %s hat %d Devices und %d System-Artefakte",
+	//	systemTree.Version, len(systemTree.Devices), len(systemTree.Artefacts))
+	//for i, d := range systemTree.Devices {
+	//	log.Printf("DEBUG Device %d: %s %s, %d Applications, %d Artefakte",
+	//		i, d.Name, d.Version, len(d.Applications), len(d.Artefacts))
+	//	for j, a := range d.Applications {
+	//		log.Printf("DEBUG Application %d: %s %s, %d Components",
+	//			j, a.Name, a.Version, len(a.Components))
+	//	}
+	//}
+
 	return systemTree
 }
 

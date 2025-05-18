@@ -136,22 +136,51 @@
           <div class="col-md-12">
             <h1>Structure:</h1>
             <a class="btn btn-primary btn-lg mb-2" href="/sms_systems/downloadSystemStructureJSON/{{ system.system_id }}" role="button">
-            Download JSON
+              Download JSON
             </a>
             <ul id="myUL">
-              <li><span class="caret"><h2>{{system.systemtype_id}} with ID: {{systemTree.version}}</h2></span>
-                {% for device in systemTree.devices %}
+              <li><span class="caret"><h2>{{system.Systemtype_id}} Version: {{systemTree.Version}}</h2></span>
+
+                <!-- System-Artefakte -->
+                {% if systemTree.Artefacts and systemTree.Artefacts | length > 0 %}
                 <ul class="nested">
-                  <li><span class="caret"><h3>{{device.name}}&nbsp;{{device.version}}</h3></span>
-                    {% for app in device.applications %}
+                  <li><span class="caret">System Artefacts</span>
                     <ul class="nested">
-                      <li><span class="caret">{{app.name}}&nbsp;{{app.version}}</span>
-                        {% for comp in app.components %}
+                      {% for art in systemTree.Artefacts %}
+                      <li>{{ art.Name }} {{ art.Version }}</li>
+                      {% endfor %}
+                    </ul>
+                  </li>
+                </ul>
+                {% endif %}
+
+                {% for device in systemTree.Devices %}
+                <ul class="nested">
+                  <li><span class="caret"><h3>{{device.Name}}&nbsp;{{device.Version}}</h3></span>
+
+                    <!-- Device-Artefakte -->
+                    {% if device.Artefacts and device.Artefacts | length > 0 %}
+                    <ul class="nested">
+                      <li><span class="caret">Device Artefacts</span>
                         <ul class="nested">
-                          <li><span class="caret">{{comp.name}}&nbsp;{{comp.version}}</span>
-                          </li>
+                          {% for art in device.Artefacts %}
+                          <li>{{ art.Name }} {{ art.Version }}</li>
+                          {% endfor %}
                         </ul>
-                        {% endfor %}
+                      </li>
+                    </ul>
+                    {% endif %}
+
+                    {% for app in device.Applications %}
+                    <ul class="nested">
+                      <li><span class="caret">{{app.Name}}&nbsp;{{app.Version}}</span>
+                        {% if app.Components and app.Components | length > 0 %}
+                        <ul class="nested">
+                          {% for comp in app.Components %}
+                          <li><span class="caret">{{comp.Name}}&nbsp;{{comp.Version}}</span></li>
+                          {% endfor %}
+                        </ul>
+                        {% endif %}
                       </li>
                     </ul>
                     {% endfor %}
