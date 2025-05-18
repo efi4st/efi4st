@@ -130,6 +130,54 @@
             </form>
           </div>
         </div>
+        <hr>
+        <hr>
+        <div class="row">
+          <div class="col-md-6">
+            <h2>Artefacts for this Device Instance:</h2>
+            <p>
+              <a class="btn btn-primary btn-lg"
+                 href="/sms_artefactPartOfDeviceInstance/create/{{deviceInstance.DeviceInstance_id}}"
+                 role="button">Add Artefact</a>
+            </p>
+
+            <table class="table">
+              <thead>
+              <tr>
+                <th>ArtefactName</th>
+                <th>ArtefactType</th>
+                <th>ArtefactVersion</th>
+                <th>Additional Info</th>
+                <th>Del</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for artefact in artefactsUnderDeviceInstance %}
+              <tr>
+                <td><a href="/sms_artefacts/show/{{ artefact.artefact_id }}">{{ artefact.ArtefactName }}</a></td>
+                <td>{{ artefact.ArtefactType }}</td>
+                <td>{{ artefact.ArtefactVersion }}</td>
+                <td>
+                  {% if artefact.OverridesModel %}
+                  <span style="color: red; font-weight: bold;" title="Overrides Model Artefact">⚠️</span>
+                  {% endif %}
+                  {{ artefact.AdditionalInfo }}
+                </td>
+                <td>
+                  <a class="btn btn-danger"
+                     href="/sms_artefactPartOfDeviceInstance/remove/{{ artefact.DeviceInstanceID }}/{{ artefact.ArtefactID }}">
+                    Delete
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-6">
+
+          </div>
+        </div>
       </div> <!-- /container -->
       
 {% endblock %}

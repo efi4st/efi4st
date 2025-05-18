@@ -112,6 +112,9 @@ func ShowSMSDeviceInstance(ctx iris.Context) {
 		ctx.ViewData("error", "Could not get available versions for this device.")
 	}
 
+	artefactsUnderDeviceInstance := dbprovider.GetDBManager().GetSMSArtefactPartOfDeviceInstanceDetailedForDeviceInstance(i)
+
+	ctx.ViewData("artefactsUnderDeviceInstance", artefactsUnderDeviceInstance)
 	ctx.ViewData("availableDeviceVersions", availableVersions)
 	ctx.ViewData("availableDeviceVersions", availableVersions)
 	ctx.ViewData("deviceModel", deviceModel)

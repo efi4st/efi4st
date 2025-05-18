@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-2"></div>
+
+    <div class="col-md-8">
+      <form action="/sms_artefactPartOfDeviceInstance/add" method="POST">
+        <div class="form-group">
+          <h3>Which Artefact(s) are part of Device Instance {{deviceInstanceId}}:</h3>
+          <br>
+
+          <label for="DeviceInstance_id">DeviceInstance_id:</label>
+          <input type="text" class="form-control" name="DeviceInstance_id" id="DeviceInstance_id" value="{{deviceInstanceId}}" readonly>
+          <br>
+
+          <label for="Artefact_ids">Artefact(s):</label>
+          <select name="Artefact_ids" id="Artefact_ids" class="form-select" multiple aria-label="Default select example">
+            {% for artefact in artefactList %}
+            <option value="{{artefact.artefact_id}}">{{artefact.name}} &nbsp; {{artefact.version}}</option>
+            {% endfor %}
+          </select>
+          <br>
+
+          <label for="AdditionalInfo">Additional Info:</label>
+          <input type="text" class="form-control" name="AdditionalInfo" id="AdditionalInfo" placeholder="Optional notes">
+          <br><br>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Artefact(s)</button>
+      </form>
+    </div>
+
+    <div class="col-md-2"></div>
+  </div>
+
+  <hr>
+</div>
+      
+{% endblock %}
+

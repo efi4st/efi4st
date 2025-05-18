@@ -123,16 +123,21 @@ CREATE TABLE IF NOT EXISTS sms_projecttype (
 
 var sms_project_schema = `
 CREATE TABLE IF NOT EXISTS sms_project (
-	project_id INT(11) NOT NULL AUTO_INCREMENT,
-	name VARCHAR(150) NOT NULL,
-	customer VARCHAR(150) NOT NULL,
-	projecttype_id INT(11) NOT NULL,
-	reference VARCHAR(150) DEFAULT NULL,
-	date DATE NOT NULL,
-	active BOOLEAN,
-	PRIMARY KEY (project_id),
-	CONSTRAINT sms_project_ibfk_1 FOREIGN KEY (projecttype_id) REFERENCES sms_projecttype (projecttype_id) ON UPDATE CASCADE ON DELETE NO ACTION
-)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+    project_id INT(11) NOT NULL AUTO_INCREMENT,
+    name VARCHAR(150) NOT NULL,
+    customer VARCHAR(150) NOT NULL,
+    projecttype_id INT(11) NOT NULL,
+    reference VARCHAR(150) DEFAULT NULL,
+    date DATE NOT NULL,
+    active BOOLEAN,
+    plant_number VARCHAR(150) DEFAULT NULL,
+    project_reference VARCHAR(150) DEFAULT NULL,
+    imo_plant_powerplant_factory VARCHAR(150) DEFAULT NULL,
+    plant_type ENUM('IMO', 'Plant', 'PowerPlant', 'Factory') DEFAULT NULL,
+    note TEXT DEFAULT NULL,
+    PRIMARY KEY (project_id),
+    CONSTRAINT sms_project_ibfk_1 FOREIGN KEY (projecttype_id) REFERENCES sms_projecttype (projecttype_id) ON UPDATE CASCADE ON DELETE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
 
 var sms_systemtype_schema = `
@@ -570,5 +575,16 @@ CREATE TABLE IF NOT EXISTS sms_update_center (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (update_center_id),
     CONSTRAINT sms_update_center_project_fk FOREIGN KEY (project_id) REFERENCES sms_project (project_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_artefactPartOfDeviceInstance_schema = `
+CREATE TABLE IF NOT EXISTS sms_artefactPartOfDeviceInstance (
+	deviceInstance_id INT(11) NOT NULL,
+	artefact_id INT(11) NOT NULL,
+	additionalInfo VARCHAR(150) DEFAULT NULL,
+	PRIMARY KEY (deviceInstance_id, artefact_id),
+	CONSTRAINT sms_artefactPartOfDeviceInstance_ibfk_1 FOREIGN KEY (deviceInstance_id) REFERENCES sms_deviceInstance (deviceInstance_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	CONSTRAINT sms_artefactPartOfDeviceInstance_ibfk_2 FOREIGN KEY (artefact_id) REFERENCES sms_artefact (artefact_id) ON UPDATE CASCADE ON DELETE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `

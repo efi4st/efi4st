@@ -112,51 +112,51 @@
   </div>
 </div>
 <hr>
-      <div class="container">
-        <div class="row">
-          <p><a class="btn btn-primary btn-lg" href="/sms_projects/createSMSProject" role="button">New Project &raquo;</a></p>
-        </div>
+<div class="container">
+  <div class="row">
+    <p><a class="btn btn-primary btn-lg" href="/sms_projects/createSMSProject" role="button">New Project &raquo;</a></p>
+  </div>
 
-        <div class="row">
-          <div class="col-md-2">
-          </div>
-          <div class="col-md-8">
-            <h2>Projects:</h2>
-            <input class="form-control" id="myInput" type="text" placeholder="Search..">
-            <br>
-            <table class="table">
-              <thead>
-              <tr>
-                <th>Date</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Reference</th>
-                <th>Active?</th>
-                <th><i class="fa fa-trash-o"></i></th>
-              </tr>
-              </thead>
-              <tbody id="myTable">
-              {% for project in projectList %}
-              <tr>
-                <td>{{ project.Date|truncatechars:13 }}</td>
-                <td><a href="/sms_projects/show/{{ project.Project_id }}">{{ project.Name }}</a></td>
-                <td>{{ project.Projecttype }}</td>
-                <td>{{ project.Reference }}</td>
-                <td>{{ project.Active }}</td>
-                <td><a href="/sms_projects/remove/{{project.Project_id}}" class="button"><i class="fa fa-close"></i></a></td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <div class="col-md-2">
-          </div>
-        </div>
+  <div class="row">
+    <div class="col-md-2">
+    </div>
+    <div class="col-md-8">
+      <h2>Projects:</h2>
+      <input class="form-control" id="myInput" type="text" placeholder="Search..">
+      <br>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Reference</th>
+          <th>Plant Number</th> <!-- NEU -->
+          <th>Active?</th>
+          <th><i class="fa fa-trash-o"></i></th>
+        </tr>
+        </thead>
+        <tbody id="myTable">
+        {% for project in projectList %}
+        <tr>
+          <td>{{ project.Date|truncatechars:13 }}</td>
+          <td><a href="/sms_projects/show/{{ project.Project_id }}">{{ project.Name }}</a></td>
+          <td>{{ project.Projecttype }}</td>
+          <td>{{ project.Reference }}</td>
+          <td>{{ project.Plant_number }}</td> <!-- NEU -->
+          <td>{{ project.Active }}</td>
+          <td><a href="/sms_projects/remove/{{ project.Project_id }}" class="button"><i class="fa fa-close"></i></a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="col-md-2">
+    </div>
+  </div>
 
-        <hr>
-
-
-      </div> <!-- /container -->
+  <hr>
+</div> <!-- /container -->
       
 {% endblock %}
 

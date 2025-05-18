@@ -253,6 +253,12 @@ type Manager interface {
 	UpdateSMSUpdateCenter(center classes.Sms_UpdateCenter) error
 	DeleteSMSUpdateCenter(updateCenterID int) error
 	UpdateSMSUpdateCenterLastContact(id int, lastContact *time.Time) error
+	// ArtefactPartOfDeviceInstance
+	AddSMSArtefactPartOfDeviceInstance(deviceInstanceID int, artefactID int, additionalInfo string) error
+	GetSMSArtefactPartOfDeviceInstanceForDeviceInstance(deviceInstanceID int) []classes.Sms_ArtefactPartOfDeviceInstance
+	GetSMSArtefactPartOfDeviceInstanceForArtefact(artefactID int) []classes.Sms_ArtefactPartOfDeviceInstanceDetailed
+	RemoveSMSArtefactPartOfDeviceInstance(deviceInstanceID int, artefactID int) error
+	GetSMSArtefactPartOfDeviceInstanceDetailedForDeviceInstance(deviceInstanceID int) []classes.Sms_ArtefactPartOfDeviceInstanceDetailed
 }
 
 type manager struct {
@@ -1257,27 +1263,72 @@ func (mgr *manager) AddSMSProject(projectName string, customer string, projectty
 
 func (mgr *manager) GetSMSProjects() (projects []classes.Sms_Project) {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_projects)
-	if err != nil{
-		fmt.Print(err)
+	if err != nil {
+		fmt.Print("Prepare Error:", err)
+		return
 	}
-	rows, err := stmt.Query()
+	defer stmt.Close()
 
-	var ( 	dbId int
-		dbName string
-		dbCustomer string
-		dbProjectType string
-		dbReference string
-		dbDate time.Time
-		dbActive bool)
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Print("Query Error:", err)
+		return
+	}
+	defer rows.Close()
 
 	for rows.Next() {
-		err := rows.Scan(&dbId, &dbName, &dbCustomer, &dbProjectType, &dbReference, &dbDate, &dbActive)
+		var (
+			dbId                          int
+			dbName                        string
+			dbCustomer                    string
+			dbProjectType                 string
+			dbReference                   string
+			dbDate                        time.Time
+			dbActive                      bool
+			dbPlantNumber                 *string
+			dbProjectReference            *string
+			dbIMOPlantPowerPlantFactory   *string
+			dbPlantType                   *string
+			dbNote                        *string
+		)
 
-		var project = classes.NewSms_ProjectFromDB(dbId, dbName, dbCustomer, dbProjectType, dbReference, dbDate.String(), dbActive)
-		projects=append(projects, *project)
+		err := rows.Scan(
+			&dbId,
+			&dbName,
+			&dbCustomer,
+			&dbProjectType,
+			&dbReference,
+			&dbDate,
+			&dbActive,
+			&dbPlantNumber,
+			&dbProjectReference,
+			&dbIMOPlantPowerPlantFactory,
+			&dbPlantType,
+			&dbNote,
+		)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Scan Error:", err)
 		}
+
+		project := classes.NewSms_ProjectFromDB(
+			dbId,
+			dbName,
+			dbCustomer,
+			dbProjectType,
+			dbReference,
+			dbDate.String(),
+			dbActive,
+			dbPlantNumber,
+			dbProjectReference,
+			dbIMOPlantPowerPlantFactory,
+			dbPlantType,
+			dbNote,
+		)
+		projects = append(projects, *project)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal("Row Iteration Error:", err)
 	}
 
 	return projects
@@ -1308,40 +1359,92 @@ func (mgr *manager) GetSMSProjectTypes() (projectTypes []classes.Sms_ProjectType
 
 func (mgr *manager) GetSMSProjectInfo(id int) (*classes.Sms_Project) {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_projectInfo)
-	if err != nil{
+	if err != nil {
 		fmt.Print(err)
 	}
 
-	var ( 	dbId int
-		dbName string
-		dbCustomer string
-		dbProjectType string
-		dbReference string
-		dbDate time.Time
-		dbActive bool)
+	var (
+		dbId                          int
+		dbName                        string
+		dbCustomer                    string
+		dbProjectType                 string
+		dbReference                   string
+		dbDate                        time.Time
+		dbActive                      bool
+		dbPlantNumber                 *string
+		dbProjectReference            *string
+		dbIMOPlantPowerPlantFactory   *string
+		dbPlantType                   *string
+		dbNote                        *string
+	)
 
 	row := stmt.QueryRow(id)
-	row.Scan(&dbId, &dbName, &dbCustomer, &dbProjectType, &dbReference, &dbDate, &dbActive)
+	err = row.Scan(
+		&dbId,
+		&dbName,
+		&dbCustomer,
+		&dbProjectType,
+		&dbReference,
+		&dbDate,
+		&dbActive,
+		&dbPlantNumber,
+		&dbProjectReference,
+		&dbIMOPlantPowerPlantFactory,
+		&dbPlantType,
+		&dbNote,
+	)
+	if err != nil {
+		log.Fatal("Scan Error:", err)
+	}
 
-	var project = classes.NewSms_ProjectFromDB(dbId, dbName, dbCustomer, dbProjectType, dbReference, dbDate.String(), dbActive)
+	project := classes.NewSms_ProjectFromDB(
+		dbId,
+		dbName,
+		dbCustomer,
+		dbProjectType,
+		dbReference,
+		dbDate.String(),
+		dbActive,
+		dbPlantNumber,
+		dbProjectReference,
+		dbIMOPlantPowerPlantFactory,
+		dbPlantType,
+		dbNote,
+	)
 
 	return project
 }
 
 func (mgr *manager) UpdateSMSProjectsActive(id int, active bool) (err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_sms_projectActive)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 
-	stmt.QueryRow(active, id)
+	_, err = stmt.Exec(active, id)
+	if err != nil {
+		fmt.Println("Error updating project active state:", err)
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (mgr *manager) RemoveSMSProject(id int) (err error) {
 	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_project)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 
-	stmt.QueryRow(id)
+	_, err = stmt.Exec(id)
+	if err != nil {
+		fmt.Println("Error removing project:", err)
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (mgr *manager) GetDeviceInstanceListForProject(id int) (deviceInstances []classes.Sms_DeviceInstance){
@@ -6362,4 +6465,269 @@ func (mgr *manager) UpdateSMSUpdateCenterLastContact(id int, lastContact *time.T
 
 	_, err = stmt.Exec(lastContact, id)
 	return err
+}
+
+///////////////////////
+//
+// ArtefactPartOfDeviceInstance
+//
+//////////////////////
+func (mgr *manager) AddSMSArtefactPartOfDeviceInstance(deviceInstanceID int, artefactID int, additionalInfo string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newArtefactPartOfDeviceInstance)
+	if err != nil {
+		fmt.Print(err)
+		return err
+	}
+	_, err = stmt.Exec(deviceInstanceID, artefactID, additionalInfo)
+	return err
+}
+
+func (mgr *manager) GetSMSArtefactPartOfDeviceInstanceForDeviceInstance(deviceInstanceID int) []classes.Sms_ArtefactPartOfDeviceInstance {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ArtefactPartOfDeviceInstanceForDeviceInstance)
+	if err != nil {
+		fmt.Print(err)
+	}
+	rows, err := stmt.Query(deviceInstanceID)
+	if err != nil {
+		fmt.Print(err)
+		return nil
+	}
+	defer rows.Close()
+
+	var artefacts []classes.Sms_ArtefactPartOfDeviceInstance
+
+	for rows.Next() {
+		var (
+			dbDeviceInstanceID int
+			dbArtefactID       int
+			dbAdditionalInfo   string
+			dbArtefactType     string
+			dbVersion          string
+		)
+
+		err := rows.Scan(&dbDeviceInstanceID, &dbArtefactID, &dbAdditionalInfo, &dbArtefactType, &dbVersion)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		artefact := classes.NewSms_ArtefactPartOfDeviceInstance(dbDeviceInstanceID, dbArtefactID, dbAdditionalInfo, dbArtefactType, dbVersion)
+		artefacts = append(artefacts, *artefact)
+	}
+
+	return artefacts
+}
+
+func (mgr *manager) GetSMSArtefactPartOfDeviceInstanceForArtefact(artefactID int) []classes.Sms_ArtefactPartOfDeviceInstanceDetailed {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ArtefactPartOfDeviceInstanceForArtefact)
+	if err != nil {
+		fmt.Print(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(artefactID)
+	if err != nil {
+		fmt.Print(err)
+		return nil
+	}
+	defer rows.Close()
+
+	var devices []classes.Sms_ArtefactPartOfDeviceInstanceDetailed
+
+	// Vorab: artefacttype_id des übergebenen Artefakts abfragen
+	var artefactTypeID int
+	err = mgr.db.QueryRow(`SELECT artefacttype_id FROM sms_artefact WHERE artefact_id = ?`, artefactID).Scan(&artefactTypeID)
+	if err != nil {
+		fmt.Println("Fehler beim Abrufen des ArtefactType:", err)
+		return nil
+	}
+
+	for rows.Next() {
+		var (
+			dbDeviceInstanceID int
+			dbArtefactID       int
+			dbAdditionalInfo   string
+			dbDeviceType       string
+			dbDeviceVersion    string
+			dbSerialNumber     string
+			dbArtefactType     string
+			dbArtefactName     string
+			dbArtefactVersion  string
+		)
+
+		err := rows.Scan(
+			&dbDeviceInstanceID,
+			&dbArtefactID,
+			&dbAdditionalInfo,
+			&dbDeviceType,
+			&dbDeviceVersion,
+			&dbSerialNumber,
+			&dbArtefactType,
+			&dbArtefactName,
+			&dbArtefactVersion,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// device_id der DeviceInstance holen
+		var deviceID int
+		err = mgr.db.QueryRow(`SELECT device_id FROM sms_deviceInstance WHERE deviceInstance_id = ?`, dbDeviceInstanceID).Scan(&deviceID)
+		if err != nil {
+			fmt.Println("Fehler beim Abrufen des Devices zur DeviceInstance:", err)
+			continue
+		}
+
+		// Prüfen, ob das Device ein Artefakt mit dem gleichen artefacttype_id hat
+		var modelArtefactID int
+		err = mgr.db.QueryRow(`
+			SELECT artefact_id
+			FROM sms_artefactPartOfDevice ad
+			JOIN sms_artefact a ON ad.artefact_id = a.artefact_id
+			WHERE ad.device_id = ? AND a.artefacttype_id = ?
+			LIMIT 1
+		`, deviceID, artefactTypeID).Scan(&modelArtefactID)
+
+		overrides := err == nil // wenn QueryRow erfolgreich, dann gibt es ein Modell-Artefakt
+
+		// Info ggf. anreichern
+		info := dbAdditionalInfo
+		if overrides {
+			if info != "" {
+				info += " | "
+			}
+			info += "(Config Override)"
+		}
+
+		device := classes.NewSms_ArtefactPartOfDeviceInstanceDetailed(
+			dbDeviceInstanceID,
+			dbArtefactID,
+			info,
+			dbDeviceType,
+			dbDeviceVersion,
+			dbSerialNumber,
+			dbArtefactType,
+			dbArtefactName,
+			dbArtefactVersion,
+			overrides, // NEU
+		)
+		devices = append(devices, *device)
+	}
+
+	return devices
+}
+
+func (mgr *manager) RemoveSMSArtefactPartOfDeviceInstance(deviceInstanceID int, artefactID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_ArtefactPartOfDeviceInstance)
+	if err != nil {
+		fmt.Print(err)
+		return err
+	}
+	_, err = stmt.Exec(deviceInstanceID, artefactID)
+	return err
+}
+
+func (mgr *manager) GetSMSArtefactPartOfDeviceInstanceDetailedForDeviceInstance(deviceInstanceID int) []classes.Sms_ArtefactPartOfDeviceInstanceDetailed {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ArtefactPartOfDeviceInstanceDetailedForDeviceInstance)
+	if err != nil {
+		fmt.Print(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceInstanceID)
+	if err != nil {
+		fmt.Print(err)
+		return nil
+	}
+	defer rows.Close()
+
+	type artefactRow struct {
+		deviceInstanceID  int
+		artefactID        int
+		additionalInfo    string
+		deviceType        string
+		deviceVersion     string
+		serialNumber      string
+		artefactTypeID    int
+		artefactTypeName  string
+		artefactName      string
+		artefactVersion   string
+		deviceID          int
+	}
+
+	var artefactRows []artefactRow
+	var deviceID int
+
+	for rows.Next() {
+		var row artefactRow
+		err := rows.Scan(
+			&row.deviceInstanceID,
+			&row.artefactID,
+			&row.additionalInfo,
+			&row.deviceType,
+			&row.deviceVersion,
+			&row.serialNumber,
+			&row.artefactTypeID,
+			&row.artefactTypeName,
+			&row.artefactName,
+			&row.artefactVersion,
+			&row.deviceID,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		deviceID = row.deviceID
+		artefactRows = append(artefactRows, row)
+	}
+
+	// ➕ Hole Artefakt-Typen des abstrakten Geräts (Device)
+	modelArtefactTypeIDs := make(map[int]bool)
+	modelRows, err := mgr.db.Query(`
+		SELECT a.artefacttype_id
+		FROM sms_artefactPartOfDevice apd
+		JOIN sms_artefact a ON apd.artefact_id = a.artefact_id
+		WHERE apd.device_id = ?`, deviceID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer modelRows.Close()
+
+	for modelRows.Next() {
+		var atID int
+		err := modelRows.Scan(&atID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		modelArtefactTypeIDs[atID] = true
+	}
+
+	// ➕ Konstruieren der Artefakte mit Info über "Überschreiben"
+	var artefacts []classes.Sms_ArtefactPartOfDeviceInstanceDetailed
+	for _, row := range artefactRows {
+		overrides := modelArtefactTypeIDs[row.artefactTypeID]
+		info := row.additionalInfo
+		if overrides {
+			if info != "" {
+				info += " | "
+			}
+			info += "(Config Override)"
+		}
+
+		artefact := classes.NewSms_ArtefactPartOfDeviceInstanceDetailed(
+			row.deviceInstanceID,
+			row.artefactID,
+			info,
+			row.deviceType,
+			row.deviceVersion,
+			row.serialNumber,
+			row.artefactTypeName,
+			row.artefactName,
+			row.artefactVersion,
+			overrides, // ⬅️ neu
+		)
+		artefacts = append(artefacts, *artefact)
+	}
+
+	return artefacts
 }

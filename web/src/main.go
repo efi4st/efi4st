@@ -579,6 +579,15 @@ func irisMain()() {
 	// POST: http://localhost:8144/sms_update_centers/update_last_contact/{id:string}
 	app.Post("/sms_update_centers/ping/{id:string}", routes.PingSMSUpdateCenter)
 
+	// GET: Artefakt-Zuordnung zu einer Device-Instanz erstellen
+	app.Get("/sms_artefactPartOfDeviceInstance/create/{id:string}", routes.CreateSMSArtefactPartOfDeviceInstance)
+
+	// POST: Artefakt(e) einer Device-Instanz zuordnen
+	app.Post("/sms_artefactPartOfDeviceInstance/add", routes.AddSMSArtefactPartOfDeviceInstance)
+
+	// GET: Artefakt-Zuordnung von einer Device-Instanz entfernen
+	app.Get("/sms_artefactPartOfDeviceInstance/remove/{deviceInstanceId:string}/{artefactId:string}", routes.RemoveSMSArtefactPartOfDeviceInstance)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

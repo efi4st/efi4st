@@ -22,62 +22,83 @@
         {% endif %}
       </div>
 
-      <div class="container">
+<div class="container">
 
-        <div class="row">
-          <div class="col-md-2">
+  <div class="row">
+    <div class="col-md-2">
+    </div>
+
+    <div class="col-md-8">
+      <form action="/sms_projects/addSMSProject" method="POST">
+        <div class="form-group">
+          <h3>Add new Project:</h3>
+
+          <label for="ProjectName">Name:</label>
+          <input type="text" class="form-control" name="ProjectName" id="ProjectName" placeholder="Project Name" required>
+          <br>
+
+          <label for="Customer">Customer:</label>
+          <input type="text" class="form-control" name="Customer" id="Customer" placeholder="Customer">
+          <br>
+
+          <label for="ProjecttypeId">Type:</label>
+          <select name="ProjecttypeId" id="ProjecttypeId" class="form-select" aria-label="Default select example">
+            {% for type in typeList %}
+            <option value="{{ type.projecttype_id }}">{{ type.projectType }}</option>
+            {% endfor %}
+          </select>
+          <br>
+
+          <label for="Reference">Reference:</label>
+          <input type="text" class="form-control" name="Reference" id="Reference" placeholder="Reference">
+          <br>
+
+          <label for="ProjectReference">Project Reference:</label> <!-- NEU -->
+          <input type="text" class="form-control" name="ProjectReference" id="ProjectReference" placeholder="Project Reference">
+          <br>
+
+          <label for="PlantNumber">Plant Number:</label> <!-- NEU -->
+          <input type="text" class="form-control" name="PlantNumber" id="PlantNumber" placeholder="Plant Number">
+          <br>
+
+          <label for="ImoPlantFactory">IMO/Plant/Factory:</label> <!-- NEU -->
+          <input type="text" class="form-control" name="ImoPlantFactory" id="ImoPlantFactory" placeholder="IMO/Plant/Factory">
+          <br>
+
+          <label for="PlantType">Plant Type:</label> <!-- NEU -->
+          <input type="text" class="form-control" name="PlantType" id="PlantType" placeholder="Plant Type">
+          <br>
+
+          <label for="Note">Note:</label> <!-- NEU -->
+          <textarea class="form-control" name="Note" id="Note" rows="4" placeholder="Add any notes"></textarea>
+          <br>
+
+          <h4>Select Project Settings:</h4>
+          {% for setting in projectSettingsList %}
+          <div class="form-check">
+            <input class="form-check-input setting-checkbox" type="checkbox" name="selectedSettings" value="{{ setting.SettingID }}" id="setting_{{ setting.SettingID }}">
+            <label class="form-check-label" for="setting_{{ setting.SettingID }}">
+              {{ setting.KeyName }} ({{ setting.ValueType }}) - Default: {{ setting.DefaultValue }}
+            </label>
+            <br>
+            <input type="text" class="form-control setting-value" name="SettingValue_{{ setting.SettingID }}" placeholder="Enter value (optional)" disabled>
           </div>
+          <br>
+          {% endfor %}
 
-          <div class="col-md-8">
-            <form action="/sms_projects/addSMSProject" method="POST">
-              <div class="form-group">
-                <h3>Add new Project:</h3>
-
-                <label for="ProjectName">Name:</label>
-                <input type="text" class="form-control" name="ProjectName" id="ProjectName" placeholder="ProjectName" required>
-                <br>
-
-                <label for="Customer">Customer:</label>
-                <input type="text" class="form-control" name="Customer" id="Customer" placeholder="Customer">
-                <br>
-
-                <label for="ProjecttypeId">Type:</label>
-                <select name="ProjecttypeId" id="ProjecttypeId" class="form-select" aria-label="Default select example">
-                  {% for type in typeList %}
-                  <option value="{{ type.projecttype_id }}">{{ type.projectType }}</option>
-                  {% endfor %}
-                </select>
-                <br>
-
-                <label for="Reference">Reference:</label>
-                <input type="text" class="form-control" name="Reference" id="Reference" placeholder="Reference">
-                <br>
-
-                <h4>Select Project Settings:</h4>
-                {% for setting in projectSettingsList %}
-                <div class="form-check">
-                  <input class="form-check-input setting-checkbox" type="checkbox" name="selectedSettings" value="{{ setting.SettingID }}" id="setting_{{ setting.SettingID }}">
-                  <label class="form-check-label" for="setting_{{ setting.SettingID }}">
-                    {{ setting.KeyName }} ({{ setting.ValueType }}) - Default: {{ setting.DefaultValue }}
-                  </label>
-                  <br>
-                  <input type="text" class="form-control setting-value" name="SettingValue_{{ setting.SettingID }}" placeholder="Enter value (optional)" disabled>
-                </div>
-                <br>
-                {% endfor %}
-
-                <button type="submit" class="btn btn-primary">Add</button>
-              </div>
-            </form>
-
-          </div>
-
-          <div class="col-md-2">
-          </div>
+          <button type="submit" class="btn btn-primary">Add</button>
         </div>
+      </form>
 
-        <hr>
-      </div> <!-- /container -->
+    </div>
+
+    <div class="col-md-2">
+    </div>
+  </div>
+
+  <hr>
+</div> <!-- /container -->
+
 <script>
   // Aktiviert das Eingabefeld nur, wenn die Checkbox angehakt ist
   document.querySelectorAll(".setting-checkbox").forEach(checkbox => {

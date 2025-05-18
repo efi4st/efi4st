@@ -22,169 +22,195 @@
         {% endif %}
       </div>
 
-      <div class="container">
-        <div class="row">
-          <h1>{{project.Name}}&nbsp;&nbsp;&nbsp;&nbsp;</h1> <h3>Customer: &nbsp;{{project.Customer}}</h3>
-        </div>
+<div class="container">
+  <div class="row">
+    <h1>{{ project.Name }}&nbsp;&nbsp;&nbsp;&nbsp;</h1>
+    <h3>Customer: &nbsp;{{ project.Customer }}</h3>
+  </div>
 
-        <div class="row">
-          <div class="col-md-4">
-            <ul class="list-group">
-              <li class="list-group-item">Name: {{project.Name}}</li>
-              <li class="list-group-item">Customer: {{project.Customer}}</li>
-              <li class="list-group-item">Date: {{project.Date|truncatechars:13}}</li>
-              <li class="list-group-item">Type: {{project.Projecttype}}</li>
-              <li class="list-group-item">Reference: {{project.Reference}}</li>
-              <li class="list-group-item">Active: {{project.Active}}</li>
+  <div class="row">
+    <div class="col-md-4">
+      <ul class="list-group">
+        <li class="list-group-item"><strong>Name:</strong> {{ project.Name }}</li>
+        <li class="list-group-item"><strong>Customer:</strong> {{ project.Customer }}</li>
+        <li class="list-group-item"><strong>Date:</strong> {{ project.Date|truncatechars:13 }}</li>
+        <li class="list-group-item"><strong>Type:</strong> {{ project.Projecttype }}</li>
+        <li class="list-group-item"><strong>Reference:</strong> {{ project.Reference }}</li>
+        <li class="list-group-item"><strong>Project Reference:</strong> {{ project.Project_reference }}</li> <!-- NEU -->
+        <li class="list-group-item"><strong>Plant Number:</strong> {{ project.Plant_number }}</li> <!-- NEU -->
+        <li class="list-group-item"><strong>IMO/Plant/Factory:</strong> {{ project.Imo_plant_powerplant_factory }}</li> <!-- NEU -->
+        <li class="list-group-item"><strong>Plant Type:</strong> {{ project.Plant_type }}</li> <!-- NEU -->
+        <li class="list-group-item"><strong>Note:</strong> {{ project.Note }}</li> <!-- NEU -->
+        <li class="list-group-item"><strong>Active:</strong> {{ project.Active }}</li>
+      </ul>
+    </div>
+
+    <div class="col-md-8">
+      <h2>Included Systems:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <a class="btn btn-primary btn-lg" href="/sms_projectBOM/createSMSProjectBOMForProject/{{ project.Project_id }}" role="button" align="right">Add</a>
+      </h2>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>System</th>
+          <th>Version</th>
+          <th>Order Number</th>
+          <th>Info</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for system in systemList %}
+        <tr>
+          <td><a href="/sms_systems/show/{{ system.system_id }}">{{ system.name }}</a></td>
+          <td>{{ system.tmp }}</td>
+          <td>{{ system.orderNumber }}</td>
+          <td>{{ system.additionalInfo }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+  <hr>
+
+  <div class="row">
+    <div class="col-md-4">
+      <h2>Functions:</h2>
+      <div class="d-flex flex-column">
+        <a class="btn btn-primary btn-lg mb-2" href="/sms_projects/getiplist/{{ project.Project_id }}" role="button">IP List</a>
+        <a class="btn btn-primary btn-lg mb-2" href="/asas/asas/{{ project.Project_id }}" role="button">Part List</a>
+        <form action="" method="GET" class="mb-3">
+          <div class="input-group">
+            <select class="form-select" id="checkTypeSelect">
+              <option value="all">Choose Checklist</option>
+              <option value="SL1 Abnahme">SL1 Abnahme</option>
+              <option value="Basic IBN Check">Basic IBN Check</option>
+              <option value="Production Check">Production Check</option>
+              <option value="Regular Re-Check">Regular Re-Check</option>
+            </select>
+            <a id="checkListButton" class="btn btn-primary btn-lg mb-2" href="#" role="button">Check Lists</a>
+          </div>
+        </form>
+        <a class="btn btn-primary btn-lg" href="/sms_projectUpdates/show/{{ project.Project_id }}" role="button">Update</a>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <h3>Project Settings:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <a href="/sms_projectSettingsLink/createSMSProjectSettingsLink/{{ project.Project_id }}" class="btn btn-primary">Add</a>
+      </h3>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Setting Name</th>
+          <th>Value</th>
+          <th>Value Type</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for setting in projectSettings %}
+        <tr>
+          <td>{{ setting.KeyName }}</td>
+          <td>{{ setting.DefaultValue }}</td>
+          <td>{{ setting.ValueType }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-md-4">
+      <h2>Statistics:</h2>
+    </div>
+  </div>
+
+  <hr>
+  <hr>
+
+  <div class="row">
+    <div class="col-md-8">
+      <h2>DeviceInstances:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <a class="btn btn-primary btn-lg" href="/sms_deviceInstances/createSMSDeviceInstanceForProject/{{ project.Project_id }}" role="button" align="right">Add</a>
+      </h2>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Device</th>
+          <th>Version</th>
+          <th>Belongs To</th>
+          <th>Serial</th>
+          <th>Issues</th>
+          <th>Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for projectDeviceInstance in deviceInstanceList %}
+        <tr>
+          <td><a href="/sms_deviceInstances/show/{{ projectDeviceInstance.deviceInstance_id }}">{{ projectDeviceInstance.deviceType }}</a></td>
+          <td>{{ projectDeviceInstance.deviceVersion }}</td>
+          <td></td>
+          <td>{{ projectDeviceInstance.serialnumber }}</td>
+          <td></td>
+          <td></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-md-4">
+    </div>
+  </div>
+
+  <hr>
+  <hr>
+
+  <div class="row">
+    <div class="col-md-12">
+      <h2>Issues:</h2>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Crit.</th>
+          <th>Affected Devices</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for issue in issuesForThisProject %}
+        <tr>
+          <td><a href="/sms_issues/show/{{ issue.IssueID }}">{{ issue.IssueName|truncatechars:20 }}</a></td>
+          <td>
+            {% if issue.Criticality > 2 %}
+            <h3 style="color:red">HIGH</h3>
+            {% elif issue.Criticality < 2 %}
+            <h3 style="color:greenyellow">LOW</h3>
+            {% else %}
+            <h3 style="color:orange">MEDIUM</h3>
+            {% endif %}
+          </td>
+          <td>
+            <ul>
+              {% for device in issue.AffectedDevices %}
+              <li>
+                <strong>{{ device.DeviceName }}</strong> (ID: {{ device.DeviceID }}, Version: {{ device.DeviceVersion }})
+                {% if device.Inherit %}
+                <span class="text-muted">(Inherited)</span>
+                {% endif %}
+              </li>
+              {% endfor %}
             </ul>
-          </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div> <!-- /container -->
 
-          <div class="col-md-8">
-            <h2>Included Systems:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="btn btn-primary btn-lg" href="/sms_projectBOM/createSMSProjectBOMForProject/{{project.Project_id}}" role="button" align=right>Add</a></h2>
-            <table class="table">
-              <thead>
-              <tr>
-                <th>System</th>
-                <th>Version</th>
-                <th>orderNumber</th>
-                <th>Info</th>
-              </tr>
-              </thead>
-              <tbody>
-              {% for system in systemList %}
-              <tr>
-                <td><a href="/sms_systems/show/{{ system.system_id }}">{{ system.name }}</a></td>
-                <td>{{ system.tmp }}</td>
-                <td>{{ system.orderNumber }}</td>
-                <td>{{ system.additionalInfo }}</td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <hr>
-        <hr>
-        <div class="row">
-          <div class="col-md-4">
-            <h2>Functions:</h2>
-            <div class="d-flex flex-column">
-              <a class="btn btn-primary btn-lg mb-2" href="/sms_projects/getiplist/{{project.Project_id}}" role="button">IP List</a>
-              <a class="btn btn-primary btn-lg mb-2" href="/asas/asas/{{project.Project_id}}" role="button">Part List</a>
-              <form action="" method="GET" class="mb-3">
-                <div class="input-group">
-                  <select class="form-select" id="checkTypeSelect">
-                    <option value="all">Choose Checklist</option>
-                    <option value="SL1 Abnahme">SL1 Abnahme</option>
-                    <option value="Basic IBN Check">Basic IBN Check</option>
-                    <option value="Production Check">Production Check</option>
-                    <option value="Regular Re-Check">Regular Re-Check</option>
-                  </select>
-                  <a id="checkListButton" class="btn btn-primary btn-lg mb-2" href="#" role="button">Check Lists</a>
-                </div>
-              </form>
-              <a class="btn btn-primary btn-lg" href="/sms_projectUpdates/show/{{project.Project_id}}" role="button">Update</a>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <h3>Project Settings:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="/sms_projectSettingsLink/createSMSProjectSettingsLink/{{project.Project_id}}" class="btn btn-primary">Add</a></h3>
-            <table class="table">
-              <thead>
-              <tr>
-                <th>Setting Name</th>
-                <th>Value</th>
-                <th>Value Type</th>
-              </tr>
-              </thead>
-              <tbody>
-              {% for setting in projectSettings %}
-              <tr>
-                <td>{{ setting.KeyName }}</td>
-                <td>{{ setting.DefaultValue }}</td>
-                <td>{{ setting.ValueType }}</td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-
-          </div>
-          <div class="col-md-4">
-            <h2>Statistics:</h2>
-          </div>
-        </div>
-        <hr>
-        <hr>
-        <div class="row">
-          <div class="col-md-8">
-            <h2>DeviceInstances:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="btn btn-primary btn-lg" href="/sms_deviceInstances/createSMSDeviceInstanceForProject/{{project.Project_id}}" role="button" align=right>Add</a></h2>
-            <table class="table">
-              <thead>
-              <tr>
-                <th>Device</th>
-                <th>Version</th>
-                <th>belongsTo</th>
-                <th>Serial</th>
-                <th>Issues</th>
-                <th>Status</th>
-              </tr>
-              </thead>
-              <tbody>
-              {% for projectDeviceInstance in deviceInstanceList %}
-              <tr>
-                <td><a href="/sms_deviceInstances/show/{{ projectDeviceInstance.deviceInstance_id }}">{{ projectDeviceInstance.deviceType }}</a></td>
-                <td>{{ projectDeviceInstance.deviceVersion }}</td>
-                <td></td>
-                <td>{{ projectDeviceInstance.serialnumber }}</td>
-                <td></td>
-                <td></td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <div class="col-md-4">
-
-          </div>
-        </div>
-
-        <hr>
-        <hr>
-        <div class="row">
-          <div class="col-md-12">
-            <h2>Issues:</h2>
-            <table class="table">
-              <thead>
-              <tr>
-                <th>Name</th>
-                <th>Crit.</th>
-                <th>Affected Devices</th>
-              </tr>
-              </thead>
-              <tbody>
-              {% for issue in issuesForThisProject %}
-              <tr>
-                <td><a href="/sms_issues/show/{{ issue.IssueID }}">{{ issue.IssueName|truncatechars:20 }}</a></td>
-                <td>{% if issue.Criticality > 2 %}<h3 style="color:red">HIGH</h3>{% elif issue.Criticality < 2 %}<h3 style="color:greenyellow">LOW</h3>{% else %}<h3 style="color:orange">MEDIUM</h3>{% endif %}</td>
-                <td>
-                  <ul>
-                    {% for device in issue.AffectedDevices %}
-                    <li>
-                      <strong>{{ device.DeviceName }}</strong> (ID: {{ device.DeviceID }}, Version: {{ device.DeviceVersion }})
-                      {% if device.Inherit %}
-                      <span class="text-muted">(Inherited)</span>
-                      {% endif %}
-                    </li>
-                    {% endfor %}
-                  </ul>
-                </td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div> <!-- /container -->
 <script>
   document.getElementById("checkListButton").addEventListener("click", function(event) {
     event.preventDefault();

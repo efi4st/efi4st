@@ -103,8 +103,39 @@ var DELETE_analysisTool = `DELETE FROM analysisTool WHERE analysisTool_id = ?;`
 
 
 // SMS Project
-var SELECT_sms_projects = `SELECT sms_project.project_id, sms_project.name, sms_project.customer, sms_projecttype.type, sms_project.reference, sms_project.date, sms_project.active FROM sms_project LEFT JOIN sms_projecttype ON sms_project.projecttype_id = sms_projecttype.projecttype_id `
-var SELECT_sms_projectInfo = `SELECT sms_project.project_id, sms_project.name, sms_project.customer, sms_projecttype.type, sms_project.reference, sms_project.date, sms_project.active FROM sms_project LEFT JOIN sms_projecttype ON sms_project.projecttype_id = sms_projecttype.projecttype_id WHERE project_id = ?;`
+var SELECT_sms_projects = `SELECT
+sms_project.project_id,
+sms_project.name,
+sms_project.customer,
+sms_projecttype.type,
+sms_project.reference,
+sms_project.date,
+sms_project.active,
+sms_project.plant_number,
+sms_project.project_reference,
+sms_project.imo_plant_powerplant_factory,
+sms_project.plant_type,
+sms_project.note
+FROM sms_project
+LEFT JOIN sms_projecttype ON sms_project.projecttype_id = sms_projecttype.projecttype_id;
+`
+var SELECT_sms_projectInfo = `SELECT
+sms_project.project_id,
+sms_project.name,
+sms_project.customer,
+sms_projecttype.type,
+sms_project.reference,
+sms_project.date,
+sms_project.active,
+sms_project.plant_number,
+sms_project.project_reference,
+sms_project.imo_plant_powerplant_factory,
+sms_project.plant_type,
+sms_project.note
+FROM sms_project
+LEFT JOIN sms_projecttype ON sms_project.projecttype_id = sms_projecttype.projecttype_id
+WHERE project_id = ?;
+`
 var INSERT_sms_newProject = `INSERT INTO sms_project (name, customer, projecttype_id, reference, date, active) VALUES (?,?,?,?,?,?);`
 var DELETE_sms_project = `DELETE FROM sms_project WHERE project_id = ?;`
 var UPDATE_sms_projectActive = `UPDATE sms_project SET active = ? WHERE project_id = ?;`
@@ -719,3 +750,67 @@ UPDATE sms_update_center
 SET last_contact = ?
 WHERE update_center_id = ?;
 `
+
+// SMS ArtefactPartOfDeviceInstance
+var INSERT_sms_newArtefactPartOfDeviceInstance = `
+  INSERT INTO sms_artefactPartOfDeviceInstance (deviceInstance_id, artefact_id, additionalInfo)
+  VALUES (?, ?, ?);
+`;
+
+var DELETE_sms_ArtefactPartOfDeviceInstance = `
+  DELETE FROM sms_artefactPartOfDeviceInstance
+  WHERE deviceInstance_id = ? AND artefact_id = ?;
+`;
+
+var SELECT_sms_ArtefactPartOfDeviceInstanceForDeviceInstance = `
+  SELECT
+    sms_artefactPartOfDeviceInstance.deviceInstance_id,
+    sms_artefactPartOfDeviceInstance.artefact_id,
+    sms_artefactPartOfDeviceInstance.additionalInfo,
+    sms_artefacttype.artefactType,
+    sms_artefact.version
+  FROM sms_artefactPartOfDeviceInstance
+  LEFT JOIN sms_artefact ON sms_artefactPartOfDeviceInstance.artefact_id = sms_artefact.artefact_id
+  LEFT JOIN sms_artefacttype ON sms_artefact.artefacttype_id = sms_artefacttype.artefacttype_id
+  WHERE sms_artefactPartOfDeviceInstance.deviceInstance_id = ?;
+`;
+
+const SELECT_sms_ArtefactPartOfDeviceInstanceForArtefact = `
+SELECT 
+  apdi.deviceInstance_id,
+  apdi.artefact_id,
+  apdi.additionalInfo,
+  dt.name AS deviceType,
+  d.version AS deviceVersion,
+  di.serialnumber AS serialNumber,
+  at.name AS artefactType,
+  a.name AS artefactName,
+  a.version AS artefactVersion
+FROM sms_artefactPartOfDeviceInstance apdi
+JOIN sms_artefact a ON a.artefact_id = apdi.artefact_id
+JOIN sms_artefacttype at ON a.artefacttype_id = at.artefacttype_id
+JOIN sms_deviceinstance di ON di.deviceinstance_id = apdi.deviceInstance_id
+JOIN sms_device d ON d.device_id = di.device_id
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+WHERE apdi.artefact_id = ?`
+
+const SELECT_sms_ArtefactPartOfDeviceInstanceDetailedForDeviceInstance = `
+SELECT 
+  apdi.deviceInstance_id,
+  apdi.artefact_id,
+  apdi.additionalInfo,
+  dt.type AS deviceType,
+  d.version AS deviceVersion,
+  di.serialnumber AS serialNumber,
+  at.artefacttype_id,
+  at.artefactType,
+  a.name AS artefactName,
+  a.version AS artefactVersion,
+  d.device_id
+FROM sms_artefactPartOfDeviceInstance apdi
+JOIN sms_artefact a ON a.artefact_id = apdi.artefact_id
+JOIN sms_artefacttype at ON a.artefacttype_id = at.artefacttype_id
+JOIN sms_deviceInstance di ON di.deviceinstance_id = apdi.deviceInstance_id
+JOIN sms_device d ON d.device_id = di.device_id
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+WHERE apdi.deviceInstance_id = ?`;
