@@ -264,6 +264,12 @@ type Manager interface {
 	GetSMSArtefactPartOfSystemForSystem(system_id int) (artefactsPartOfSystem []classes.Sms_ArtefactPartOfSystem)
 	GetSMSArtefactPartOfSystemForArtefact(artefact_id int) (systemsParentOfArtefact []classes.Sms_ArtefactPartOfSystem)
 	RemoveSMSArtefactPartOfSystem(system_id int, artefact_id int) (err error)
+	// ProjectStatusLog
+	AddSMSProjectStatus(project_id int, status string, note string, access_group string) (err error)
+	GetSMSProjectStatusLog(project_id int) (statusLog []classes.Sms_ProjectStatusLog)
+	GetSMSProjectLatestStatus(project_id int) (statusEntry *classes.Sms_ProjectStatusLog, err error)
+	RemoveSMSProjectStatusLog(status_id int) (err error)
+	GetSMSProjectStatusLogsForProject(project_id int) (statusLogs []classes.Sms_ProjectStatusLog)
 }
 
 type manager struct {
@@ -6907,4 +6913,122 @@ func (mgr *manager) RemoveSMSArtefactPartOfSystem(system_id int, artefact_id int
 	}
 	_, err = stmt.Exec(system_id, artefact_id)
 	return err
+}
+
+/////////////////////////
+//
+// ProjectStatus
+//
+////////////////////////
+func (mgr *manager) AddSMSProjectStatus(project_id int, status string, note string, access_group string) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_project_status_log)
+	if err != nil {
+		fmt.Print(err)
+		return err
+	}
+
+	_, err = stmt.Exec(project_id, status, note, access_group)
+	return err
+}
+
+func (mgr *manager) GetSMSProjectStatusLog(project_id int) (statusLog []classes.Sms_ProjectStatusLog) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_project_status_log_by_project)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	rows, err := stmt.Query(project_id)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	var (
+		dbStatus_id    int
+		dbProject_id   int
+		dbStatus       string
+		dbNote         string
+		dbAccess_group string
+		dbCreated_at   string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbStatus_id, &dbProject_id, &dbStatus, &dbNote, &dbAccess_group, &dbCreated_at)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		statusEntry := classes.NewSms_ProjectStatusLog(dbStatus_id, dbProject_id, dbStatus, dbNote, dbAccess_group, dbCreated_at)
+		statusLog = append(statusLog, *statusEntry)
+	}
+
+	return statusLog
+}
+
+func (mgr *manager) GetSMSProjectLatestStatus(project_id int) (statusEntry *classes.Sms_ProjectStatusLog, err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_project_latest_status)
+	if err != nil {
+		fmt.Print(err)
+		return nil, err
+	}
+	row := stmt.QueryRow(project_id)
+
+	var (
+		dbStatus_id    int
+		dbProject_id   int
+		dbStatus       string
+		dbNote         string
+		dbAccess_group string
+		dbCreated_at   string
+	)
+
+	err = row.Scan(&dbStatus_id, &dbProject_id, &dbStatus, &dbNote, &dbAccess_group, &dbCreated_at)
+	if err != nil {
+		return nil, err
+	}
+
+	statusEntry = classes.NewSms_ProjectStatusLog(dbStatus_id, dbProject_id, dbStatus, dbNote, dbAccess_group, dbCreated_at)
+	return statusEntry, nil
+}
+
+func (mgr *manager) RemoveSMSProjectStatusLog(status_id int) (err error) {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_project_status_log)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(status_id)
+	return err
+}
+
+func (mgr *manager) GetSMSProjectStatusLogsForProject(project_id int) (statusLogs []classes.Sms_ProjectStatusLog) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_project_status_logs_for_project)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	rows, err := stmt.Query(project_id)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	var (
+		dbID           int
+		dbProjectID    int
+		dbStatus       string
+		dbNote         string
+		dbTimestamp    string
+		dbAccessGroup  string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbID, &dbProjectID, &dbStatus, &dbNote, &dbTimestamp, &dbAccessGroup)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		entry := classes.NewSms_ProjectStatusLog(dbID, dbProjectID, dbStatus, dbNote, dbAccessGroup, dbTimestamp)
+		statusLogs = append(statusLogs, *entry)
+	}
+	return
 }

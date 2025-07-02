@@ -600,6 +600,10 @@ func irisMain()() {
 	// Beispiel: http://localhost:8144/sms_artefactPartOfSystem/remove?system_id=1&artefact_id=4
 	app.Get("/sms_artefactPartOfSystem/remove", routes.RemoveSMSArtefactPartOfSystem)
 
+	app.Get("/sms_projectstatus/create/{project_id}", routes.CreateSMSProjectStatusLog)
+	app.Post("/sms_projectstatus/add", routes.AddSMSProjectStatusLog)
+	app.Get("/sms_projectstatus/show/{id}", routes.ShowSMSProjectStatusLog)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

@@ -46,6 +46,31 @@
     </div>
 
     <div class="col-md-8">
+      <h3>Project Status History</h3>
+
+      <table border="1" style="width:100%">
+        <thead>
+        <tr>
+          <th>Status</th>
+          <th>Note</th>
+          <th>Date</th>
+          <th>Access Group</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for log in statusLogs %}
+        <tr {% if forloop.First %} style="background-color: #dff0d8;" {% endif %}>
+          <td>{{log.Status}}</td>
+          <td>{{log.Note}}</td>
+          <td>{{log.CreatedAt}}</td>
+          <td>{{log.AccessGroup}}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <a href="/sms_projectstatus/create/{{ project.Project_id }}">Neuen Status hinzufügen</a>
+      <br />
+      <br />
       <h2>Included Systems:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
         <a class="btn btn-primary btn-lg" href="/sms_projectBOM/createSMSProjectBOMForProject/{{ project.Project_id }}" role="button" align="right">Add</a>
       </h2>
@@ -69,6 +94,7 @@
         {% endfor %}
         </tbody>
       </table>
+
     </div>
   </div>
 

@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-2"></div>
+
+    <div class="col-md-8">
+      <form action="/sms_projectstatus/add" method="POST">
+        <div class="form-group">
+          <h3>Add Project Status:</h3>
+          <br>
+
+          <input type="hidden" name="ProjectID" value="{{projectId}}" />
+
+          <label for="Status">Status:</label>
+          <select name="Status" id="Status" class="form-select" required>
+            <option value="ordered">Ordered</option>
+            <option value="in_construction">In Construction</option>
+            <option value="in_commission">In Commission</option>
+            <option value="active">Active</option>
+          </select>
+          <br>
+
+          <label for="AccessGroup">Access Group:</label>
+          <select name="AccessGroup" id="AccessGroup" class="form-select" required>
+            <option value="Automation">Automation</option>
+            <option value="PrimeServ">PrimeServ</option>
+          </select>
+          <br>
+
+          <label for="Note">Note:</label>
+          <textarea class="form-control" name="Note" id="Note" placeholder="Optional note..." rows="4"></textarea>
+          <br><br>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Status Log</button>
+      </form>
+    </div>
+
+    <div class="col-md-2"></div>
+  </div>
+
+  <hr>
+</div>
+      
+{% endblock %}
+

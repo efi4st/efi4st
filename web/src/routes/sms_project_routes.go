@@ -142,7 +142,10 @@ func ShowSMSProject(ctx iris.Context) {
 		return
 	}
 
+	statusLogs := dbprovider.GetDBManager().GetSMSProjectStatusLogsForProject(i)
+
 	// Übergebe alle Daten an die View
+	ctx.ViewData("statusLogs", statusLogs)
 	ctx.ViewData("deviceInstanceList", deviceInstanceList)
 	ctx.ViewData("systemList", systemList)
 	ctx.ViewData("issuesForThisProject", issuesForThisProject)

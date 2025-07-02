@@ -847,3 +847,70 @@ LEFT JOIN sms_system ON sms_artefactPartOfSystem.system_id = sms_system.system_i
 LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id
 WHERE sms_artefactPartOfSystem.artefact_id = ?;
 `
+
+// project_status_log
+var SELECT_sms_project_status_log = `
+SELECT 
+    status_id,
+    project_id,
+    status,
+    note,
+    access_group,
+    created_at
+FROM 
+    sms_project_status_log;
+`
+
+var SELECT_sms_project_status_log_by_project = `
+SELECT 
+    status_id,
+    project_id,
+    status,
+    note,
+    access_group,
+    created_at
+FROM 
+    sms_project_status_log
+WHERE 
+    project_id = ?
+ORDER BY 
+    created_at DESC;
+`
+
+var SELECT_sms_project_latest_status = `
+SELECT 
+    status_id,
+    project_id,
+    status,
+    note,
+    access_group,
+    created_at
+FROM 
+    sms_project_status_log
+WHERE 
+    project_id = ?
+ORDER BY 
+    created_at DESC
+LIMIT 1;
+`
+
+var INSERT_sms_project_status_log = `
+INSERT INTO sms_project_status_log (
+    project_id,
+    status,
+    note,
+    access_group
+) VALUES (?,?,?,?);
+`
+
+var DELETE_sms_project_status_log = `
+DELETE FROM sms_project_status_log
+WHERE status_id = ?;
+`
+
+var SELECT_sms_project_status_logs_for_project = `
+SELECT status_id, project_id, status, note, created_at, access_group
+FROM sms_project_status_log
+WHERE project_id = ?
+ORDER BY created_at DESC;
+`

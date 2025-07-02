@@ -599,3 +599,16 @@ CONSTRAINT sms_artefactPartOfSystem_ibfk_1 FOREIGN KEY (system_id) REFERENCES sm
 CONSTRAINT sms_artefactPartOfSystem_ibfk_2 FOREIGN KEY (artefact_id) REFERENCES sms_artefact (artefact_id) ON UPDATE CASCADE ON DELETE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_project_status_log_schema = `
+CREATE TABLE IF NOT EXISTS sms_project_status_log (
+    status_id INT(11) NOT NULL AUTO_INCREMENT,
+    project_id INT(11) NOT NULL,
+    status ENUM('ordered', 'in_construction', 'in_commission', 'active') NOT NULL,
+    note TEXT DEFAULT NULL,
+    access_group VARCHAR(100) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (status_id),
+    CONSTRAINT sms_project_status_log_ibfk_1 FOREIGN KEY (project_id) REFERENCES sms_project (project_id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
