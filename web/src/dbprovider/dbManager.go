@@ -270,6 +270,8 @@ type Manager interface {
 	GetSMSProjectLatestStatus(project_id int) (statusEntry *classes.Sms_ProjectStatusLog, err error)
 	RemoveSMSProjectStatusLog(status_id int) (err error)
 	GetSMSProjectStatusLogsForProject(project_id int) (statusLogs []classes.Sms_ProjectStatusLog)
+	// Project Structure
+	GetProjectStructure(projectID int) (structure []classes.ProjectDeviceStructure)
 }
 
 type manager struct {
@@ -7031,4 +7033,114 @@ func (mgr *manager) GetSMSProjectStatusLogsForProject(project_id int) (statusLog
 		statusLogs = append(statusLogs, *entry)
 	}
 	return
+}
+
+
+// Project Structure
+func (mgr *manager) GetProjectStructure(projectID int) (structure []classes.ProjectDeviceStructure) {
+	stmtDevices, err := mgr.db.Prepare(dbUtils.SELECT_DevicesInProject)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer stmtDevices.Close()
+
+	rowsDevices, err := stmtDevices.Query(projectID)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer rowsDevices.Close()
+
+	for rowsDevices.Next() {
+		var (
+			deviceID     int
+			serialNumber string
+			deviceType   string
+			deviceVersion string
+		)
+		err := rowsDevices.Scan(&deviceID, &serialNumber, &deviceType, &deviceVersion)
+		if err != nil {
+			log.Println("Scan error device:", err)
+			continue
+		}
+
+		device := classes.ProjectDeviceStructure{
+			DeviceType:    deviceType,
+			DeviceVersion: deviceVersion,
+			SerialNumber:  serialNumber,
+		}
+
+		// --- Software in Device laden ---
+		stmtSW, err := mgr.db.Prepare(dbUtils.SELECT_SoftwareInDevice)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		defer stmtSW.Close()
+
+		rowsSW, err := stmtSW.Query(deviceID)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		for rowsSW.Next() {
+			var (
+				swID     int
+				swType   string
+				swVersion string
+			)
+			err := rowsSW.Scan(&swID, &swType, &swVersion)
+			if err != nil {
+				log.Println("Scan error software:", err)
+				continue
+			}
+
+			software := classes.Software{
+				Type:    swType,
+				Version: swVersion,
+			}
+
+			// --- Komponenten in Software laden ---
+			stmtComp, err := mgr.db.Prepare(dbUtils.SELECT_ComponentsInSoftware)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			defer stmtComp.Close()
+
+			rowsComp, err := stmtComp.Query(swID)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			for rowsComp.Next() {
+				var (
+					compName    string
+					compVersion string
+				)
+				err := rowsComp.Scan(&compName, &compVersion)
+				if err != nil {
+					log.Println("Scan error component:", err)
+					continue
+				}
+
+				component := classes.Component{
+					Name:    compName,
+					Version: compVersion,
+				}
+				software.Components = append(software.Components, component)
+			}
+			rowsComp.Close()
+
+			device.Software = append(device.Software, software)
+		}
+		rowsSW.Close()
+
+		structure = append(structure, device)
+	}
+
+	return structure
 }

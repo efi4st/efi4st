@@ -68,7 +68,7 @@
         {% endfor %}
         </tbody>
       </table>
-      <a href="/sms_projectstatus/create/{{ project.Project_id }}">Neuen Status hinzufügen</a>
+      <a href="/sms_projectstatus/create/{{ project.Project_id }}">Update Status</a>
       <br />
       <br />
       <h2>Included Systems:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -106,7 +106,7 @@
       <h2>Functions:</h2>
       <div class="d-flex flex-column">
         <a class="btn btn-primary btn-lg mb-2" href="/sms_projects/getiplist/{{ project.Project_id }}" role="button">IP List</a>
-        <a class="btn btn-primary btn-lg mb-2" href="/asas/asas/{{ project.Project_id }}" role="button">Part List</a>
+        <a class="btn btn-primary btn-lg mb-2" href="/sms_project/{{ project.Project_id }}/export-structure" role="button">Component List (flat csv)</a>
         <form action="" method="GET" class="mb-3">
           <div class="input-group">
             <select class="form-select" id="checkTypeSelect">

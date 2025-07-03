@@ -340,3 +340,80 @@ func SMSProjectCheckList(ctx iris.Context) {
 	ctx.ViewData("selectedCheckType", checkType) // Falls du das für die UI brauchst
 	ctx.View("sms_projectChecks.html")
 }
+
+
+func SMSExportProjectStructureCSV(ctx iris.Context) {
+	projectIDStr := ctx.Params().Get("project_id")
+	projectID, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("Invalid project ID")
+		return
+	}
+
+	// Projektstruktur laden
+	structure := dbprovider.GetDBManager().GetProjectStructure(projectID)
+
+	// CSV Header
+	ctx.ResponseWriter().Header().Set("Content-Type", "text/csv")
+	ctx.ResponseWriter().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=project_%d_structure.csv", projectID))
+
+	writer := csv.NewWriter(ctx.ResponseWriter())
+	defer writer.Flush()
+
+	// Spalten-Header
+	header := []string{
+		"DeviceSerial", "DeviceType", "DeviceVersion",
+		"SoftwareType", "SoftwareVersion",
+		"ComponentName", "ComponentVersion",
+	}
+	if err := writer.Write(header); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("Failed to write CSV header")
+		return
+	}
+
+	// Daten flatten und schreiben
+	for _, device := range structure {
+		if len(device.Software) == 0 {
+			// Gerät ohne Software, leere Spalte
+			record := []string{
+				device.SerialNumber,
+				device.DeviceType,
+				device.DeviceVersion,
+				"", "", "", "",
+			}
+			writer.Write(record)
+			continue
+		}
+
+		for _, sw := range device.Software {
+			if len(sw.Components) == 0 {
+				// Software ohne Komponenten
+				record := []string{
+					device.SerialNumber,
+					device.DeviceType,
+					device.DeviceVersion,
+					sw.Type,
+					sw.Version,
+					"", "",
+				}
+				writer.Write(record)
+				continue
+			}
+
+			for _, comp := range sw.Components {
+				record := []string{
+					device.SerialNumber,
+					device.DeviceType,
+					device.DeviceVersion,
+					sw.Type,
+					sw.Version,
+					comp.Name,
+					comp.Version,
+				}
+				writer.Write(record)
+			}
+		}
+	}
+}

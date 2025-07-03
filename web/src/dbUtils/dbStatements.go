@@ -914,3 +914,26 @@ FROM sms_project_status_log
 WHERE project_id = ?
 ORDER BY created_at DESC;
 `
+
+const SELECT_DevicesInProject = `
+SELECT di.device_id, di.serialnumber, dt.type, d.version
+FROM sms_deviceInstance di
+JOIN sms_device d ON di.device_id = d.device_id
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+WHERE di.project_id = ?
+`
+
+const SELECT_SoftwareInDevice = `
+SELECT s.software_id, st.typeName, s.version
+FROM sms_softwarePartOfDevice spd
+JOIN sms_software s ON spd.software_id = s.software_id
+JOIN sms_softwaretype st ON s.softwaretype_id = st.softwaretype_id
+WHERE spd.device_id = ?
+`
+
+const SELECT_ComponentsInSoftware = `
+SELECT c.name, c.version
+FROM sms_componentPartOfSoftware cps
+JOIN sms_component c ON cps.component_id = c.component_id
+WHERE cps.software_id = ?
+`
