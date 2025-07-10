@@ -13,6 +13,7 @@ import (
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
+	"gopkg.in/yaml.v3"
 	"strconv"
 	"strings"
 )
@@ -416,4 +417,30 @@ func SMSExportProjectStructureCSV(ctx iris.Context) {
 			}
 		}
 	}
+}
+
+func SMSExportProjectStructureYAML(ctx iris.Context) {
+	projectIDStr := ctx.Params().Get("project_id")
+	projectID, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("Invalid project ID")
+		return
+	}
+
+	// Datenstruktur abrufen
+	structure := dbprovider.GetDBManager().GetProjectStructure(projectID)
+
+	// YAML serialisieren
+	yamlData, err := yaml.Marshal(structure)
+	if err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("Error generating YAML")
+		return
+	}
+
+	// Header setzen und Datei senden
+	ctx.ResponseWriter().Header().Set("Content-Type", "application/x-yaml")
+	ctx.ResponseWriter().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=project_%d_structure.yaml", projectID))
+	ctx.Write(yamlData)
 }

@@ -605,6 +605,7 @@ func irisMain()() {
 	app.Get("/sms_projectstatus/show/{id}", routes.ShowSMSProjectStatusLog)
 
 	app.Get("/sms_project/{project_id:int}/export-structure", routes.SMSExportProjectStructureCSV)
+	app.Get("/sms_project/exportprojectstructureyaml/{project_id:int}", routes.SMSExportProjectStructureYAML)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
