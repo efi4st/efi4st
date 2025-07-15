@@ -141,3 +141,35 @@ func RemoveSMSSystem(ctx iris.Context) {
 	ctx.ViewData("systemList", systems)
 	ctx.View("sms_systems.html")
 }
+
+func ShowSMSReleaseNotesForSystem(ctx iris.Context) {
+	id := ctx.Params().Get("id")
+	systemID, err := strconv.Atoi(id)
+
+	if err != nil {
+		ctx.ViewData("error", "Fehler beim Parsen der System-ID!")
+		ctx.View("sms_showSystemReleaseNotes.html")
+		return
+	}
+
+	// 1. Hole das System-Objekt
+	system := dbprovider.GetDBManager().GetSMSSystemTypeForReleaseNotes(systemID)
+	if system == nil {
+		ctx.ViewData("error", "System nicht gefunden!")
+		ctx.View("sms_showSystemReleaseNotes.html")
+		return
+	}
+	fmt.Println(system.Systemtype_id())
+	systemtypeIDInt, err := strconv.Atoi(system.Systemtype_id())
+	if err != nil {
+		ctx.ViewData("error", "Fehler beim Konvertieren des systemtype_id in int")
+		ctx.View("error.html")
+		return
+	}
+	releaseNotes := dbprovider.GetDBManager().GetReleaseNotesForSystemUpToVersion(systemtypeIDInt, system.Version())
+
+	// 3. Übergib die Daten an die View
+	ctx.ViewData("system", system)
+	ctx.ViewData("releaseNotes", releaseNotes)
+	ctx.View("sms_showSystemReleaseNotes.html")
+}

@@ -182,6 +182,9 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_systems/downloadSystemStructureJSON/1
 	app.Get("/sms_systems/downloadSystemStructureJSON/{system_id:string}", routes.DownloadSystemTreeJSON)
 
+	// GET: http://localhost:8144/sms_systems/releasenotes/1
+	app.Get("/sms_systems/releasenotes/{id}", routes.ShowSMSReleaseNotesForSystem)
+
 	// GET: http://localhost:8144/smsdevices
 	app.Get("/sms_devices", routes.SMSDevice)
 

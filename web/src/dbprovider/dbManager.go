@@ -76,6 +76,7 @@ type Manager interface {
 	AddSMSSystem(systemtypeId int, version string, date string) error
 	GetSMSSystems() []classes.Sms_System
 	GetSMSSystemInfo(id int) *classes.Sms_System
+	GetSMSSystemTypeForReleaseNotes(id int) (*classes.Sms_System)
 	RemoveSMSSystem(id int) error
 	AddSMSDevice(devicetypeId int, version string, date string) error
 	GetSMSDevice() []classes.Sms_Device
@@ -272,6 +273,8 @@ type Manager interface {
 	GetSMSProjectStatusLogsForProject(project_id int) (statusLogs []classes.Sms_ProjectStatusLog)
 	// Project Structure
 	GetProjectStructure(projectID int) (structure []classes.ProjectDeviceStructure)
+	// Release Note for system
+	GetReleaseNotesForSystemUpToVersion(systemTypeId int, maxVersion string) (releaseNotes []classes.Sms_ReleaseNoteEntry)
 }
 
 type manager struct {
@@ -1646,6 +1649,25 @@ func (mgr *manager) GetSMSSystemInfo(id int) (*classes.Sms_System) {
 	row.Scan(&dbId, &dbVersion, &dbDate, &dbSystemType)
 
 	var system = classes.NewSms_SystemFromDB(dbId, dbSystemType, dbVersion, dbDate.String())
+
+	return system
+}
+
+func (mgr *manager) GetSMSSystemTypeForReleaseNotes(id int) (*classes.Sms_System) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_systemsTypeID)
+	if err != nil{
+		fmt.Print(err)
+	}
+
+	var (
+		dbSystemID int
+		dbSystemType string
+		dbVersion string)
+
+	row := stmt.QueryRow(id)
+	row.Scan(&dbSystemID, &dbSystemType, &dbVersion)
+
+	var system = classes.NewSms_SystemFromDB(dbSystemID, dbSystemType, dbVersion, "")
 
 	return system
 }
@@ -7143,4 +7165,50 @@ func (mgr *manager) GetProjectStructure(projectID int) (structure []classes.Proj
 	}
 
 	return structure
+}
+
+// Release Notes for whole system
+func (mgr *manager) GetReleaseNotesForSystemUpToVersion(systemTypeId int, maxVersion string) (releaseNotes []classes.Sms_ReleaseNoteEntry) {
+
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ReleaseNotesForSystemUpToVersion)
+	if err != nil {
+		log.Println("Prepare failed:", err)
+		return
+	}
+	defer stmt.Close()
+	log.Println("SQL:", dbUtils.SELECT_ReleaseNotesForSystemUpToVersion)
+	log.Printf("Params: systemTypeId=%d, maxVersion=%s\n", systemTypeId, maxVersion)
+	rows, err := stmt.Query(systemTypeId, maxVersion, systemTypeId, maxVersion, systemTypeId, maxVersion)
+	if err != nil {
+		log.Println("Query failed:", err)
+		return
+	}
+	defer rows.Close()
+
+	var (
+		dbElementType         string
+		dbElementID           int
+		dbName                string
+		dbReleaseNote         string
+		dbReleaseDate         string
+		dbIntroducedInVersion string
+	)
+
+	for rows.Next() {
+		err := rows.Scan(&dbElementType, &dbElementID, &dbName, &dbReleaseNote, &dbReleaseDate, &dbIntroducedInVersion)
+		if err != nil {
+			log.Println("Row scan failed:", err)
+			continue
+		}
+		entry := classes.NewSms_ReleaseNoteEntry(
+			dbElementType,
+			dbElementID,
+			dbName,
+			dbReleaseNote,
+			dbReleaseDate,
+			dbIntroducedInVersion,
+		)
+		releaseNotes = append(releaseNotes, *entry)
+	}
+	return
 }

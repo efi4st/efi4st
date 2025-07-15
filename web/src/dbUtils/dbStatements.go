@@ -144,6 +144,7 @@ var SELECT_sms_issuesForProject = `SELECT DISTINCT di.device_id, dt.type AS devi
 
 // SMS System
 var SELECT_sms_systems = `SELECT sms_system.system_id, sms_system.version, sms_system.date, sms_systemtype.type FROM sms_system LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id `
+var SELECT_sms_systemsTypeID = `SELECT sms_system.system_id, sms_system.systemtype_id, sms_system.version FROM sms_system WHERE sms_system.system_id = ? `
 var SELECT_sms_systemInfo = `SELECT sms_system.system_id, sms_system.version, sms_system.date, sms_systemtype.type FROM sms_system LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id WHERE system_id = ?;`
 var INSERT_sms_newSystem = `INSERT INTO sms_system (systemtype_id, version, date) VALUES (?,?,?);`
 var DELETE_sms_system = `DELETE FROM sms_system WHERE system_id = ?;`
@@ -937,3 +938,52 @@ FROM sms_componentPartOfSoftware cps
 JOIN sms_component c ON cps.component_id = c.component_id
 WHERE cps.software_id = ?
 `
+
+const SELECT_ReleaseNotesForSystemUpToVersion = `
+SELECT
+'Device' AS element_type,
+d.device_id AS element_id,
+CONCAT(dt.type, ' ', d.version) AS name,
+r.details AS release_note,
+r.date AS release_date,
+MIN(s.version) AS introduced_in_version
+FROM sms_device d
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+JOIN sms_releasenote r ON r.device_id = d.device_id
+JOIN sms_devicePartOfSystem dps ON d.device_id = dps.device_id
+JOIN sms_system s ON dps.system_id = s.system_id
+WHERE s.systemtype_id = ? AND s.version <= ?
+GROUP BY d.device_id, r.details, r.date
+UNION
+SELECT
+'Application' AS element_type,
+sw.software_id AS element_id,
+CONCAT(st.typeName, ' ', sw.version) AS name,
+sw.releaseNote AS release_note,
+sw.date AS release_date,
+MIN(s.version) AS introduced_in_version
+FROM sms_software sw
+JOIN sms_softwaretype st ON sw.softwaretype_id = st.softwaretype_id
+JOIN sms_softwarePartOfDevice spd ON sw.software_id = spd.software_id
+JOIN sms_devicePartOfSystem dps ON spd.device_id = dps.device_id
+JOIN sms_system s ON dps.system_id = s.system_id
+WHERE s.systemtype_id = ? AND s.version <= ?
+AND sw.releaseNote IS NOT NULL
+GROUP BY sw.software_id, sw.releaseNote, sw.date
+UNION
+SELECT
+'Component' AS element_type,
+c.component_id AS element_id,
+CONCAT(c.name, ' ', c.version) AS name,
+c.releaseNote AS release_note,
+c.date AS release_date,
+MIN(s.version) AS introduced_in_version
+FROM sms_component c
+JOIN sms_componentPartOfSoftware cps ON c.component_id = cps.component_id
+JOIN sms_softwarePartOfDevice spd ON cps.software_id = spd.software_id
+JOIN sms_devicePartOfSystem dps ON spd.device_id = dps.device_id
+JOIN sms_system s ON dps.system_id = s.system_id
+WHERE s.systemtype_id = ? AND s.version <= ?
+AND c.releaseNote IS NOT NULL
+GROUP BY c.component_id, c.releaseNote, c.date
+ORDER BY introduced_in_version DESC, release_date DESC;`

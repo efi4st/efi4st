@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-10 offset-md-1">
+      <h2>Release Notes bis Version {{ system.Version }}</h2>
+
+      <table class="table table-bordered table-striped mt-4">
+        <thead class="thead-dark">
+        <tr>
+          <th>Typ</th>
+          <th>Name</th>
+          <th>Release Note</th>
+          <th>Release Date</th>
+          <th>Introduced in Version</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% set currentVersion = "" %}
+        {% for note in releaseNotes %}
+        {% if note.IntroducedInVersion != currentVersion %}
+        <tr class="table-secondary">
+          <td colspan="5" style="font-weight:bold;">
+            Systemversion: {{ note.IntroducedInVersion }}
+          </td>
+        </tr>
+        {% set currentVersion = note.IntroducedInVersion %}
+        {% endif %}
+        <tr>
+          <td>
+            {% if note.ElementType == "Device" %}
+            💻 Gerät
+            {% elif note.ElementType == "Application" %}
+            📦 Anwendung
+            {% elif note.ElementType == "Component" %}
+            🔧 Komponente
+            {% else %}
+            {{ note.ElementType }}
+            {% endif %}
+          </td>
+          <td>{{ note.Name }}</td>
+          <td>{{ note.ReleaseNote }}</td>
+          <td>{{ note.ReleaseDate }}</td>
+          <td>{{ note.IntroducedInVersion }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+
+      <a href="/sms_systems/show/{{ system.system_id }}" class="btn btn-primary mt-3">
+        ⬅ Zurück zum System
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
