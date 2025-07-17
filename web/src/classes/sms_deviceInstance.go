@@ -18,6 +18,11 @@ type Sms_DeviceInstance struct {
 	projectName string `db:"name"`
 	deviceType string `db:"type"`
 	deviceVersion string `db:"version"`
+	SystemVersions []string
+	MinVersion     string
+	MaxVersion     string
+	ContainsCurrent bool
+	VersionStatus  string // e.g. "equal", "older", "newer", "containsNewer"
 
 }
 

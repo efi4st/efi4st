@@ -167,19 +167,33 @@
           <th>Version</th>
           <th>Belongs To</th>
           <th>Serial</th>
-          <th>Issues</th>
           <th>Status</th>
         </tr>
         </thead>
         <tbody>
-        {% for projectDeviceInstance in deviceInstanceList %}
-        <tr>
-          <td><a href="/sms_deviceInstances/show/{{ projectDeviceInstance.deviceInstance_id }}">{{ projectDeviceInstance.deviceType }}</a></td>
-          <td>{{ projectDeviceInstance.deviceVersion }}</td>
-          <td></td>
-          <td>{{ projectDeviceInstance.serialnumber }}</td>
-          <td></td>
-          <td></td>
+        {% for d in deviceInstanceList %}
+        <tr class="
+      {% if d.VersionStatus == 'equal' %}table-success
+      {% elif d.VersionStatus == 'containsNewer' %}table-warning
+      {% elif d.VersionStatus == 'older' %}table-danger
+      {% elif d.VersionStatus == 'newer' %}table-primary
+      {% endif %}
+    ">
+          <td><a href="/sms_deviceInstances/show/{{ d.deviceInstance_id }}">{{ d.deviceType }}</a></td>
+          <td>{{ d.deviceVersion }}</td>
+          <td>
+            {{ d.MinVersion }} – {{ d.MaxVersion }}
+            {% if d.ContainsCurrent %}<br><strong>(contains current)</strong>{% endif %}
+          </td>
+          <td>{{ d.serialnumber }}</td>
+          <td>
+            {% if d.VersionStatus == 'equal' %}✅ match
+            {% elif d.VersionStatus == 'containsNewer' %}⚠️ newer sys ready
+            {% elif d.VersionStatus == 'older' %}⬇️ outdated
+            {% elif d.VersionStatus == 'newer' %}⬆️ too new
+            {% else %}❓ unknown
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
         </tbody>

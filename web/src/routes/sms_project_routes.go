@@ -14,6 +14,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
 	"gopkg.in/yaml.v3"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -135,6 +136,18 @@ func ShowSMSProject(ctx iris.Context) {
 	deviceInstanceList := dbprovider.GetDBManager().GetDeviceInstanceListForProject(i)
 	systemList := dbprovider.GetDBManager().GetSMSProjectBOMForProject(i)
 	issuesForThisProject, err := dbprovider.GetDBManager().GetSMSIssuesForProject(i)
+
+	var currentSystemVersion string
+	if len(systemList) > 0 {
+		currentSystemVersion = systemList[0].Tmp() // oder .Version(), wenn du das später umstellst
+	} else {
+		currentSystemVersion = "" // oder ein Fallbackwert wie "0.0.0"
+		log.Println("Warnung: Kein System mit diesem Projekt verlinkt (systemList ist leer)")
+	}
+
+	for i := range deviceInstanceList {
+		dbprovider.GetDBManager().EnrichDeviceInstanceWithSystemInfo(&deviceInstanceList[i], currentSystemVersion)
+	}
 
 	// Hole die verlinkten Settings für das Projekt
 	projectSettings, err := dbprovider.GetDBManager().GetLinkedProjectSettings(i)

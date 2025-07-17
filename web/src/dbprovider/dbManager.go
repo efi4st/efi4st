@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/Masterminds/semver/v3"
 	"github.com/efi4st/efi4st/classes"
 	"github.com/efi4st/efi4st/dbUtils"
 	"github.com/efi4st/efi4st/utils"
@@ -90,6 +91,7 @@ type Manager interface {
 	UpgradeDeviceInstance(instanceID int, newDeviceID int) error
 	GetAllVersionsForDevice(deviceID int) ([]classes.Sms_Device, error)
 	GetDeviceInstanceListForProject(id int) []classes.Sms_DeviceInstance
+	EnrichDeviceInstanceWithSystemInfo(deviceInstance *classes.Sms_DeviceInstance, currentSystemVersion string)
 	GetSMSIssuesForDeviceInstance(deviceInstanceID int) (issueAffectedDevices []classes.Sms_IssueAffectedDeviceWithInheritage, err error)
 	GetSMSUpdateHistoryForDevice(id int) []classes.Sms_UpdateHistory
 	AddSMSUpdateHistory(deviceInstance_id int, user string, updateType string, description string) error
@@ -2186,6 +2188,84 @@ func (mgr *manager) GetSMSDeviceInstanceInfo(id int) (*classes.Sms_DeviceInstanc
 	var deviceInstance = classes.NewSms_DeviceInstanceFromDB(dbId, dbProject_id, dbDevice_id, dbSerialnumber, dbProvisioner, dbConfiguration, dbDate.String(), dbprojectName, dbdeviceType, dbdeviceVersion)
 
 	return deviceInstance
+}
+
+
+func (mgr *manager) EnrichDeviceInstanceWithSystemInfo(deviceInstance *classes.Sms_DeviceInstance, currentSystemVersion string) {
+	if currentSystemVersion == "" {
+		deviceInstance.VersionStatus = "unknown"
+		return
+	}
+
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_systemVersionsforDevice)
+	if err != nil {
+		log.Println("Prepare failed:", err)
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceInstance.Device_id())
+	if err != nil {
+		log.Println("Query failed:", err)
+		return
+	}
+	defer rows.Close()
+
+	var semverList []*semver.Version
+	var rawVersions []string
+
+	for rows.Next() {
+		var version string
+		if err := rows.Scan(&version); err == nil {
+			v, err := semver.NewVersion(version)
+			if err == nil {
+				semverList = append(semverList, v)
+				rawVersions = append(rawVersions, version)
+			} else {
+				log.Printf("Invalid semver version: %s", version)
+			}
+		}
+	}
+
+	if len(semverList) == 0 {
+		return
+	}
+
+	sort.Sort(semver.Collection(semverList))
+
+	deviceInstance.SystemVersions = rawVersions
+	deviceInstance.MinVersion = semverList[0].String()
+	deviceInstance.MaxVersion = semverList[len(semverList)-1].String()
+
+	// Vergleiche mit aktueller Systemversion
+	current, err := semver.NewVersion(currentSystemVersion)
+	if err != nil {
+		log.Printf("Invalid currentSystemVersion: %s", currentSystemVersion)
+		deviceInstance.VersionStatus = "unknown"
+		return
+	}
+
+	containsCurrent := false
+	for _, v := range semverList {
+		if v.Equal(current) {
+			containsCurrent = true
+			break
+		}
+	}
+	deviceInstance.ContainsCurrent = containsCurrent
+
+	switch {
+	case containsCurrent && semverList[len(semverList)-1].GreaterThan(current):
+		deviceInstance.VersionStatus = "containsNewer"
+	case containsCurrent:
+		deviceInstance.VersionStatus = "equal"
+	case semverList[len(semverList)-1].LessThan(current):
+		deviceInstance.VersionStatus = "older"
+	case semverList[0].GreaterThan(current):
+		deviceInstance.VersionStatus = "newer"
+	default:
+		deviceInstance.VersionStatus = "unknown"
+	}
 }
 
 func (mgr *manager) RemoveSMSDeviceInstances(id int) (err error) {

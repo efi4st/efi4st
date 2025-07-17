@@ -987,3 +987,10 @@ WHERE s.systemtype_id = ? AND s.version <= ?
 AND c.releaseNote IS NOT NULL
 GROUP BY c.component_id, c.releaseNote, c.date
 ORDER BY introduced_in_version DESC, release_date DESC;`
+
+
+const SELECT_systemVersionsforDevice = `SELECT s.version 
+FROM sms_devicePartOfSystem dps 
+JOIN sms_system s ON s.system_id = dps.system_id 
+WHERE dps.device_id = ?
+`
