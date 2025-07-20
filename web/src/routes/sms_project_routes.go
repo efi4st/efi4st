@@ -28,8 +28,6 @@ func SMSProjects(ctx iris.Context) {
 	if len(projects) < 1 {
 		ctx.ViewData("error", "Error: No projects available. Add one!")
 	}
-	fmt.Printf(strconv.Itoa(len(projects)))
-	fmt.Printf(projects[0].Name)
 	ctx.ViewData("projectList", projects)
 	ctx.View("sms_projects.html")
 }

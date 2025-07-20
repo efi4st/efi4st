@@ -311,7 +311,36 @@ var SELECT_sms_ProjectBOMForSystem = `SELECT sms_projectBOM.projectBOM_id, sms_p
 var INSERT_sms_newIssueAffectedSoftware = `INSERT INTO sms_issueAffectedSoftware (software_id, issue_id, additionalInfo, confirmed) VALUES (?,?,?,?);`
 var DELETE_sms_IssueAffectedSoftware = `DELETE FROM sms_issueAffectedSoftware WHERE software_id = ? AND issue_id = ?;`
 var SELECT_sms_IssueAffectedSoftwaresForIssueID = `SELECT sms_issueAffectedSoftware.software_id, sms_issueAffectedSoftware.issue_id, sms_issueAffectedSoftware.additionalInfo, sms_issueAffectedSoftware.confirmed, sms_softwaretype.typeName, sms_software.version FROM sms_issueAffectedSoftware LEFT JOIN sms_software ON sms_issueAffectedSoftware.software_id = sms_software.software_id LEFT JOIN sms_softwaretype ON sms_software.softwaretype_id = sms_softwaretype.softwaretype_id WHERE sms_issueAffectedSoftware.issue_id = ?; `
-var SELECT_sms_IssueAffectedSoftwaresForIssueIDWithInheritage = `SELECT DISTINCT sms_issueAffectedSoftware.software_id, sms_issueAffectedSoftware.issue_id, sms_issueAffectedSoftware.additionalInfo, sms_issueAffectedSoftware.confirmed, sms_softwaretype.typeName, sms_software.version, CASE WHEN siac.component_id IS NOT NULL THEN true ELSE false END AS inherit FROM sms_issueAffectedSoftware LEFT JOIN sms_software ON sms_issueAffectedSoftware.software_id = sms_software.software_id LEFT JOIN sms_softwaretype ON sms_software.softwaretype_id = sms_softwaretype.softwaretype_id LEFT JOIN sms_componentPartOfSoftware scps ON sms_software.software_id = scps.software_id LEFT JOIN sms_issueAffectedComponent siac ON scps.component_id = siac.component_id AND siac.issue_id = ? WHERE sms_issueAffectedSoftware.issue_id = ? AND ( siac.component_id IS NULL OR siac.issue_id = ? );`
+var SELECT_sms_IssueAffectedSoftwaresForIssueIDWithInheritage = `SELECT 
+  s.software_id,
+  ias.issue_id,
+  ias.additionalInfo,
+  ias.confirmed,
+  st.typeName,
+  s.version,
+  FALSE AS inherit
+FROM sms_issueAffectedSoftware ias
+JOIN sms_software s ON ias.software_id = s.software_id
+JOIN sms_softwaretype st ON s.softwaretype_id = st.softwaretype_id
+WHERE ias.issue_id = ?
+UNION
+SELECT 
+  s.software_id,
+  ? AS issue_id,
+  NULL AS additionalInfo,
+  FALSE AS confirmed,
+  st.typeName,
+  s.version,
+  TRUE AS inherit
+FROM sms_software s
+JOIN sms_softwaretype st ON s.softwaretype_id = st.softwaretype_id
+WHERE EXISTS (
+  SELECT 1
+  FROM sms_componentPartOfSoftware cps
+  JOIN sms_issueAffectedComponent iac ON iac.component_id = cps.component_id
+  WHERE cps.software_id = s.software_id
+    AND iac.issue_id = ?
+)`
 var SELECT_sms_IssuesForSoftware = `SELECT DISTINCT sms_issueAffectedSoftware.software_id, sms_issue.issue_id, COALESCE(sms_issueAffectedSoftware.additionalInfo, siac.additionalInfo) AS additionalInfo, COALESCE(sms_issueAffectedSoftware.confirmed, siac.confirmed) AS confirmed, sms_issue.name, CASE WHEN siac.component_id IS NOT NULL THEN true ELSE false END AS inherit FROM sms_issueAffectedSoftware LEFT JOIN sms_issue ON sms_issue.issue_id = sms_issueAffectedSoftware.issue_id LEFT JOIN sms_componentPartOfSoftware scps ON sms_issueAffectedSoftware.software_id = scps.software_id LEFT JOIN sms_issueAffectedComponent siac ON scps.component_id = siac.component_id AND siac.issue_id = sms_issueAffectedSoftware.issue_id WHERE sms_issueAffectedSoftware.software_id = ? OR siac.component_id IS NOT NULL; `
 
 // SMS ArtefactPartOfDevice
