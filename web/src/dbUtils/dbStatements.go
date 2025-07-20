@@ -1023,3 +1023,11 @@ FROM sms_devicePartOfSystem dps
 JOIN sms_system s ON s.system_id = dps.system_id 
 WHERE dps.device_id = ?
 `
+
+var SELECT_sms_ElementSearchLike = `
+SELECT * FROM sms_elementSearch
+WHERE LOWER(name) LIKE CONCAT('%', ?, '%')
+   OR LOWER(version) LIKE CONCAT('%', ?, '%')
+   OR LOWER(type) LIKE CONCAT('%', ?, '%')
+ORDER BY name, version
+`

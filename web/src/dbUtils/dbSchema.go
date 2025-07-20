@@ -612,3 +612,58 @@ CREATE TABLE IF NOT EXISTS sms_project_status_log (
     CONSTRAINT sms_project_status_log_ibfk_1 FOREIGN KEY (project_id) REFERENCES sms_project (project_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_sms_elementSearch_schema = `
+CREATE OR REPLACE VIEW sms_elementSearch AS
+(
+SELECT
+'Artefact' AS entity_type,
+a.artefact_id AS entity_id,
+a.name AS name,
+a.version AS version,
+at.artefactType AS type,
+IFNULL(GROUP_CONCAT(DISTINCT CONCAT(stype.type, ' ', sys.version) SEPARATOR ', '), '–') AS systems
+FROM sms_artefact a
+JOIN sms_artefacttype at ON a.artefacttype_id = at.artefacttype_id
+LEFT JOIN sms_artefactPartOfDevice apd ON a.artefact_id = apd.artefact_id
+LEFT JOIN sms_devicePartOfSystem dps ON apd.device_id = dps.device_id
+LEFT JOIN sms_system sys ON dps.system_id = sys.system_id
+LEFT JOIN sms_systemtype stype ON sys.systemtype_id = stype.systemtype_id
+GROUP BY a.artefact_id, a.name, a.version, at.artefactType
+)
+UNION
+(
+SELECT
+'Software' AS entity_type,
+sft.software_id AS entity_id,
+st.typeName AS name,               -- ✅ Softwaretyp als Name (z. B. "Firmware")
+sft.version AS version,
+sft.license AS type,               -- ✅ z. B. Lizenztyp als Kategorie (optional)
+IFNULL(GROUP_CONCAT(DISTINCT CONCAT(stype.type, ' ', sys.version) SEPARATOR ', '), '–') AS systems
+FROM sms_software sft
+JOIN sms_softwaretype st ON sft.softwaretype_id = st.softwaretype_id
+LEFT JOIN sms_softwarePartOfDevice spd ON sft.software_id = spd.software_id
+LEFT JOIN sms_devicePartOfSystem dps ON spd.device_id = dps.device_id
+LEFT JOIN sms_system sys ON dps.system_id = sys.system_id
+LEFT JOIN sms_systemtype stype ON sys.systemtype_id = stype.systemtype_id
+GROUP BY sft.software_id, sft.version, st.typeName, sft.license
+)
+UNION
+(
+SELECT
+'Component' AS entity_type,
+c.component_id AS entity_id,
+c.name AS name,
+c.version AS version,
+c.componentType AS type,
+IFNULL(GROUP_CONCAT(DISTINCT CONCAT(stype.type, ' ', sys.version) SEPARATOR ', '), '–') AS systems
+FROM sms_component c
+LEFT JOIN sms_componentPartOfSoftware cps ON c.component_id = cps.component_id
+LEFT JOIN sms_software sft ON cps.software_id = sft.software_id
+LEFT JOIN sms_softwarePartOfDevice spd ON sft.software_id = spd.software_id
+LEFT JOIN sms_devicePartOfSystem dps ON spd.device_id = dps.device_id
+LEFT JOIN sms_system sys ON dps.system_id = sys.system_id
+LEFT JOIN sms_systemtype stype ON sys.systemtype_id = stype.systemtype_id
+GROUP BY c.component_id, c.name, c.version, c.componentType
+);
+`

@@ -610,6 +610,11 @@ func irisMain()() {
 	app.Get("/sms_project/{project_id:int}/export-structure", routes.SMSExportProjectStructureCSV)
 	app.Get("/sms_project/exportprojectstructureyaml/{project_id:int}", routes.SMSExportProjectStructureYAML)
 
+	// element search
+	//http://localhost:8144/sms_elementsearch-ui
+	app.Get("/sms_elementsearch-ui", routes.ShowElementSearchPage)
+	app.Get("/elementsearch", routes.SearchElementsAPI)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

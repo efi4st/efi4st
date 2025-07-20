@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 
 {% block content %}
+
 <!-- Main jumbotron for a primary marketing message or call to action -->
 <div class="jumbotron banner">
   <div class="container">
@@ -21,6 +22,7 @@
             </div>
           {% endif %}
         </div>
+
 <div class="container">
   <div class="row">
     <nav class="navbar navbar-expand-md" style="background-color: #343a40; border-radius: 5px; margin-top: 20px;">
@@ -71,7 +73,7 @@
           </li>
 
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Config
             </a>
             <div class="dropdown-menu bg-dark">
@@ -82,7 +84,7 @@
           </li>
 
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Doc
             </a>
             <div class="dropdown-menu bg-dark">
@@ -94,7 +96,7 @@
 
           <!-- Misc Dropdown -->
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a class="nav-link dropdown-toggle text-light font-weight-bold" href="#" id="navbarMisc3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Misc
             </a>
             <div class="dropdown-menu bg-dark">
@@ -111,47 +113,106 @@
 </div>
 <hr>
 
-      <div class="container">
-        <div class="row">
-          <p><a class="btn btn-primary btn-lg" href="/sms_systems/createSMSSystem" role="button">New System &raquo;</a></p>
-        </div>
+<div class="container">
+  <div class="row mt-4">
+    <div class="col-md-12">
+      <h2>Search for Software, Components or Artefacts</h2>
+      <input class="form-control" id="searchInput" type="text" placeholder="Suchbegriff eingeben...">
+      <br>
+      <table class="table table-bordered table-hover">
+        <thead class="thead-light">
+        <tr>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Version</th>
+          <th>Category/License</th>
+          <th>System</th>
+          <th>Details</th>
+        </tr>
+        </thead>
+        <tbody id="resultTable">
+        <!-- Ergebnisse werden hier per JavaScript eingefügt -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <hr>
+</div>
 
-        <div class="row">
-          <div class="col-md-2">
-          </div>
-          <div class="col-md-8">
-            <h2>Systems:</h2>
-            <input class="form-control" id="myInput" type="text" placeholder="Search..">
-            <br>
-            <table class="table">
-              <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Version</th>
-                <th><i class="fa fa-trash-o"></i></th>
-              </tr>
-              </thead>
-              <tbody id="myTable">
-              {% for system in systemList %}
-              <tr>
-                <td>{{ system.date|truncatechars:13 }}</td>
-                <td><a href="/sms_systems/show/{{ system.system_id }}">{{ system.systemtype_id }}</a></td>
-                <td>{{ system.version }}</td>
-                <td><a href="/sms_systems/remove/{{system.system_id}}" class="button"><i class="fa fa-close"></i></a></td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <div class="col-md-2">
-          </div>
-        </div>
+<script>
+  function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+  }
+  let debounceTimeout = null;
 
-        <hr>
+  document.getElementById("searchInput").addEventListener("input", function() {
+    const query = this.value.trim().toLowerCase();
+    clearTimeout(debounceTimeout);
 
+    debounceTimeout = setTimeout(() => {
+      const tbody = document.getElementById("resultTable");
+      tbody.innerHTML = "";
 
-      </div> <!-- /container -->
+      if (query.length < 2) return;
+
+      fetch("/elementsearch?q=" + encodeURIComponent(query))
+              .then(res => {
+                if (!res.ok) throw new Error("Fehler bei der Suche");
+                return res.json();
+              })
+              .then(data => {
+                const tbody = document.getElementById("resultTable");
+                tbody.innerHTML = "";
+
+                if (!Array.isArray(data)) {
+                  const row = document.createElement("tr");
+                  row.innerHTML = `<td colspan="6" class="text-danger text-center">Fehlerhafte Antwort vom Server</td>`;
+                  tbody.appendChild(row);
+                  return;
+                }
+
+                if (data.length === 0) {
+                  const row = document.createElement("tr");
+                  row.innerHTML = `<td colspan="6" class="text-center">Keine Ergebnisse gefunden</td>`;
+                  tbody.appendChild(row);
+                  return;
+                }
+
+                data.forEach(el => {
+                  const row = document.createElement("tr");
+
+                  const sysText = el.system_type ? el.system_type + " " + (el.system_version || "") : "–";
+                  const typeMap = {
+                    "Software": "sms_softwares/show",
+                    "Artefact": "sms_artefacts/show",
+                    "Component": "sms_components/show"
+                  };
+
+                  const routePrefix = typeMap[el.entity_type] || "unknown";
+                  const link = `/${routePrefix}/${el.entity_id}`;
+
+                  row.innerHTML = `
+                    <td>${escapeHTML(el.entity_type)}</td>
+                    <td>${escapeHTML(el.name)}</td>
+                    <td>${escapeHTML(el.version)}</td>
+                    <td>${escapeHTML(el.type)}</td>
+                    <td>${escapeHTML(el.systems || '–')}</td>
+                    <td><a href="${link}" class="btn btn-sm btn-primary">Details</a></td>
+                   `;
+                  tbody.appendChild(row);
+                });
+              })
+              .catch(err => {
+                const row = document.createElement("tr");
+                row.innerHTML = `<td colspan="6" class="text-danger text-center">Fehler: ${err.message}</td>`;
+                tbody.appendChild(row);
+              });
+    }, 400); // debounce-Zeit: 400ms
+  });
+</script>
       
 {% endblock %}
 

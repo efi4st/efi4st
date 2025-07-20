@@ -277,6 +277,8 @@ type Manager interface {
 	GetProjectStructure(projectID int) (structure []classes.ProjectDeviceStructure)
 	// Release Note for system
 	GetReleaseNotesForSystemUpToVersion(systemTypeId int, maxVersion string) (releaseNotes []classes.Sms_ReleaseNoteEntry)
+	// ElementSearch
+	GetSMSElementSearchLike(search string) []classes.Sms_ElementSearch
 }
 
 type manager struct {
@@ -7291,4 +7293,50 @@ func (mgr *manager) GetReleaseNotesForSystemUpToVersion(systemTypeId int, maxVer
 		releaseNotes = append(releaseNotes, *entry)
 	}
 	return
+}
+
+//////////////////////
+//
+///// Element Search
+//
+/////////////////////
+func (mgr *manager) GetSMSElementSearchLike(search string) []classes.Sms_ElementSearch {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ElementSearchLike)
+	if err != nil {
+		fmt.Print(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	search = strings.ToLower(search)
+	rows, err := stmt.Query(search, search, search)
+	if err != nil {
+		fmt.Print(err)
+		return nil
+	}
+	defer rows.Close()
+
+	var results []classes.Sms_ElementSearch
+
+	for rows.Next() {
+		var (
+			entityType string
+			entityID   int
+			name       string
+			version    string
+			typeStr    string
+			systems    string
+		)
+
+		err := rows.Scan(&entityType, &entityID, &name, &version, &typeStr, &systems)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+
+		elem := classes.NewSms_ElementSearch(entityType, entityID, name, version, typeStr, systems)
+		results = append(results, *elem)
+	}
+
+	return results
 }
