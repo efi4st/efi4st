@@ -82,9 +82,11 @@ func ShowSMSSystem(ctx iris.Context) {
 	deviceIssuesForThisSystem, err := dbprovider.GetDBManager().GetSMSIssuesForSystem(i)
 	reportsForThisSystem, err := dbprovider.GetDBManager().GetReportsForLinkedObject(i, "sms_system")
 
+	hardwareDesigns := dbprovider.GetDBManager().GetSMSHardwareDesignsForSystem(i)
+	ctx.ViewData("hardwaredesignListForSystem", hardwareDesigns)
+
 	// 🔽 Artefakte unter dem System abrufen
 	artefactsUnderSystem := dbprovider.GetDBManager().GetSMSArtefactPartOfSystemForSystem(i)
-
 	// 🔼 Artefakte als ViewData bereitstellen
 	ctx.ViewData("artefactsUnderSystem", artefactsUnderSystem)
 

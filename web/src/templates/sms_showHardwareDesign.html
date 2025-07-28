@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <h2>Hardware Design: {{hardwareDesign.Name}} <small class="text-muted">v{{hardwareDesign.Version}}</small></h2>
+      <hr>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-5">
+      <ul class="list-group mb-3">
+        <li class="list-group-item"><strong>ID:</strong> {{hardwareDesign.HardwareDesignID}}</li>
+        <li class="list-group-item"><strong>Version:</strong> {{hardwareDesign.Version}}</li>
+        <li class="list-group-item"><strong>Datum:</strong> {{hardwareDesign.Date|truncatechars:13}}</li>
+        <li class="list-group-item"><strong>Autor:</strong> {{hardwareDesign.Author}}</li>
+        <li class="list-group-item"><strong>Dokumentnummer:</strong> {{hardwareDesign.DocumentNumber}}</li>
+        <li class="list-group-item"><strong>Freigegeben:</strong> {% if hardwareDesign.IsApproved %}✅ Ja{% else %}❌ Nein{% endif %}</li>
+      </ul>
+
+      <div class="mb-4">
+        <h5>Revisionshinweis:</h5>
+        <textarea class="form-control" rows="3" readonly>{{hardwareDesign.RevisionNote}}</textarea>
+      </div>
+
+      <div>
+        <h5>Beschreibung:</h5>
+        <textarea class="form-control" rows="5" readonly>{{hardwareDesign.Description}}</textarea>
+      </div>
+    </div>
+
+    <div class="col-md-7">
+      {% if hardwareDesign.ImageBase64 %}
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <strong>Design-Skizze / Bild</strong>
+        </div>
+        <div class="card-body text-center">
+          <img src="data:image/png;base64,{{hardwareDesign.ImageBase64}}" alt="Hardware Design Image" class="img-fluid rounded" style="max-height: 500px;">
+        </div>
+      </div>
+      {% else %}
+      <div class="alert alert-info text-center">
+        Kein Bild/Skizze verfügbar.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="container mt-4">
+    <div class="row justify-content-center">
+      <div class="col-md-6 text-center">
+        <a href="/sms_hardwaredesigns" class="btn btn-outline-primary btn-lg">
+          <i class="fa fa-arrow-left"></i> Zurück zur Übersicht
+        </a>
+      </div>
+    </div>
+  </div>
+  <hr>
+</div>
+{% endblock %}

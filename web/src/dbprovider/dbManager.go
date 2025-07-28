@@ -279,6 +279,15 @@ type Manager interface {
 	GetReleaseNotesForSystemUpToVersion(systemTypeId int, maxVersion string) (releaseNotes []classes.Sms_ReleaseNoteEntry)
 	// ElementSearch
 	GetSMSElementSearchLike(search string) []classes.Sms_ElementSearch
+	// HardwareDesign
+	AddSMSHardwareDesign(design *classes.Sms_HardwareDesign) error
+	AddSMSHardwareDesignMapping(systemID int, designID int, additionalInfo string) error
+	GetSMSHardwareDesignsForSystem(systemID int) []classes.Sms_HardwareDesign
+	GetAllSMSHardwareDesigns() []classes.Sms_HardwareDesign
+	GetSMSHardwareDesignByID(designID int) *classes.Sms_HardwareDesign
+	DeleteSMSHardwareDesignByID(designID int) error
+	DeleteSMSHardwareDesignMappingsByDesignID(designID int) error
+	DeleteSMSHardwareDesignMapping(systemID int, designID int) error
 }
 
 type manager struct {
@@ -7339,4 +7348,174 @@ func (mgr *manager) GetSMSElementSearchLike(search string) []classes.Sms_Element
 	}
 
 	return results
+}
+
+////////////////
+//
+// Hardware Design
+//
+/////////////////
+func (mgr *manager) AddSMSHardwareDesign(design *classes.Sms_HardwareDesign) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_HardwareDesign)
+	if err != nil {
+		fmt.Println("Prepare Error:", err)
+		return err
+	}
+	defer stmt.Close()
+
+	fmt.Println("→ INSERT HardwareDesign:", design.Name, "Bildgröße:", len(design.Image), "Bytes")
+
+	_, err = stmt.Exec(
+		design.Name,
+		design.Version,
+		design.Date,
+		design.Description,
+		design.Image,          // Bild muss hier hin (5. Stelle)
+		design.Author,
+		design.IsApproved,
+		design.RevisionNote,
+		design.DocumentNumber,
+	)
+
+	if err != nil {
+		fmt.Println("Exec Error:", err)
+	}
+	return err
+}
+
+func (mgr *manager) AddSMSHardwareDesignMapping(systemID int, designID int, additionalInfo string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_HardwareDesignPartOfSystem)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(systemID, designID, additionalInfo)
+	return err
+}
+
+func (mgr *manager) GetSMSHardwareDesignsForSystem(systemID int) []classes.Sms_HardwareDesign {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_HardwareDesignsForSystem)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(systemID)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	var designs []classes.Sms_HardwareDesign
+
+	for rows.Next() {
+		var d classes.Sms_HardwareDesign
+		err := rows.Scan(
+			&d.HardwareDesignID, &d.Name, &d.Version, &d.Date, &d.Description, &d.Author,
+			&d.IsApproved, &d.RevisionNote, &d.DocumentNumber, &d.AdditionalInfo,
+		)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		designs = append(designs, d)
+	}
+
+	return designs
+}
+
+func (mgr *manager) GetAllSMSHardwareDesigns() []classes.Sms_HardwareDesign {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_AllHardwareDesigns)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	var designs []classes.Sms_HardwareDesign
+
+	for rows.Next() {
+		var d classes.Sms_HardwareDesign
+		err := rows.Scan(
+			&d.HardwareDesignID, &d.Name, &d.Version, &d.Date, &d.Description,
+			&d.Author, &d.IsApproved, &d.RevisionNote, &d.DocumentNumber,
+		)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		designs = append(designs, d)
+	}
+
+	return designs
+}
+
+func (mgr *manager) GetSMSHardwareDesignByID(designID int) *classes.Sms_HardwareDesign {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_HardwareDesignByID)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRow(designID)
+
+	var d classes.Sms_HardwareDesign
+	err = row.Scan(
+		&d.HardwareDesignID, &d.Name, &d.Version, &d.Date, &d.Description, &d.Image,
+		&d.Author, &d.IsApproved, &d.RevisionNote, &d.DocumentNumber,
+	)
+	if err != nil {
+		fmt.Println("Scan error:", err)
+		return nil
+	}
+
+	return &d
+}
+
+func (mgr *manager) DeleteSMSHardwareDesignByID(designID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_HardwareDesignByID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(designID)
+	return err
+}
+
+func (mgr *manager) DeleteSMSHardwareDesignMappingsByDesignID(designID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_HardwareDesignMappingsByDesignID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(designID)
+	return err
+}
+
+func (mgr *manager) DeleteSMSHardwareDesignMapping(systemID int, designID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_HardwareDesignMapping)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(systemID, designID)
+	return err
 }

@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container mt-4">
+
+  <div class="row">
+    <div class="col-md-2"></div>
+
+    <div class="col-md-8">
+      <form action="/sms_hardwaredesigns/add" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <h3>Neues Hardware Design erstellen</h3>
+
+          <label for="Name">Name:</label>
+          <input type="text" class="form-control" name="Name" id="Name" placeholder="z. B. Schaltschranklayout 1.0" required>
+          <br>
+
+          <label for="Version">Version:</label>
+          <input type="text" class="form-control" name="Version" id="Version" placeholder="z. B. 1.0.0" required>
+          <br>
+
+          <label for="Date">Datum:</label>
+          <input type="date" class="form-control" name="Date" id="Date" required>
+          <br>
+
+          <label for="Author">Autor:</label>
+          <input type="text" class="form-control" name="Author" id="Author" placeholder="z. B. Max Mustermann">
+          <br>
+
+          <label for="DocumentNumber">Dokumentnummer:</label>
+          <input type="text" class="form-control" name="DocumentNumber" id="DocumentNumber" placeholder="z. B. D-12345-AB">
+          <br>
+
+          <label for="RevisionNote">Revisionshinweis:</label>
+          <textarea class="form-control" name="RevisionNote" id="RevisionNote" rows="3" placeholder="z. B. Geändert: Sicherung F3 ersetzt..."></textarea>
+          <br>
+
+          <label for="Description">Beschreibung:</label>
+          <textarea class="form-control" name="Description" id="Description" rows="4" placeholder="Kurze Erläuterung des Designs..."></textarea>
+          <br>
+
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="IsApproved" id="IsApproved">
+            <label class="form-check-label" for="IsApproved">
+              Design ist freigegeben
+            </label>
+          </div>
+          <br>
+
+          <label for="Image">Design-Skizze / PDF / Bild (optional):</label>
+          <input type="file" class="form-control-file" name="Image" id="Image" accept="image/*,application/pdf">
+          <br>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa fa-plus-circle"></i> Hardware Design speichern
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-md-2"></div>
+  </div>
+
+  <hr>
+</div>
+{% endblock %}
+

@@ -8,6 +8,8 @@
       <div class="col-md-3"></div>
       <div class="col-md-8">
         <h1 class="display-3" ></h1>
+        <h4 hidden class="glow">Investigation of methods for firmware analysis of embedded Linux Devices in preparation for security testing / fuzzing.</h4>
+        <p hidden><a class="btn btn-primary btn-lg" href="/documentation" role="button">See Documentation &raquo;</a></p>
       </div>
       <div class="col-md-1"></div>
     </div>
@@ -21,6 +23,7 @@
             </div>
           {% endif %}
         </div>
+
 <div class="container">
   <div class="row">
     <nav class="navbar navbar-expand-md" style="background-color: #343a40; border-radius: 5px; margin-top: 20px;">
@@ -110,51 +113,88 @@
 
   </div>
 </div>
-
 <hr>
+<div class="container mt-4">
 
-      <div class="container">
-        <div class="row">
-          <p><a class="btn btn-primary btn-lg" href="/sms_certifications/createSMSCertification" role="button">New Certification &raquo;</a></p>
-        </div>
+  <!-- Top Row: Button -->
+  <div class="row mb-3">
+    <div class="col text-right">
+      <a class="btn btn-success btn-lg" href="/sms_hardwaredesigns/create" role="button">
+        <i class="fa fa-plus-circle"></i> Neues Hardware Design
+      </a>
+    </div>
+  </div>
 
-        <div class="row">
-          <div class="col-md-2">
-          </div>
-          <div class="col-md-8">
-            <h2>Certifications:</h2>
-            <input class="form-control" id="myInput" type="text" placeholder="Search..">
-            <br>
-            <table class="table">
-              <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Date</th>
-                <th>Description</th>
-                <th><i class="fa fa-trash-o"></i></th>
-              </tr>
-              </thead>
-              <tbody id="myTable">
-              {% for certification in certificationList %}
-              <tr>
-                <td>{{ certification.certification_id }}</td>
-                <td><a href="/sms_certifications/show/{{ certification.certification_id }}">{{ certification.name }}</a></td>
-                <td>{{ certification.date|truncatechars:13 }}</td>
-                <td>{{ certification.description }}</td>
-                <td><a href="/sms_certifications/remove/{{certification.certification_id}}" class="button"><i class="fa fa-close"></i></a></td>
-              </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <div class="col-md-2">
-          </div>
-        </div>
+  <!-- Table Title + Filter -->
+  <div class="row">
+    <div class="col-md-12">
+      <h2>Hardware Designs</h2>
+      <input class="form-control mb-3" id="searchInput" type="text" placeholder="Suche nach Name, Version, Autor...">
+    </div>
+  </div>
 
-        <hr>
+  <!-- Table -->
+  <div class="row">
+    <div class="col-md-12">
+      <table class="table table-hover table-bordered table-sm">
+        <thead class="thead-dark">
+        <tr>
+          <th>Name</th>
+          <th>Version</th>
+          <th>Datum</th>
+          <th>Autor</th>
+          <th>Dokument-Nr.</th>
+          <th>Freigegeben?</th>
+          <th>Details</th>
+          <th><i class="fa fa-trash-o"></i></th>
+        </tr>
+        </thead>
+        <tbody id="hardwareDesignTable">
+        {% for design in hardwaredesignList %}
+        <tr>
+          <td>{{ design.Name }}</td>
+          <td>{{ design.Version }}</td>
+          <td>{{ design.Date|truncatechars:13 }}</td>
+          <td>{{ design.Author }}</td>
+          <td>{{ design.DocumentNumber }}</td>
+          <td>
+            {% if design.IsApproved %}
+            ✅
+            {% else %}
+            ❌
+            {% endif %}
+          </td>
+          <td>
+            <a class="btn btn-sm btn-outline-info" href="/sms_hardwaredesigns/show/{{ design.HardwareDesignID }}">
+              Anzeigen
+            </a>
+          </td>
+          <td>
+            <a class="btn btn-sm btn-outline-danger" href="/sms_hardwaredesigns/remove/{{ design.HardwareDesignID }}">
+              <i class="fa fa-trash"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-      </div> <!-- /container -->
+  <hr>
+</div>
+
+<!-- Optional: JS für lokale Filterung -->
+<script>
+  document.getElementById("searchInput").addEventListener("input", function () {
+    let input = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#hardwareDesignTable tr");
+    rows.forEach(row => {
+      let text = row.innerText.toLowerCase();
+      row.style.display = text.includes(input) ? "" : "none";
+    });
+  });
+</script>
       
 {% endblock %}
 

@@ -262,7 +262,34 @@
 
           </div>
           <div class="col-md-6">
+            <h2>Hardware Design:</h2>
+            <p>
+              <a class="btn btn-outline-primary" href="/sms_hardwaredesignPartOfSystem/create/{{ system.System_id }}" role="button">
+                Add Hardware Design
+              </a>
+            </p>
 
+            {% if hardwaredesignListForSystem|length == 0 %}
+            <div class="alert alert-info">No hardware design linked to this system.</div>
+            {% else %}
+            <ul class="list-group">
+              {% for hd in hardwaredesignListForSystem %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <strong><a href="/sms_hardwaredesigns/show/{{ hd.HardwareDesignID }}">{{ hd.Name }}</a></strong><br>
+                  <small>Version: {{ hd.Version }}, Author: {{ hd.Author }}</small><br>
+                  <small><em>{{ hd.Description|truncatechars:100 }}</em></small><br>
+                  {% if hd.AdditionalInfo %}
+                  <small class="text-muted">Note: {{ hd.AdditionalInfo }}</small>
+                  {% endif %}
+                </div>
+                <a class="btn btn-sm btn-danger" href="/sms_hardwaredesignPartOfSystem/remove?system_id={{ system.System_id }}&hardwaredesign_id={{ hd.HardwareDesignID }}">
+                  <i class="fa fa-trash-o"></i>
+                </a>
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
           </div>
 
         </div>

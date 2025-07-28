@@ -615,6 +615,15 @@ func irisMain()() {
 	app.Get("/sms_elementsearch-ui", routes.ShowElementSearchPage)
 	app.Get("/elementsearch", routes.SearchElementsAPI)
 
+	app.Get("/sms_hardwaredesigns", routes.SMSHardwareDesigns)
+	app.Get("/sms_hardwaredesigns/create", routes.CreateSMSHardwareDesign)
+	app.Post("/sms_hardwaredesigns/add", routes.AddSMSHardwareDesign)
+	app.Get("/sms_hardwaredesigns/show/{id:int}", routes.ShowSMSHardwareDesign)
+	app.Get("/sms_hardwaredesigns/remove/{id:int}", routes.RemoveSMSHardwareDesign)
+	app.Get("/sms_hardwaredesignPartOfSystem/create/{id:int}", routes.CreateSMSHardwareDesignPartOfSystem)
+	app.Post("/sms_hardwaredesignPartOfSystem/add", routes.AddSMSHardwareDesignPartOfSystem)
+	app.Get("/sms_hardwaredesignPartOfSystem/remove", routes.RemoveSMSHardwareDesignPartOfSystem)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

@@ -1031,3 +1031,52 @@ WHERE LOWER(name) LIKE CONCAT('%', ?, '%')
    OR LOWER(type) LIKE CONCAT('%', ?, '%')
 ORDER BY name, version
 `
+
+var SELECT_sms_AllHardwareDesigns = `
+SELECT hardwaredesign_id, name, version, date, description, author,
+       isApproved, revision_note, document_number
+FROM sms_hardwaredesign
+ORDER BY name ASC, version ASC
+`
+
+var SELECT_sms_HardwareDesignsForSystem = `
+SELECT h.hardwaredesign_id, h.name, h.version, h.date, h.description, h.author,
+       h.isApproved, h.revision_note, h.document_number, m.additionalInfo
+FROM sms_hardwaredesign h
+JOIN sms_hardwaredesignPartOfSystem m ON h.hardwaredesign_id = m.hardwaredesign_id
+WHERE m.system_id = ?
+`
+
+var SELECT_sms_HardwareDesignByID = `
+SELECT hardwaredesign_id, name, version, date, description, image, author,
+       isApproved, revision_note, document_number
+FROM sms_hardwaredesign
+WHERE hardwaredesign_id = ?
+`
+
+var INSERT_sms_HardwareDesign = `
+INSERT INTO sms_hardwaredesign
+(name, version, date, description, image, author, isApproved, revision_note, document_number)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+var INSERT_sms_HardwareDesignPartOfSystem = `
+INSERT INTO sms_hardwaredesignPartOfSystem
+(system_id, hardwaredesign_id, additionalInfo)
+VALUES (?, ?, ?)
+`
+
+var DELETE_sms_HardwareDesignByID = `
+DELETE FROM sms_hardwaredesign
+WHERE hardwaredesign_id = ?
+`
+
+var DELETE_sms_HardwareDesignMappingsByDesignID = `
+DELETE FROM sms_hardwaredesignPartOfSystem
+WHERE hardwaredesign_id = ?
+`
+
+var DELETE_sms_HardwareDesignMapping = `
+DELETE FROM sms_hardwaredesignPartOfSystem
+WHERE system_id = ? AND hardwaredesign_id = ?
+`

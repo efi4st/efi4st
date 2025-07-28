@@ -667,3 +667,32 @@ LEFT JOIN sms_systemtype stype ON sys.systemtype_id = stype.systemtype_id
 GROUP BY c.component_id, c.name, c.version, c.componentType
 );
 `
+
+var sms_hardwaredesign_schema = `
+CREATE TABLE IF NOT EXISTS sms_hardwaredesign (
+hardwaredesign_id INT(11) NOT NULL AUTO_INCREMENT,
+name VARCHAR(150) NOT NULL,
+version VARCHAR(80) NOT NULL,
+date DATE NOT NULL,
+description TEXT DEFAULT NULL,
+image BLOB DEFAULT NULL,
+author VARCHAR(150) DEFAULT NULL,
+isApproved BOOLEAN DEFAULT FALSE,
+revision_note TEXT DEFAULT NULL,
+document_number VARCHAR(100) DEFAULT NULL,
+PRIMARY KEY (hardwaredesign_id)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_hardwaredesignPartOfSystem_schema = `
+CREATE TABLE IF NOT EXISTS sms_hardwaredesignPartOfSystem (
+system_id INT(11) NOT NULL,
+hardwaredesign_id INT(11) NOT NULL,
+additionalInfo VARCHAR(150) DEFAULT NULL,
+PRIMARY KEY (system_id, hardwaredesign_id),
+CONSTRAINT fk_hwdesign_system FOREIGN KEY (system_id)
+REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+CONSTRAINT fk_hwdesign_design FOREIGN KEY (hardwaredesign_id)
+REFERENCES sms_hardwaredesign (hardwaredesign_id) ON UPDATE CASCADE ON DELETE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
