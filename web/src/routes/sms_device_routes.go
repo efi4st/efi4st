@@ -77,6 +77,17 @@ func ShowSMSDevice(ctx iris.Context) {
 	issuesForThisDevice := dbprovider.GetDBManager().GetSMSIssuesForDevice(i)
 	reportsForThisDevice, err := dbprovider.GetDBManager().GetReportsForLinkedObject(i,"sms_device")
 
+	templates := dbprovider.GetDBManager().GetAllChecklistTemplates()
+	ctx.ViewData("checklistTemplates", templates)
+	// 🔽 Instanzen für dieses Gerät holen
+	instances := dbprovider.GetDBManager().GetChecklistInstancesForDevice(i)
+	// Optional: Template-Namen auflösen
+	for i := range instances {
+		tmpl := dbprovider.GetDBManager().GetChecklistTemplateByID(instances[i].ChecklistTemplateID)
+		instances[i].TemplateName = tmpl.Name
+	}
+	ctx.ViewData("checklistInstances", instances)
+
 	ctx.ViewData("systemsParentsOfDevice", systemsParentsOfDevice)
 	ctx.ViewData("applicationsUnderDevice", applicationsUnderDevice)
 	ctx.ViewData("artefactsUnderDevice", artefactsUnderDevice)

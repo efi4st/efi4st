@@ -31,7 +31,7 @@
     <thead class="thead-light">
     <tr>
       <th>Scope</th>
-      <th>Expected</th>
+      <th>Test & Expected Result</th>
       <th>Actual-Value</th>
       <th>OK?</th>
       <th>Comment</th>
@@ -44,7 +44,23 @@
       <form action="/sms_checklistItemInstance/update" method="POST">
         <input type="hidden" name="ChecklistItemInstanceID" value="{{ item.ChecklistItemInstanceID }}">
         <input type="hidden" name="ChecklistInstanceID" value="{{ instance.ChecklistInstanceID }}">
-        <td>{{ item.TargetObjectType }} of Project#{{ item.TargetObjectID }}</td>
+        <td>
+          {% if item.TargetObjectType == "device" %}
+          <a href="/sms_devices/show/{{ item.TargetObjectID }}">
+            Device #{{ item.TargetObjectID }}
+          </a>
+          {% elif item.TargetObjectType == "system" %}
+          <a href="/sms_projects/show/{{ item.TargetObjectID }}">
+            System (Project #{{ item.TargetObjectID }})
+          </a>
+          {% elif item.TargetObjectType == "deviceInstance" %}
+          <a href="/sms_projects/show/{{ item.TargetObjectID }}">
+            Device Instance (Project #{{ item.TargetObjectID }})
+          </a>
+          {% else %}
+          Unknown Type #{{ item.TargetObjectID }}
+          {% endif %}
+        </td>
         <td>{{ item.ExpectedValue }}</td>
         <td>
           <input class="form-control form-control-sm" type="text" name="ActualValue" value="{{ item.ActualValue }}">
@@ -69,7 +85,7 @@
   </table>
 
   <a class="btn btn-secondary" href="/sms_checklistInstance/markStatus/{{ instance.ChecklistInstanceID }}?status=done">
-    Als erledigt markieren
+    Mark as done
   </a>
 </div>
 {% endblock %}

@@ -297,6 +297,7 @@ type Manager interface {
 	AddChecklistTemplateItem(i *classes.Sms_ChecklistTemplateItem) error
 	DeleteChecklistTemplateItemByID(id int) error
 	GetChecklistInstancesForProject(projectID int) []classes.Sms_ChecklistInstance
+	GetChecklistInstancesForDevice(deviceID int) []classes.Sms_ChecklistInstance
 	AddChecklistInstance(inst *classes.Sms_ChecklistInstance) error
 	DeleteChecklistInstanceByID(id int) error
 	UpdateChecklistInstanceStatus(id int, status string) error
@@ -7695,6 +7696,42 @@ func (mgr *manager) GetChecklistInstancesForProject(projectID int) []classes.Sms
 			&inst.ChecklistInstanceID,
 			&inst.ChecklistTemplateID,
 			&inst.TemplateName,              // ➕
+			&inst.ProjectID,
+			&inst.DeviceID,
+			&inst.GeneratedAt,
+			&inst.Status,
+		)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		list = append(list, inst)
+	}
+	return list
+}
+
+func (mgr *manager) GetChecklistInstancesForDevice(deviceID int) []classes.Sms_ChecklistInstance {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ChecklistInstancesForDevice)
+	if err != nil {
+		log.Println("Prepare error:", err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceID)
+	if err != nil {
+		log.Println("Query error:", err)
+		return nil
+	}
+	defer rows.Close()
+
+	var list []classes.Sms_ChecklistInstance
+	for rows.Next() {
+		var inst classes.Sms_ChecklistInstance
+		err := rows.Scan(
+			&inst.ChecklistInstanceID,
+			&inst.ChecklistTemplateID,
+			&inst.TemplateName,
 			&inst.ProjectID,
 			&inst.DeviceID,
 			&inst.GeneratedAt,

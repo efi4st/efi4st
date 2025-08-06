@@ -1154,10 +1154,17 @@ WHERE i.project_id = ?
 // Checklist Instances (Device)
 // ==============================
 var SELECT_ChecklistInstancesForDevice = `
-SELECT checklistInstance_id, checklistTemplate_id, project_id, device_id,
-       generated_at AS created_at, status
-FROM sms_checklistInstance
-WHERE device_id = ?
+SELECT 
+  i.checklistInstance_id,
+  i.checklistTemplate_id,
+  t.name AS template_name,
+  i.project_id,
+  i.device_id,
+  i.generated_at,
+  i.status
+FROM sms_checklistInstance i
+LEFT JOIN sms_checklistTemplate t ON i.checklistTemplate_id = t.checklistTemplate_id
+WHERE i.device_id = ?
 `
 
 // ================================

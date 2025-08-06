@@ -751,6 +751,7 @@ CREATE TABLE IF NOT EXISTS sms_checklistItemInstance (
     is_ok BOOLEAN DEFAULT NULL,
     actual_value VARCHAR(150) DEFAULT NULL,
     comment TEXT DEFAULT NULL,
+	expected_value VARCHAR(400) DEFAULT NULL,
     PRIMARY KEY (checklistItemInstance_id),
     CONSTRAINT fk_checklist_inst FOREIGN KEY (checklistInstance_id)
       REFERENCES sms_checklistInstance (checklistInstance_id) ON UPDATE CASCADE ON DELETE CASCADE,

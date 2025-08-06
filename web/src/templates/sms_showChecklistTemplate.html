@@ -93,7 +93,7 @@
     <!-- Add New Item -->
     <div class="row mt-4">
       <div class="col-md-12">
-        <h4>Neues Item hinzufügen</h4>
+        <h4>Add new Test Item</h4>
         <form method="post" action="/sms_checklistTemplateItem/add">
           <input type="hidden" name="ChecklistTemplateID" value="{{ template.ChecklistTemplateID }}"/>
 
@@ -109,7 +109,7 @@
             </div>
 
             <div class="form-group col-md-6">
-              <label for="ArtefactTypeID">Artefakttyp</label>
+              <label for="ArtefactTypeID">Artefact Type</label>
               <select class="form-control" name="ArtefactTypeID">
                 <option value="0">(Keine)</option>
                 {% for a in artefactTypes %}
@@ -129,7 +129,7 @@
           </div>
 
           <div class="form-group">
-            <label for="ExpectedValue">Erwarteter Wert</label>
+            <label for="ExpectedValue">Test & Expected Result</label>
             <input type="text" class="form-control" name="ExpectedValue" placeholder="z.B. true oder 'active'" required />
           </div>
 
@@ -140,7 +140,7 @@
 
           <br>
           <button type="submit" class="btn btn-success">
-            <i class="fa fa-plus"></i> Item hinzufügen
+            <i class="fa fa-plus"></i> Add Test Item
           </button>
         </form>
       </div>
