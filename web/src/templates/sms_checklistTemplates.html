@@ -114,41 +114,47 @@
 </div>
 <hr>
 
-<div class="container">
-  <div class="row">
-    <p>
-      <a class="btn btn-primary btn-lg" href="/sms_securityReports/createSMSSecurityReport" role="button">New Report &raquo;</a>
-    </p>
+<!-- sms_checklistTemplates.html -->
+<div class="container mt-4">
+  <div class="row mb-3">
+    <div class="col text-right">
+      <a class="btn btn-success btn-lg" href="/sms_checklistTemplate/create" role="button">
+        <i class="fa fa-plus-circle"></i> Neues Template
+      </a>
+    </div>
   </div>
 
   <div class="row">
-    <div class="col-md-2"></div>
-    <div class="col-md-8">
-      <h2>Reports:</h2>
-      <input class="form-control" id="myInput" type="text" placeholder="Search..">
-      <br>
-      <table class="table">
-        <thead>
+    <div class="col-md-12">
+      <h2>Checklisten-Templates</h2>
+      <input class="form-control mb-3" id="searchInput" type="text" placeholder="Suche nach Name oder Beschreibung...">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12">
+      <table class="table table-hover table-bordered table-sm">
+        <thead class="thead-dark">
         <tr>
-          <th>Creation Date</th>
-          <th>Report Name</th>
-          <th>Scanner</th>
-          <th>Vulnerabilities</th>
+          <th>Name</th>
+          <th>Beschreibung</th>
+          <th>Details</th>
           <th><i class="fa fa-trash-o"></i></th>
         </tr>
         </thead>
-        <tbody id="myTable">
-        {% for report in reportList %}
+        <tbody id="templateTable">
+        {% for template in templateList %}
         <tr>
-          <td>{{ report.CreationDate|truncatechars:13 }}</td>
+          <td>{{ template.Name }}</td>
+          <td>{{ template.Description }}</td>
           <td>
-            <a href="/sms_securityReports/show/{{ report.ReportID }}">{{ report.ReportName }}</a>
+            <a class="btn btn-sm btn-outline-info" href="/sms_checklistTemplate/show/{{ template.ChecklistTemplateID }}">
+              Anzeigen
+            </a>
           </td>
-          <td>{{ report.ScannerName }} ({{ report.ScannerVersion }})</td>
-          <td>{{ report.VulnerabilityCount }}</td>
           <td>
-            <a href="/sms_securityReports/remove/{{report.ReportID}}" class="button">
-              <i class="fa fa-close"></i>
+            <a class="btn btn-sm btn-outline-danger" href="/sms_checklistTemplate/remove/{{ template.ChecklistTemplateID }}">
+              <i class="fa fa-trash"></i>
             </a>
           </td>
         </tr>
@@ -156,14 +162,9 @@
         </tbody>
       </table>
     </div>
-    <div class="col-md-2"></div>
   </div>
+  <hr>
 </div>
-
-        <hr>
-
-
-      </div> <!-- /container -->
       
 {% endblock %}
 

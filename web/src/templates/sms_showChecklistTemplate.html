@@ -1,0 +1,155 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<!-- sms_showChecklistTemplate.html -->
+<div class="container mt-4">
+
+  <!-- Header + Zurück -->
+  <div class="row mb-3">
+    <div class="col-md-8">
+      <h2>Checkliste: {{ template.Name }}</h2>
+      <p>{{ template.Description }}</p>
+    </div>
+    <div class="col-md-4 text-right">
+      <a class="btn btn-outline-secondary" href="/sms_checklistTemplates">
+        <i class="fa fa-arrow-left"></i> Zurück zur Übersicht
+      </a>
+    </div>
+  </div>
+
+  <div class="container mt-4">
+        <!-- Table of Items -->
+    <div class="row">
+      <div class="col-md-12">
+        <table class="table table-hover table-bordered table-sm">
+          <thead class="thead-dark">
+          <tr>
+            <th>ID</th>
+            <th>Optional</th>
+            <th>Checkdefinition / Artefakt</th>
+            <th>Scope</th>
+            <th>Expected</th>
+            <th><i class="fa fa-trash-o"></i></th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.ChecklistTemplateItemID }}</td>
+            <td>
+              {% if item.Optional %}
+              <span class="badge bg-warning text-dark">Optional</span>
+              {% else %}
+              <span class="badge bg-success">Pflicht</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if item.CheckDefinitionID %}
+              Check #{{ item.CheckDefinitionID }}
+              {% elif item.ArtefactTypeID %}
+              Artefakt #{{ item.ArtefactTypeID }}
+              {% else %}
+              –
+              {% endif %}
+            </td>
+            <td><span class="badge bg-secondary">{{ item.TargetScope }}</span></td>
+            <td title="{{ item.ExpectedValue }}">{{ item.ExpectedValue|truncatechars:25 }}</td>
+            <td>
+              <a href="/sms_checklistTemplateItem/remove/{{ item.ChecklistTemplateItemID }}?template_id={{ template.ChecklistTemplateID }}"
+                 class="btn btn-sm btn-outline-danger">
+                <i class="fa fa-trash"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Add New Item -->
+    <div class="row mt-4">
+      <div class="col-md-12">
+        <h4>Neues Item hinzufügen</h4>
+        <form method="post" action="/sms_checklistTemplateItem/add">
+          <input type="hidden" name="ChecklistTemplateID" value="{{ template.ChecklistTemplateID }}"/>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="CheckDefinitionID">Check Definition</label>
+              <select class="form-control" name="CheckDefinitionID">
+                <option value="0">(Keine)</option>
+                {% for def in checkDefinitions %}
+                <option value="{{ def.ID }}">{{ def.TestName }} – {{ def.DeviceTypeName }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group col-md-6">
+              <label for="ArtefactTypeID">Artefakttyp</label>
+              <select class="form-control" name="ArtefactTypeID">
+                <option value="0">(Keine)</option>
+                {% for a in artefactTypes %}
+                <option value="{{ a.artefacttype_id }}">{{ a.artefactType }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="TargetScope">Scope</label>
+            <select name="TargetScope" class="form-control" required>
+              <option value="device">Device</option>
+              <option value="deviceInstance">DeviceInstance</option>
+              <option value="system">System</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="ExpectedValue">Erwarteter Wert</label>
+            <input type="text" class="form-control" name="ExpectedValue" placeholder="z.B. true oder 'active'" required />
+          </div>
+
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" name="Optional" id="optionalCheck">
+            <label class="form-check-label" for="optionalCheck">Optional</label>
+          </div>
+
+          <br>
+          <button type="submit" class="btn btn-success">
+            <i class="fa fa-plus"></i> Item hinzufügen
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <hr>
+  </div>
+      
+{% endblock %}
+
+
+

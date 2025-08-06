@@ -249,6 +249,71 @@
       </table>
     </div>
   </div>
+  <hr>
+  <hr>
+  <div class="row">
+    <div class="col-md-6">
+      <h3>
+        Projekt-Checklisten&nbsp;&nbsp;
+        <form action="/sms_checklistInstance/generateForProject/{{ project.Project_id }}" method="POST" class="d-inline">
+          <div class="input-group">
+            <select name="ChecklistTemplateID" class="form-select" required>
+              <option value="">Neue Checkliste instanziieren...</option>
+              {% for tmpl in checklistTemplates %}
+              <option value="{{ tmpl.ChecklistTemplateID }}">{{ tmpl.Name }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-success" type="submit">
+              <i class="fa fa-plus-circle"></i>
+            </button>
+          </div>
+        </form>
+      </h3>
+
+      {% if checklistInstances %}
+      <table class="table table-hover table-bordered table-sm mt-3">
+        <thead class="table-dark">
+        <tr>
+          <th>Vorlage</th>
+          <th>Status</th>
+          <th>Erstellt am</th>
+          <th>Details</th>
+          <th><i class="fa fa-trash-o"></i></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for inst in checklistInstances %}
+        <tr>
+          <td>{{ inst.TemplateName }}</td>
+          <td>
+            {% if inst.Status == 'done' %}
+            ✅ Abgeschlossen
+            {% elif inst.Status == 'in_progress' %}
+            🕒 In Bearbeitung
+            {% else %}
+            🟡 Offen
+            {% endif %}
+          </td>
+          <td>{{ inst.GeneratedAt|truncatechars:19 }}</td>
+          <td>
+            <a class="btn btn-sm btn-outline-info" href="/sms_checklistInstance/show/{{ inst.ChecklistInstanceID }}">
+              Anzeigen
+            </a>
+          </td>
+          <td>
+            <a class="btn btn-sm btn-outline-danger" href="/sms_checklistInstance/delete/{{ inst.ChecklistInstanceID }}">
+              <i class="fa fa-trash"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted">Keine Checklisten für dieses Projekt vorhanden.</p>
+      {% endif %}
+    </div>
+  </div>
 </div> <!-- /container -->
 
 <script>

@@ -155,8 +155,12 @@ func ShowSMSProject(ctx iris.Context) {
 	}
 
 	statusLogs := dbprovider.GetDBManager().GetSMSProjectStatusLogsForProject(i)
+	checklistTemplates := dbprovider.GetDBManager().GetAllChecklistTemplates()
+	checklistInstances := dbprovider.GetDBManager().GetChecklistInstancesForProject(i)
 
 	// Übergebe alle Daten an die View
+	ctx.ViewData("checklistTemplates", checklistTemplates)
+	ctx.ViewData("checklistInstances", checklistInstances)
 	ctx.ViewData("statusLogs", statusLogs)
 	ctx.ViewData("deviceInstanceList", deviceInstanceList)
 	ctx.ViewData("systemList", systemList)

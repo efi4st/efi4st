@@ -615,6 +615,7 @@ func irisMain()() {
 	app.Get("/sms_elementsearch-ui", routes.ShowElementSearchPage)
 	app.Get("/elementsearch", routes.SearchElementsAPI)
 
+	// Hardware Design
 	app.Get("/sms_hardwaredesigns", routes.SMSHardwareDesigns)
 	app.Get("/sms_hardwaredesigns/create", routes.CreateSMSHardwareDesign)
 	app.Post("/sms_hardwaredesigns/add", routes.AddSMSHardwareDesign)
@@ -623,6 +624,24 @@ func irisMain()() {
 	app.Get("/sms_hardwaredesignPartOfSystem/create/{id:int}", routes.CreateSMSHardwareDesignPartOfSystem)
 	app.Post("/sms_hardwaredesignPartOfSystem/add", routes.AddSMSHardwareDesignPartOfSystem)
 	app.Get("/sms_hardwaredesignPartOfSystem/remove", routes.RemoveSMSHardwareDesignPartOfSystem)
+
+	// Checklist Templates
+	app.Get("/sms_checklistTemplates", routes.SMSChecklistTemplates)
+	app.Get("/sms_checklistTemplate/create", routes.CreateSMSChecklistTemplate)
+	app.Post("/sms_checklistTemplate/add", routes.AddSMSChecklistTemplate)
+	app.Get("/sms_checklistTemplate/show/{id:int}", routes.ShowSMSChecklistTemplate)
+	app.Get("/sms_checklistTemplate/remove/{id:int}", routes.RemoveSMSChecklistTemplate)
+	// Checklist Template Items
+	app.Post("/sms_checklistTemplateItem/add", routes.AddSMSChecklistTemplateItem)
+	app.Get("/sms_checklistTemplateItem/remove/{id:int}", routes.RemoveSMSChecklistTemplateItem)
+	// Checklist Instances
+	app.Post("/sms_checklistInstance/generateForProject/{project_id:int}", routes.GenerateChecklistInstanceForProject)
+	app.Post("/sms_checklistInstance/generateForDevice/{device_id:int}", routes.GenerateChecklistInstanceForDevice)
+	app.Get("/sms_checklistInstance/show/{id:int}", routes.ShowChecklistInstance)
+	app.Get("/sms_checklistInstance/delete/{id:int}", routes.DeleteChecklistInstance)
+	app.Get("/sms_checklistInstance/markStatus/{id:int}", routes.MarkChecklistInstanceStatus)
+	// Checklist Item Instances
+	app.Post("/sms_checklistItemInstance/update", routes.UpdateChecklistItemInstance)
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

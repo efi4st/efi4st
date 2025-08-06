@@ -1080,3 +1080,152 @@ var DELETE_sms_HardwareDesignMapping = `
 DELETE FROM sms_hardwaredesignPartOfSystem
 WHERE system_id = ? AND hardwaredesign_id = ?
 `
+
+// =======================
+// SMS Checklist Templates
+// =======================
+var SELECT_All_ChecklistTemplates = `
+SELECT checklistTemplate_id, name, description
+FROM sms_checklistTemplate
+`
+
+var SELECT_ChecklistTemplateByID = `
+SELECT checklistTemplate_id, name, description
+FROM sms_checklistTemplate
+WHERE checklistTemplate_id = ?
+`
+
+var INSERT_ChecklistTemplate = `
+INSERT INTO sms_checklistTemplate (name, description)
+VALUES (?, ?)
+`
+
+var DELETE_ChecklistTemplateByID = `
+DELETE FROM sms_checklistTemplate
+WHERE checklistTemplate_id = ?
+`
+
+// ==========================
+// Checklist Template Items
+// ==========================
+var SELECT_ChecklistTemplateItemsByTemplateID = `
+SELECT checklistTemplateItem_id, checklistTemplate_id,
+       checkDefinition_id, artefacttype_id, targetScope,
+       expected_value, optional
+FROM sms_checklistTemplateItem
+WHERE checklistTemplate_id = ?
+`
+
+var INSERT_ChecklistTemplateItem = `
+INSERT INTO sms_checklistTemplateItem
+(checklistTemplate_id, checkDefinition_id, artefacttype_id, targetScope, expected_value, optional)
+VALUES (?, ?, ?, ?, ?, ?)
+`
+
+var DELETE_ChecklistTemplateItemByID = `
+DELETE FROM sms_checklistTemplateItem
+WHERE checklistTemplateItem_id = ?
+`
+
+var SELECT_ArtefactTypeForChecklistTemplateItem = `
+SELECT at.artefactType
+FROM sms_checklistTemplateItem AS ti
+JOIN sms_artefacttype AS at ON ti.artefacttype_id = at.artefacttype_id
+WHERE ti.checklistTemplateItem_id = ?
+`
+
+// ==============================
+// Checklist Instances (Projekt)
+// ==============================
+var SELECT_ChecklistInstancesForProject = `
+SELECT i.checklistInstance_id,
+       i.checklistTemplate_id,
+       t.name AS template_name,
+       i.project_id,
+       i.device_id,
+       i.generated_at,
+       i.status
+FROM sms_checklistInstance i
+JOIN sms_checklistTemplate t ON i.checklistTemplate_id = t.checklistTemplate_id
+WHERE i.project_id = ?
+`
+
+// ==============================
+// Checklist Instances (Device)
+// ==============================
+var SELECT_ChecklistInstancesForDevice = `
+SELECT checklistInstance_id, checklistTemplate_id, project_id, device_id,
+       generated_at AS created_at, status
+FROM sms_checklistInstance
+WHERE device_id = ?
+`
+
+// ================================
+// Einzelne Checklist Instance
+// ================================
+var SELECT_ChecklistInstanceByID = `
+SELECT checklistInstance_id, checklistTemplate_id, project_id, device_id,
+       generated_at AS created_at, status
+FROM sms_checklistInstance
+WHERE checklistInstance_id = ?
+`
+
+var INSERT_ChecklistInstance = `
+INSERT INTO sms_checklistInstance
+(checklistTemplate_id, project_id, device_id, generated_by, status)
+VALUES (?, ?, ?, ?, ?)
+`
+
+var DELETE_ChecklistInstanceByID = `
+DELETE FROM sms_checklistInstance
+WHERE checklistInstance_id = ?
+`
+
+var UPDATE_ChecklistInstanceStatus = `
+UPDATE sms_checklistInstance
+SET status = ?
+WHERE checklistInstance_id = ?
+`
+
+// ==============================
+// Checklist Item Instances
+// ==============================
+var SELECT_ChecklistItemInstancesByChecklistInstanceID = `
+SELECT checklistItemInstance_id, checklistInstance_id, checklistTemplateItem_id,
+       target_object_id, target_object_type,
+       is_ok, actual_value, comment, expected_value
+FROM sms_checklistItemInstance
+WHERE checklistInstance_id = ?
+`
+
+var INSERT_ChecklistItemInstance = `
+INSERT INTO sms_checklistItemInstance
+(checklistInstance_id, checklistTemplateItem_id, target_object_id, target_object_type,
+ is_ok, actual_value, comment)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+`
+
+var DELETE_ChecklistItemInstancesByChecklistInstanceID = `
+DELETE FROM sms_checklistItemInstance
+WHERE checklistInstance_id = ?
+`
+
+var UPDATE_ChecklistItemInstance = `
+UPDATE sms_checklistItemInstance
+SET is_ok = ?, actual_value = ?, comment = ?
+WHERE checklistItemInstance_id = ?
+`
+
+var INSERT_ChecklistInstanceAuto = `INSERT INTO sms_checklistInstance
+		(checklistTemplate_id, project_id, device_id, generated_at, generated_by, status)
+		VALUES (?, ?, ?, NOW(), 'system', ?)`
+
+var INSERT_ChecklistItemInstanceAuto = `
+INSERT INTO sms_checklistItemInstance (
+	checklistInstance_id,
+	checklistTemplateItem_id,
+	target_object_id,
+	target_object_type,
+	expected_value
+) VALUES (?, ?, ?, ?, ?)
+`

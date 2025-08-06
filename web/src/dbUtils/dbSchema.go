@@ -696,3 +696,65 @@ CONSTRAINT fk_hwdesign_design FOREIGN KEY (hardwaredesign_id)
 REFERENCES sms_hardwaredesign (hardwaredesign_id) ON UPDATE CASCADE ON DELETE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_checklistTemplate_schema = `
+CREATE TABLE IF NOT EXISTS sms_checklistTemplate (
+    checklistTemplate_id INT(11) NOT NULL AUTO_INCREMENT,
+    name VARCHAR(150) NOT NULL,
+    description TEXT DEFAULT NULL,
+    PRIMARY KEY (checklistTemplate_id)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_checklistTemplateItem_schema = `
+CREATE TABLE IF NOT EXISTS sms_checklistTemplateItem (
+    checklistTemplateItem_id INT(11) NOT NULL AUTO_INCREMENT,
+    checklistTemplate_id INT(11) NOT NULL,
+    checkDefinition_id INT(11) DEFAULT NULL,
+    artefacttype_id INT(11) DEFAULT NULL,
+    targetScope ENUM('system', 'device', 'deviceInstance') NOT NULL,
+    expected_value VARCHAR(150) DEFAULT NULL,
+    optional BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (checklistTemplateItem_id),
+    CONSTRAINT fk_checklist_template FOREIGN KEY (checklistTemplate_id)
+      REFERENCES sms_checklistTemplate (checklistTemplate_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_checklist_checkDefinition FOREIGN KEY (checkDefinition_id)
+      REFERENCES sms_deviceCheckDefinition (id) ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT fk_checklist_artefacttype FOREIGN KEY (artefacttype_id)
+      REFERENCES sms_artefacttype (artefacttype_id) ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_checklistInstance_schema = `
+CREATE TABLE IF NOT EXISTS sms_checklistInstance (
+    checklistInstance_id INT AUTO_INCREMENT PRIMARY KEY,
+    checklistTemplate_id INT NOT NULL,
+    project_id INT DEFAULT NULL,
+    device_id INT DEFAULT NULL,
+    generated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    generated_by VARCHAR(150) NOT NULL,
+    note TEXT DEFAULT NULL,
+    status ENUM('open','in_progress','done') DEFAULT 'open',
+    FOREIGN KEY (checklistTemplate_id) REFERENCES sms_checklistTemplate(checklistTemplate_id),
+    FOREIGN KEY (project_id) REFERENCES sms_project(project_id),
+    FOREIGN KEY (device_id) REFERENCES sms_device(device_id)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_checklistItemInstance_schema = `
+CREATE TABLE IF NOT EXISTS sms_checklistItemInstance (
+    checklistItemInstance_id INT(11) NOT NULL AUTO_INCREMENT,
+    checklistInstance_id INT(11) NOT NULL,
+    checklistTemplateItem_id INT(11) NOT NULL,
+    target_object_id INT(11) NOT NULL, -- device_id, deviceInstance_id, system_id (je nach targetScope)
+    target_object_type ENUM('system', 'device', 'deviceInstance') NOT NULL,
+    is_ok BOOLEAN DEFAULT NULL,
+    actual_value VARCHAR(150) DEFAULT NULL,
+    comment TEXT DEFAULT NULL,
+    PRIMARY KEY (checklistItemInstance_id),
+    CONSTRAINT fk_checklist_inst FOREIGN KEY (checklistInstance_id)
+      REFERENCES sms_checklistInstance (checklistInstance_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_checklist_itemtemplate FOREIGN KEY (checklistTemplateItem_id)
+      REFERENCES sms_checklistTemplateItem (checklistTemplateItem_id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`

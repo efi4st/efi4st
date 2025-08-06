@@ -288,6 +288,23 @@ type Manager interface {
 	DeleteSMSHardwareDesignByID(designID int) error
 	DeleteSMSHardwareDesignMappingsByDesignID(designID int) error
 	DeleteSMSHardwareDesignMapping(systemID int, designID int) error
+	// Check Lists
+	GetAllChecklistTemplates() []classes.Sms_ChecklistTemplate
+	GetChecklistTemplateByID(id int) *classes.Sms_ChecklistTemplate
+	AddChecklistTemplate(t *classes.Sms_ChecklistTemplate) error
+	DeleteChecklistTemplateByID(id int) error
+	GetChecklistTemplateItems(templateID int) []classes.Sms_ChecklistTemplateItem
+	AddChecklistTemplateItem(i *classes.Sms_ChecklistTemplateItem) error
+	DeleteChecklistTemplateItemByID(id int) error
+	GetChecklistInstancesForProject(projectID int) []classes.Sms_ChecklistInstance
+	AddChecklistInstance(inst *classes.Sms_ChecklistInstance) error
+	DeleteChecklistInstanceByID(id int) error
+	UpdateChecklistInstanceStatus(id int, status string) error
+	GetChecklistItemInstances(checklistInstanceID int) []classes.Sms_ChecklistItemInstance
+	AddChecklistItemInstance(item *classes.Sms_ChecklistItemInstance) error
+	DeleteChecklistItemInstancesByChecklistInstanceID(checklistInstanceID int) error
+	GetChecklistInstanceByID(id int) *classes.Sms_ChecklistInstance
+	UpdateChecklistItemInstance(item *classes.Sms_ChecklistItemInstance) error
 }
 
 type manager struct {
@@ -7518,4 +7535,451 @@ func (mgr *manager) DeleteSMSHardwareDesignMapping(systemID int, designID int) e
 
 	_, err = stmt.Exec(systemID, designID)
 	return err
+}
+
+// Checklist Template
+func (mgr *manager) GetAllChecklistTemplates() []classes.Sms_ChecklistTemplate {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_All_ChecklistTemplates)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	var templates []classes.Sms_ChecklistTemplate
+	for rows.Next() {
+		var t classes.Sms_ChecklistTemplate
+		err := rows.Scan(&t.ChecklistTemplateID, &t.Name, &t.Description)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		templates = append(templates, t)
+	}
+	return templates
+}
+
+func (mgr *manager) GetChecklistTemplateByID(id int) *classes.Sms_ChecklistTemplate {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ChecklistTemplateByID)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRow(id)
+	var t classes.Sms_ChecklistTemplate
+	err = row.Scan(&t.ChecklistTemplateID, &t.Name, &t.Description)
+	if err != nil {
+		log.Println("Scan error:", err)
+		return nil
+	}
+	return &t
+}
+
+func (mgr *manager) AddChecklistTemplate(t *classes.Sms_ChecklistTemplate) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_ChecklistTemplate)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(t.Name, t.Description)
+	return err
+}
+
+func (mgr *manager) DeleteChecklistTemplateByID(id int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_ChecklistTemplateByID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	return err
+}
+
+// Checklist Template Items
+func (mgr *manager) GetChecklistTemplateItems(templateID int) []classes.Sms_ChecklistTemplateItem {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ChecklistTemplateItemsByTemplateID)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(templateID)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	var items []classes.Sms_ChecklistTemplateItem
+	for rows.Next() {
+		var i classes.Sms_ChecklistTemplateItem
+		err := rows.Scan(&i.ChecklistTemplateItemID, &i.ChecklistTemplateID, &i.CheckDefinitionID,
+			&i.ArtefactTypeID, &i.TargetScope, &i.ExpectedValue, &i.Optional)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		items = append(items, i)
+	}
+	return items
+}
+
+func (mgr *manager) AddChecklistTemplateItem(i *classes.Sms_ChecklistTemplateItem) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_ChecklistTemplateItem)
+	if err != nil {
+		log.Println("Prepare error (AddChecklistTemplateItem):", err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		i.ChecklistTemplateID,
+		i.CheckDefinitionID,
+		i.ArtefactTypeID,
+		i.TargetScope,
+		i.ExpectedValue,
+		i.Optional,
+	)
+	if err != nil {
+		log.Printf("Exec error (AddChecklistTemplateItem): TemplateID=%d, Scope=%s → %v\n", i.ChecklistTemplateID, i.TargetScope, err)
+	}
+	return err
+}
+
+func (mgr *manager) DeleteChecklistTemplateItemByID(id int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_ChecklistTemplateItemByID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	return err
+}
+
+// Checklist Instance (Project + Device)
+func (mgr *manager) GetChecklistInstancesForProject(projectID int) []classes.Sms_ChecklistInstance {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ChecklistInstancesForProject)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	var list []classes.Sms_ChecklistInstance
+	for rows.Next() {
+		var inst classes.Sms_ChecklistInstance
+		err := rows.Scan(
+			&inst.ChecklistInstanceID,
+			&inst.ChecklistTemplateID,
+			&inst.TemplateName,              // ➕
+			&inst.ProjectID,
+			&inst.DeviceID,
+			&inst.GeneratedAt,
+			&inst.Status,
+		)
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		list = append(list, inst)
+	}
+	return list
+}
+
+
+func (mgr *manager) DeleteChecklistInstanceByID(id int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_ChecklistInstanceByID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	return err
+}
+
+func (mgr *manager) UpdateChecklistInstanceStatus(id int, status string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_ChecklistInstanceStatus)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(status, id)
+	return err
+}
+
+// Checklist Item Instances
+func (mgr *manager) GetChecklistItemInstances(checklistInstanceID int) []classes.Sms_ChecklistItemInstance {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ChecklistItemInstancesByChecklistInstanceID)
+	if err != nil {
+		log.Println("Prepare error:", err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(checklistInstanceID)
+	if err != nil {
+		log.Println("Query error:", err)
+		return nil
+	}
+	defer rows.Close()
+
+	var list []classes.Sms_ChecklistItemInstance
+	for rows.Next() {
+		var item classes.Sms_ChecklistItemInstance
+		var isOk sql.NullBool
+		var actualValue sql.NullString
+		var comment sql.NullString
+		var expectedValue sql.NullString
+
+		err := rows.Scan(
+			&item.ChecklistItemInstanceID,
+			&item.ChecklistInstanceID,
+			&item.ChecklistTemplateItemID,
+			&item.TargetObjectID,
+			&item.TargetObjectType,
+			&isOk,
+			&actualValue,
+			&comment,
+			&expectedValue,
+		)
+		if expectedValue.Valid {
+			item.ExpectedValue = expectedValue.String
+		}
+		if err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+
+		// ✅ Konvertiere sql.NullBool zu *bool
+		if isOk.Valid {
+			val := isOk.Bool
+			item.IsOK = &val
+			if val {
+				item.IsOKStr = "true"
+			} else {
+				item.IsOKStr = "false"
+			}
+		} else {
+			item.IsOK = nil
+			item.IsOKStr = "none"
+		}
+
+		// ✅ Konvertiere sql.NullString zu string
+		if actualValue.Valid {
+			item.ActualValue = actualValue.String
+		} else {
+			item.ActualValue = ""
+		}
+
+		if comment.Valid {
+			item.Comment = comment.String
+		} else {
+			item.Comment = ""
+		}
+
+		list = append(list, item)
+	}
+	return list
+}
+
+func (mgr *manager) AddChecklistItemInstance(item *classes.Sms_ChecklistItemInstance) error {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_ChecklistItemInstance)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(item.ChecklistInstanceID, item.ChecklistTemplateItemID, item.TargetObjectID,
+		item.TargetObjectType, item.IsOK, item.ActualValue, item.Comment)
+	return err
+}
+
+func (mgr *manager) DeleteChecklistItemInstancesByChecklistInstanceID(checklistInstanceID int) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_ChecklistItemInstancesByChecklistInstanceID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(checklistInstanceID)
+	return err
+}
+
+
+func (mgr *manager) GetChecklistInstanceByID(id int) *classes.Sms_ChecklistInstance {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ChecklistInstanceByID)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRow(id)
+	var inst classes.Sms_ChecklistInstance
+	err = row.Scan(&inst.ChecklistInstanceID, &inst.ChecklistTemplateID, &inst.ProjectID,
+		&inst.DeviceID, &inst.GeneratedAt, &inst.Status)
+
+	if err != nil {
+		log.Println("Scan error:", err)
+		return nil
+	}
+
+	return &inst
+}
+
+func (mgr *manager) UpdateChecklistItemInstance(item *classes.Sms_ChecklistItemInstance) error {
+	stmt, err := mgr.db.Prepare(dbUtils.UPDATE_ChecklistItemInstance)
+	if err != nil {
+		log.Println("Prepare error:", err)
+		return err
+	}
+	defer stmt.Close()
+	if item.IsOK != nil {
+		log.Printf("🔧 Update Item #%d → IsOK: %v (dereferenced: %t), Actual: %s, Comment: %s",
+			item.ChecklistItemInstanceID,
+			item.IsOK,
+			*item.IsOK,
+			item.ActualValue,
+			item.Comment)
+	} else {
+		log.Printf("🔧 Update Item #%d → IsOK: nil, Actual: %s, Comment: %s",
+			item.ChecklistItemInstanceID,
+			item.ActualValue,
+			item.Comment)
+	}
+
+	var isOkDB interface{}
+	if item.IsOK == nil {
+		isOkDB = nil
+	} else if *item.IsOK {
+		isOkDB = 1
+	} else {
+		isOkDB = 0
+	}
+
+	res, err := stmt.Exec(isOkDB, item.ActualValue, item.Comment, item.ChecklistItemInstanceID)
+	if err != nil {
+		log.Println("Exec error:", err)
+	} else {
+		affected, _ := res.RowsAffected()
+		log.Printf("✅ Update erfolgreich – %d Zeile(n) geändert", affected)
+	}
+	if err != nil {
+		log.Println("Exec error:", err)
+	}
+	return err
+}
+
+func (mgr *manager) AddChecklistInstance(inst *classes.Sms_ChecklistInstance) error {
+	tx, err := mgr.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Instanz speichern
+	stmt, err := tx.Prepare(dbUtils.INSERT_ChecklistInstanceAuto)
+	if err != nil {
+		return fmt.Errorf("prepare instance insert: %w", err)
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(inst.ChecklistTemplateID, inst.ProjectID, inst.DeviceID, inst.Status)
+	if err != nil {
+		return fmt.Errorf("insert checklist instance: %w", err)
+	}
+	instanceID, err := res.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("get instance id: %w", err)
+	}
+
+	// Template-Items abrufen
+	items := mgr.GetChecklistTemplateItems(inst.ChecklistTemplateID)
+	log.Printf("📦 %d Template-Items werden verarbeitet für TemplateID %d", len(items), inst.ChecklistTemplateID)
+
+	// Item-Insert vorbereiten
+	insertItemStmt, err := tx.Prepare(dbUtils.INSERT_ChecklistItemInstanceAuto)
+	if err != nil {
+		return fmt.Errorf("prepare item insert: %w", err)
+	}
+	defer insertItemStmt.Close()
+
+	for _, item := range items {
+		var targetID int
+		var targetType string
+
+		switch item.TargetScope {
+		case "device":
+			if inst.DeviceID == nil {
+				log.Printf("⚠️  DeviceID fehlt – Item %d (Scope: device) übersprungen", item.ChecklistTemplateItemID)
+				continue
+			}
+			targetID = *inst.DeviceID
+			targetType = "device"
+
+		case "deviceInstance":
+			if inst.ProjectID == nil {
+				log.Printf("⚠️  ProjectID fehlt – Item %d (Scope: deviceInstance) übersprungen", item.ChecklistTemplateItemID)
+				continue
+			}
+			targetID = *inst.ProjectID
+			targetType = "deviceInstance"
+
+		case "system":
+			if inst.ProjectID == nil {
+				log.Printf("⚠️  ProjectID fehlt – Item %d (Scope: system) übersprungen", item.ChecklistTemplateItemID)
+				continue
+			}
+			targetID = *inst.ProjectID // system = project ID als Ersatz
+			targetType = "system"
+
+		default:
+			log.Printf("❌ Unbekannter Scope %q – Item %d übersprungen", item.TargetScope, item.ChecklistTemplateItemID)
+			continue
+		}
+
+		log.Printf("🧩 Erzeuge Item: TemplateItemID=%d → Target: %s #%d", item.ChecklistTemplateItemID, targetType, targetID)
+		_, err := insertItemStmt.Exec(
+			instanceID,
+			item.ChecklistTemplateItemID,
+			targetID,
+			targetType,
+			item.ExpectedValue, // 🆕 hier übernehmen!
+		)
+		if err != nil {
+			return fmt.Errorf("insert item instance failed: %w", err)
+		}
+	}
+
+	log.Printf("✅ Neue ChecklistInstance (%d) erzeugt mit %d Items", instanceID, len(items))
+	return tx.Commit()
 }
