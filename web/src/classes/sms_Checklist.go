@@ -45,4 +45,37 @@ type Sms_ChecklistItemInstance struct {
 	Comment                 string
 	IsOKStr 				string // Hilfsfeld für das Template
 	ExpectedValue 			string
+	// CheckDefinition (optional)
+	CheckDefinitionID   *int
+	CheckDefName        string
+	CheckDefDescription string
+	CheckDefExplanation string
+	CheckDefExpected    string
+	DeviceTypeID        *int
+	DeviceTypeName      string
+	ApplicableVersions  string
+
+	// Gematchte Device Instances im Projekt
+	MatchingDevices []MatchingDevice
+
+	// 🆕 Device-Kontext:
+	DeviceContextTypeName string // z.B. "Router"
+	DeviceContextVersion  string // z.B. "1.2.3"
+	AppliesToThisDevice   *bool  // nil = nicht geprüft, true/false = Ergebnis
+	AppliesToThisDeviceStr string // "true" | "false" | "none"
+}
+
+type MatchingDevice struct {
+	DeviceInstanceID int
+	Serialnumber     string
+	DeviceVersion    string
+	DeviceTypeName   string
+}
+
+// classes – falls noch nicht vorhanden
+type DeviceBasic struct {
+	DeviceID     int
+	DeviceTypeID int
+	DeviceType   string
+	Version      string
 }

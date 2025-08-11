@@ -16,6 +16,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 /////////////
@@ -190,12 +191,104 @@ func GenerateChecklistInstanceForDevice(ctx iris.Context) {
 
 func ShowChecklistInstance(ctx iris.Context) {
 	id, _ := strconv.Atoi(ctx.Params().Get("id"))
-	instance := dbprovider.GetDBManager().GetChecklistInstanceByID(id)
-	items := dbprovider.GetDBManager().GetChecklistItemInstances(id)
 
-	ctx.ViewData("instance", instance)
+	inst := dbprovider.GetDBManager().GetChecklistInstanceByID(id)
+	if inst == nil {
+		ctx.ViewData("error", "Checklist instance not found")
+		ctx.View("sms_checklistTemplates.html")
+		return
+	}
+
+	items := dbprovider.GetDBManager().GetChecklistItemInstancesWithDefinition(id)
+
+	// Projekt-Kontext: passende DeviceInstances listen
+	if inst.ProjectID != nil {
+		for i := range items {
+			if items[i].CheckDefinitionID != nil && items[i].DeviceTypeID != nil {
+				candidates := dbprovider.GetDBManager().
+					GetDeviceInstancesForProjectAndDeviceType(*inst.ProjectID, *items[i].DeviceTypeID)
+
+				var matches []classes.MatchingDevice
+				for _, c := range candidates {
+					if matchesApplicable(c.DeviceVersion, items[i].ApplicableVersions) {
+						matches = append(matches, c)
+					}
+				}
+				items[i].MatchingDevices = matches
+			}
+			// ▼ Für Projekt-Kontext keine Device-Anwendbarkeit: explizit "none"
+			items[i].AppliesToThisDevice = nil
+			items[i].AppliesToThisDeviceStr = "none"
+		}
+	}
+
+	// Device-Kontext: diesen Device-Typ + Version prüfen
+	if inst.DeviceID != nil {
+		dbasic, err := dbprovider.GetDBManager().GetDeviceBasicByID(*inst.DeviceID)
+		if err == nil && dbasic != nil {
+			for i := range items {
+				items[i].DeviceContextTypeName = dbasic.DeviceType
+				items[i].DeviceContextVersion  = dbasic.Version
+
+				if items[i].CheckDefinitionID != nil {
+					var typeOK bool
+					if items[i].DeviceTypeID != nil {
+						typeOK = (*items[i].DeviceTypeID == dbasic.DeviceTypeID)
+					} else if items[i].DeviceTypeName != "" {
+						typeOK = strings.EqualFold(items[i].DeviceTypeName, dbasic.DeviceType)
+					} else {
+						typeOK = false
+					}
+					versOK := matchesApplicable(dbasic.Version, items[i].ApplicableVersions)
+
+					res := typeOK && versOK
+					items[i].AppliesToThisDevice = &res
+					// ▼ NEU: String-Repräsentation setzen
+					if res {
+						items[i].AppliesToThisDeviceStr = "true"
+					} else {
+						items[i].AppliesToThisDeviceStr = "false"
+					}
+
+					log.Printf("Check apply? inst=%d item=%d typeOK=%v (need %v/%s have %d/%s) versOK=%v (need '%s' have '%s')",
+						inst.ChecklistInstanceID, items[i].ChecklistItemInstanceID,
+						typeOK,
+						valueOr(items[i].DeviceTypeID, 0), items[i].DeviceTypeName,
+						dbasic.DeviceTypeID, dbasic.DeviceType,
+						versOK,
+						items[i].ApplicableVersions, dbasic.Version,
+					)
+				} else {
+					// ▼ NEU: explizit „none“ setzen, wenn keine Definition
+					items[i].AppliesToThisDevice = nil
+					items[i].AppliesToThisDeviceStr = "none"
+				}
+			}
+		}
+	}
+
+	ctx.ViewData("instance", inst)
 	ctx.ViewData("items", items)
 	ctx.View("sms_showChecklistInstance.html")
+}
+
+// kleiner helper:
+func valueOr(p *int, def int) int {
+	if p == nil { return def }
+	return *p
+}
+
+// 'all' oder CSV-Liste exakter Versionsstrings (einfacher Ansatz)
+func matchesApplicable(version, applicable string) bool {
+	if applicable == "" || strings.EqualFold(applicable, "all") {
+		return true
+	}
+	for _, tok := range strings.Split(applicable, ",") {
+		if strings.EqualFold(strings.TrimSpace(tok), strings.TrimSpace(version)) {
+			return true
+		}
+	}
+	return false
 }
 
 func DeleteChecklistInstance(ctx iris.Context) {
@@ -238,4 +331,20 @@ func UpdateChecklistItemInstance(ctx iris.Context) {
 	}
 
 	ctx.Redirect(fmt.Sprintf("/sms_checklistInstance/show/%d", checklistInstanceID))
+}
+
+// POST: System-Checkliste instanziieren
+func GenerateChecklistInstanceForSystem(ctx iris.Context) {
+	systemID, _ := strconv.Atoi(ctx.Params().Get("system_id"))
+	templateID, _ := strconv.Atoi(ctx.PostValue("ChecklistTemplateID"))
+
+	_, err := dbprovider.GetDBManager().AddChecklistInstanceForSystem(templateID, systemID, "system")
+	if err != nil {
+		log.Printf("❌ System-ChecklistInstance failed (sys=%d, tmpl=%d): %v", systemID, templateID, err)
+		ctx.ViewData("error", fmt.Sprintf("Fehler beim Erzeugen der System-Checkliste: %v", err))
+		// Zur System-Seite zurück
+		ctx.Redirect(fmt.Sprintf("/sms_systems/show/%d", systemID))
+		return
+	}
+	ctx.Redirect(fmt.Sprintf("/sms_systems/show/%d", systemID))
 }

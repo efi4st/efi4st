@@ -1236,3 +1236,87 @@ INSERT INTO sms_checklistItemInstance (
 	expected_value
 ) VALUES (?, ?, ?, ?, ?)
 `
+
+var SELECT_ChecklistItemInstancesWithDefinitionByChecklistInstanceID = `SELECT 
+  i.checklistItemInstance_id,
+  i.checklistInstance_id,
+  i.checklistTemplateItem_id,
+  i.target_object_id,
+  i.target_object_type,
+  i.is_ok,
+  i.actual_value,
+  i.comment,
+  i.expected_value,
+  ti.checkDefinition_id,
+  dcd.device_type_id,       -- ⬅️ WICHTIG: erst ID ...
+  dt.type AS device_type,   -- ⬅️ ... dann Name
+  dcd.applicable_versions,
+  dcd.test_name,
+  dcd.test_description,
+  dcd.explanation,
+  dcd.expected_result
+FROM sms_checklistItemInstance i
+LEFT JOIN sms_checklistTemplateItem ti 
+  ON i.checklistTemplateItem_id = ti.checklistTemplateItem_id
+LEFT JOIN sms_deviceCheckDefinition dcd
+  ON ti.checkDefinition_id = dcd.id
+LEFT JOIN sms_devicetype dt
+  ON dcd.device_type_id = dt.devicetype_id
+WHERE i.checklistInstance_id = ?
+`
+
+var SELECT_DeviceInstancesForProjectAndDeviceType = `SELECT
+di.deviceInstance_id,
+di.serialnumber,
+d.version AS device_version,
+dt.type   AS device_type_name
+FROM sms_deviceInstance di
+JOIN sms_device d      ON di.device_id = d.device_id
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+WHERE di.project_id = ? AND d.devicetype_id = ?
+`
+
+var SELECT_DeviceBasicByID = `
+SELECT d.device_id, d.devicetype_id, d.version, dt.type
+FROM sms_device d
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+WHERE d.device_id = ?
+`
+
+// Template-Items nur für Scope=system
+var SELECT_ChecklistTemplateItems_SystemOnly = `
+SELECT checklistTemplateItem_id
+FROM sms_checklistTemplateItem
+WHERE checklistTemplate_id = ? AND targetScope = 'system'
+`
+
+// Item-Instanz anlegen (mit expected_value Kopie)
+var INSERT_ChecklistItemInstanceWithExpected = `
+INSERT INTO sms_checklistItemInstance
+(checklistInstance_id, checklistTemplateItem_id, target_object_id, target_object_type,
+ is_ok, actual_value, comment, expected_value)
+SELECT ?, ti.checklistTemplateItem_id, ?, 'system', NULL, NULL, NULL, ti.expected_value
+FROM sms_checklistTemplateItem ti
+WHERE ti.checklistTemplateItem_id = ?
+`
+
+// Instanzen finden, die System-Items für dieses System enthalten
+var SELECT_ChecklistInstancesForSystem = `
+SELECT DISTINCT
+  ci.checklistInstance_id,
+  ci.checklistTemplate_id,
+  t.name AS template_name,
+  ci.project_id,
+  ci.device_id,
+  ci.generated_at,
+  ci.generated_by,
+  ci.status
+FROM sms_checklistInstance ci
+JOIN sms_checklistItemInstance cii
+  ON cii.checklistInstance_id = ci.checklistInstance_id
+JOIN sms_checklistTemplate t
+  ON t.checklistTemplate_id = ci.checklistTemplate_id
+WHERE cii.target_object_type = 'system'
+  AND cii.target_object_id = ?
+ORDER BY ci.checklistInstance_id DESC
+`

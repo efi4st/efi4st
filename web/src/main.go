@@ -637,6 +637,7 @@ func irisMain()() {
 	// Checklist Instances
 	app.Post("/sms_checklistInstance/generateForProject/{project_id:int}", routes.GenerateChecklistInstanceForProject)
 	app.Post("/sms_checklistInstance/generateForDevice/{device_id:int}", routes.GenerateChecklistInstanceForDevice)
+	app.Post("/sms_checklistInstance/generateForSystem/{system_id:int}", routes.GenerateChecklistInstanceForSystem)
 	app.Get("/sms_checklistInstance/show/{id:int}", routes.ShowChecklistInstance)
 	app.Get("/sms_checklistInstance/delete/{id:int}", routes.DeleteChecklistInstance)
 	app.Get("/sms_checklistInstance/markStatus/{id:int}", routes.MarkChecklistInstanceStatus)

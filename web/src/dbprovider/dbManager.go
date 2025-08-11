@@ -306,6 +306,11 @@ type Manager interface {
 	DeleteChecklistItemInstancesByChecklistInstanceID(checklistInstanceID int) error
 	GetChecklistInstanceByID(id int) *classes.Sms_ChecklistInstance
 	UpdateChecklistItemInstance(item *classes.Sms_ChecklistItemInstance) error
+	GetChecklistItemInstancesWithDefinition(checklistInstanceID int) []classes.Sms_ChecklistItemInstance
+	GetDeviceInstancesForProjectAndDeviceType(projectID, deviceTypeID int) []classes.MatchingDevice
+	GetDeviceBasicByID(deviceID int) (*classes.DeviceBasic, error)
+	AddChecklistInstanceForSystem(templateID int, systemID int, generatedBy string) (int, error)
+	GetChecklistInstancesForSystem(systemID int) []ChecklistInstanceRow
 }
 
 type manager struct {
@@ -8019,4 +8024,227 @@ func (mgr *manager) AddChecklistInstance(inst *classes.Sms_ChecklistInstance) er
 
 	log.Printf("✅ Neue ChecklistInstance (%d) erzeugt mit %d Items", instanceID, len(items))
 	return tx.Commit()
+}
+
+func (mgr *manager) GetChecklistItemInstancesWithDefinition(checklistInstanceID int) []classes.Sms_ChecklistItemInstance {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ChecklistItemInstancesWithDefinitionByChecklistInstanceID)
+	if err != nil { log.Println("Prepare error:", err); return nil }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(checklistInstanceID)
+	if err != nil { log.Println("Query error:", err); return nil }
+	defer rows.Close()
+
+	var list []classes.Sms_ChecklistItemInstance
+	for rows.Next() {
+		var it classes.Sms_ChecklistItemInstance
+
+		var (
+			isOk           sql.NullBool
+			actualValue    sql.NullString
+			comment        sql.NullString
+			expectedValue  sql.NullString
+			checkDefID     sql.NullInt64
+			devTypeID      sql.NullInt64
+			devTypeName    sql.NullString
+			appVers        sql.NullString
+			testName       sql.NullString
+			testDesc       sql.NullString
+			expl           sql.NullString
+			expRes         sql.NullString
+		)
+
+		err := rows.Scan(
+			&it.ChecklistItemInstanceID,
+			&it.ChecklistInstanceID,
+			&it.ChecklistTemplateItemID,
+			&it.TargetObjectID,
+			&it.TargetObjectType,
+			&isOk,
+			&actualValue,
+			&comment,
+			&expectedValue,
+			&checkDefID,
+			&devTypeID,
+			&devTypeName,
+			&appVers,
+			&testName,
+			&testDesc,
+			&expl,
+			&expRes,
+		)
+		if err != nil { log.Println("Scan error:", err); continue }
+
+		// Nullables → Werte
+		if isOk.Valid { v := isOk.Bool; it.IsOK = &v; it.IsOKStr = map[bool]string{true:"true", false:"false"}[v] } else { it.IsOK = nil; it.IsOKStr="none" }
+		if actualValue.Valid { it.ActualValue = actualValue.String }
+		if comment.Valid { it.Comment = comment.String }
+		if expectedValue.Valid { it.ExpectedValue = expectedValue.String }
+
+		if checkDefID.Valid { id := int(checkDefID.Int64); it.CheckDefinitionID = &id }
+		if devTypeID.Valid { id := int(devTypeID.Int64); it.DeviceTypeID = &id }
+		if devTypeName.Valid { it.DeviceTypeName = devTypeName.String }
+		if appVers.Valid { it.ApplicableVersions = appVers.String }
+		if testName.Valid { it.CheckDefName = testName.String }
+		if testDesc.Valid { it.CheckDefDescription = testDesc.String }
+		if expl.Valid { it.CheckDefExplanation = expl.String }
+		if expRes.Valid { it.CheckDefExpected = expRes.String }
+
+		list = append(list, it)
+	}
+	return list
+}
+
+func (mgr *manager) GetDeviceInstancesForProjectAndDeviceType(projectID, deviceTypeID int) []classes.MatchingDevice {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_DeviceInstancesForProjectAndDeviceType)
+	if err != nil {
+		log.Println("Prepare error:", err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID, deviceTypeID)
+	if err != nil {
+		log.Println("Query error:", err)
+		return nil
+	}
+	defer rows.Close()
+
+	var res []classes.MatchingDevice
+	for rows.Next() {
+		var md classes.MatchingDevice
+		if err := rows.Scan(&md.DeviceInstanceID, &md.Serialnumber, &md.DeviceVersion, &md.DeviceTypeName); err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		res = append(res, md)
+	}
+	return res
+}
+
+func (mgr *manager) GetDeviceBasicByID(deviceID int) (*classes.DeviceBasic, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_DeviceBasicByID)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	var d classes.DeviceBasic
+	if err := stmt.QueryRow(deviceID).Scan(&d.DeviceID, &d.DeviceTypeID, &d.Version, &d.DeviceType); err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
+// 2.1 Instanz für ein System erzeugen (inkl. Items)
+func (mgr *manager) AddChecklistInstanceForSystem(templateID int, systemID int, generatedBy string) (int, error) {
+	// Optional: kurze Verbindungskontrolle
+	if err := mgr.db.Ping(); err != nil {
+		return 0, fmt.Errorf("ping db: %w", err)
+	}
+
+	// ===== TX starten
+	tx, err := mgr.db.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() {
+		// nur rollback, wenn commit nicht erfolgt ist
+		_ = tx.Rollback()
+	}()
+
+	// ===== 1) Instance anlegen (5 Platzhalter!)
+	stInst, err := tx.Prepare(dbUtils.INSERT_ChecklistInstance)
+	if err != nil {
+		return 0, fmt.Errorf("prepare insert instance: %w", err)
+	}
+	defer stInst.Close()
+
+	res, err := stInst.Exec(templateID, nil, nil, generatedBy, "open")
+	if err != nil {
+		return 0, fmt.Errorf("exec insert instance: %w", err)
+	}
+	instID64, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("lastinsertid: %w", err)
+	}
+	instID := int(instID64)
+
+	// ===== 2) System-Items lesen → IDs puffern → rows SCHLIESSEN
+	rows, err := tx.Query(dbUtils.SELECT_ChecklistTemplateItems_SystemOnly, templateID)
+	if err != nil {
+		return 0, fmt.Errorf("select system items: %w", err)
+	}
+
+	var tmplItemIDs []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, fmt.Errorf("scan item id: %w", err)
+		}
+		tmplItemIDs = append(tmplItemIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, fmt.Errorf("rows err: %w", err)
+	}
+	// WICHTIG: jetzt wirklich schließen, bevor wir ein weiteres Prepare/Exec machen
+	rows.Close()
+
+	// ===== 3) Item-Insert vorbereiten und ausführen
+	stItem, err := tx.Prepare(dbUtils.INSERT_ChecklistItemInstanceWithExpected)
+	if err != nil {
+		return 0, fmt.Errorf("prepare insert item: %w", err)
+	}
+	defer stItem.Close()
+
+	count := 0
+	for _, tmplItemID := range tmplItemIDs {
+		if _, err := stItem.Exec(instID, systemID, tmplItemID); err != nil {
+			return 0, fmt.Errorf("insert item instance (tmplItem=%d): %w", tmplItemID, err)
+		}
+		count++
+	}
+
+	// ===== Commit
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit: %w", err)
+	}
+
+	log.Printf("✅ System-ChecklistInstance %d erzeugt (Template %d) mit %d Items für System #%d",
+		instID, templateID, count, systemID)
+	return instID, nil
+}
+
+// 2.2 Alle Instanzen für ein System listen
+type ChecklistInstanceRow struct {
+	ChecklistInstanceID int
+	ChecklistTemplateID int
+	TemplateName        string
+	ProjectID           *int
+	DeviceID            *int
+	GeneratedAt         string
+	GeneratedBy         string
+	Status              string
+}
+
+func (mgr *manager) GetChecklistInstancesForSystem(systemID int) []ChecklistInstanceRow {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ChecklistInstancesForSystem)
+	if err != nil { log.Println(err); return nil }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(systemID)
+	if err != nil { log.Println(err); return nil }
+	defer rows.Close()
+
+	var out []ChecklistInstanceRow
+	for rows.Next() {
+		var r ChecklistInstanceRow
+		if err := rows.Scan(&r.ChecklistInstanceID, &r.ChecklistTemplateID, &r.TemplateName,
+			&r.ProjectID, &r.DeviceID, &r.GeneratedAt, &r.GeneratedBy, &r.Status); err != nil {
+			log.Println("scan:", err)
+			continue
+		}
+		out = append(out, r)
+	}
+	return out
 }

@@ -90,7 +90,11 @@ func ShowSMSSystem(ctx iris.Context) {
 	// 🔼 Artefakte als ViewData bereitstellen
 	ctx.ViewData("artefactsUnderSystem", artefactsUnderSystem)
 
-	// Bestehende ViewData
+	checklistTemplates := dbprovider.GetDBManager().GetAllChecklistTemplates()
+	systemChecklistInstances := dbprovider.GetDBManager().GetChecklistInstancesForSystem(i)
+
+	ctx.ViewData("checklistTemplates", checklistTemplates)
+	ctx.ViewData("systemChecklistInstances", systemChecklistInstances)
 	ctx.ViewData("systemTree", systemTree)
 	ctx.ViewData("systemManufacturingOrders", systemManufacturingOrders)
 	ctx.ViewData("devicesUnderSystem", devicesUnderSystem)

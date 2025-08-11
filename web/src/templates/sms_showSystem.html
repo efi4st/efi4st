@@ -293,6 +293,65 @@
           </div>
 
         </div>
+        </hr>
+        <div class="row">
+          <div class="col-md-6">
+            <h3>
+              System-Checklisten&nbsp;&nbsp;
+              <form action="/sms_checklistInstance/generateForSystem/{{ system.System_id }}" method="POST" class="d-inline">
+                <div class="input-group">
+                  <select name="ChecklistTemplateID" class="form-select" required>
+                    <option value="">Neue Checkliste instanziieren...</option>
+                    {% for tmpl in checklistTemplates %}
+                    <option value="{{ tmpl.ChecklistTemplateID }}">{{ tmpl.Name }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="btn btn-success" type="submit">
+                    <i class="fa fa-plus-circle"></i>
+                  </button>
+                </div>
+              </form>
+            </h3>
+
+            {% if systemChecklistInstances and systemChecklistInstances|length > 0 %}
+            <table class="table table-hover table-bordered table-sm mt-3">
+              <thead class="table-dark">
+              <tr>
+                <th>Vorlage</th>
+                <th>Status</th>
+                <th>Erstellt am</th>
+                <th>Details</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for inst in systemChecklistInstances %}
+              <tr>
+                <td>{{ inst.TemplateName }}</td>
+                <td>
+                  {% if inst.Status == 'done' %}
+                  ✅ Abgeschlossen
+                  {% elif inst.Status == 'in_progress' %}
+                  🕒 In Bearbeitung
+                  {% else %}
+                  🟡 Offen
+                  {% endif %}
+                </td>
+                <td>{{ inst.GeneratedAt|truncatechars:19 }}</td>
+                <td>
+                  <a class="btn btn-sm btn-outline-info" href="/sms_checklistInstance/show/{{ inst.ChecklistInstanceID }}">
+                    Anzeigen
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">Keine System-Checklisten vorhanden.</p>
+            {% endif %}
+          </div>
+        </div>
+
       </div> <!-- /container -->
 <hr>
 

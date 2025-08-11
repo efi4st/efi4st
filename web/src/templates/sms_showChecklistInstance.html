@@ -24,18 +24,54 @@
 
 <!-- sms_showChecklistInstance.html -->
 <div class="container mt-4">
-  <h2>Checkliste Instanz</h2>
-  <p>Status: <strong>{{ instance.Status }}</strong></p>
+
+  {% if error and error|length > 0 %}
+  <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Checkliste Instanz #{{ instance.ChecklistInstanceID }}</h2>
+    <div>
+      <a class="btn btn-secondary" href="javascript:history.back()">
+        <i class="fa fa-arrow-left"></i> Zurück
+      </a>
+      <a class="btn btn-outline-success" href="/sms_checklistInstance/markStatus/{{ instance.ChecklistInstanceID }}?status=done">
+        Als erledigt markieren
+      </a>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <span class="mr-3"><strong>Status:</strong>
+      {% if instance.Status == 'done' %}
+        ✅ Abgeschlossen
+      {% elif instance.Status == 'in_progress' %}
+        🕒 In Bearbeitung
+      {% else %}
+        🟡 Offen
+      {% endif %}
+    </span>
+    {% if instance.TemplateName %}
+    <span class="mr-3"><strong>Vorlage:</strong> {{ instance.TemplateName }}</span>
+    {% endif %}
+    {% if instance.GeneratedAt %}
+    <span class="mr-3"><strong>Erstellt am:</strong> {{ instance.GeneratedAt|truncatechars:19 }}</span>
+    {% endif %}
+    {% if instance.GeneratedBy %}
+    <span class="mr-3"><strong>Erstellt von:</strong> {{ instance.GeneratedBy }}</span>
+    {% endif %}
+  </div>
 
   <table class="table table-bordered table-sm">
     <thead class="thead-light">
     <tr>
       <th>Scope</th>
-      <th>Test & Expected Result</th>
-      <th>Actual-Value</th>
+      <th>Erwartet</th>
+      <th>Ist-Wert</th>
       <th>OK?</th>
-      <th>Comment</th>
-      <th>Save</th>
+      <th>Kommentar</th>
+      <th>Check</th>
+      <th>Speichern</th>
     </tr>
     </thead>
     <tbody>
@@ -44,49 +80,131 @@
       <form action="/sms_checklistItemInstance/update" method="POST">
         <input type="hidden" name="ChecklistItemInstanceID" value="{{ item.ChecklistItemInstanceID }}">
         <input type="hidden" name="ChecklistInstanceID" value="{{ instance.ChecklistInstanceID }}">
+
+        <!-- Scope-Zelle mit korrektem Link -->
         <td>
           {% if item.TargetObjectType == "device" %}
-          <a href="/sms_devices/show/{{ item.TargetObjectID }}">
-            Device #{{ item.TargetObjectID }}
-          </a>
-          {% elif item.TargetObjectType == "system" %}
-          <a href="/sms_projects/show/{{ item.TargetObjectID }}">
-            System (Project #{{ item.TargetObjectID }})
-          </a>
+          <a href="/sms_devices/show/{{ item.TargetObjectID }}">Device #{{ item.TargetObjectID }}</a>
           {% elif item.TargetObjectType == "deviceInstance" %}
-          <a href="/sms_projects/show/{{ item.TargetObjectID }}">
-            Device Instance (Project #{{ item.TargetObjectID }})
-          </a>
+          <a href="/sms_deviceInstances/show/{{ item.TargetObjectID }}">Device Instance #{{ item.TargetObjectID }}</a>
+          {% elif item.TargetObjectType == "system" %}
+          <a href="/sms_systems/show/{{ item.TargetObjectID }}">System #{{ item.TargetObjectID }}</a>
           {% else %}
-          Unknown Type #{{ item.TargetObjectID }}
+          {{ item.TargetObjectType }} #{{ item.TargetObjectID }}
           {% endif %}
         </td>
+
+        <!-- Erwarteter Wert (kopiert aus Template zum Zeitpunkt der Instanziierung) -->
         <td>{{ item.ExpectedValue }}</td>
+
+        <!-- Ist-Wert -->
         <td>
           <input class="form-control form-control-sm" type="text" name="ActualValue" value="{{ item.ActualValue }}">
         </td>
+
+        <!-- OK? (tri-state) -->
         <td>
           <select class="form-control form-control-sm" name="IsOK">
-            <option value="" {% if item.IsOKStr == "none" %}selected{% endif %}>–</option>
-            <option value="true" {% if item.IsOKStr == "true" %}selected{% endif %}>✅</option>
+            <option value=""  {% if item.IsOKStr == "none"  %}selected{% endif %}>–</option>
+            <option value="true"  {% if item.IsOKStr == "true"  %}selected{% endif %}>✅</option>
             <option value="false" {% if item.IsOKStr == "false" %}selected{% endif %}>❌</option>
           </select>
         </td>
+
+        <!-- Kommentar -->
         <td>
           <input class="form-control form-control-sm" type="text" name="Comment" value="{{ item.Comment }}">
         </td>
-        <td>
-          <button class="btn btn-sm btn-success" type="submit"><i class="fa fa-save"></i></button>
+
+        <!-- Details (Check-Definition) -->
+        <td class="text-center">
+          {% if item.CheckDefinitionID %}
+          <button class="btn btn-sm btn-outline-secondary" type="button"
+                  data-toggle="collapse" data-target="#checkdef_{{ item.ChecklistItemInstanceID }}"
+                  aria-expanded="false" aria-controls="checkdef_{{ item.ChecklistItemInstanceID }}">
+            Details
+          </button>
+          {% else %}
+          –
+          {% endif %}
+        </td>
+
+        <!-- Speichern -->
+        <td class="text-center">
+          <button class="btn btn-sm btn-success" type="submit">
+            <i class="fa fa-save"></i>
+          </button>
         </td>
       </form>
     </tr>
+
+    {% if item.CheckDefinitionID %}
+    <!-- Collapsible Check-Definition -->
+    <tr class="collapse bg-light" id="checkdef_{{ item.ChecklistItemInstanceID }}">
+      <td colspan="7">
+        <div class="mb-2">
+          <strong>{{ item.CheckDefName }}</strong>
+          {% if item.DeviceTypeName %} – <span class="text-muted">{{ item.DeviceTypeName }}</span>{% endif %}
+        </div>
+
+        {% if item.CheckDefDescription %}
+        <div class="mb-2">{{ item.CheckDefDescription }}</div>
+        {% endif %}
+        {% if item.CheckDefExplanation %}
+        <div class="small text-muted mb-2">{{ item.CheckDefExplanation }}</div>
+        {% endif %}
+        {% if item.CheckDefExpected %}
+        <div class="mb-2"><em>Expected result:</em> {{ item.CheckDefExpected }}</div>
+        {% endif %}
+
+        <!-- Kontext-spezifischer Teil -->
+        {% if instance.ProjectID %}
+        <!-- Projekt-Kontext: passende Device-Instanzen im Projekt -->
+        <hr>
+        <div class="mb-1"><strong>Applicable device instances in this project:</strong></div>
+        {% if item.MatchingDevices and item.MatchingDevices|length > 0 %}
+        <ul class="mb-0">
+          {% for md in item.MatchingDevices %}
+          <li>
+            <a href="/sms_deviceInstances/show/{{ md.DeviceInstanceID }}">Instance #{{ md.DeviceInstanceID }}</a>
+            – {{ md.DeviceTypeName }} {{ md.DeviceVersion }}{% if md.Serialnumber %} (SN {{ md.Serialnumber }}){% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-muted">No matching device instances in this project.</div>
+        {% endif %}
+
+        {% elif instance.DeviceID %}
+        <!-- Device-Kontext: genau dieses Device prüfen -->
+        <hr>
+        <div class="mb-1">
+          <strong>Device context:</strong>
+          {{ item.DeviceContextTypeName }} {{ item.DeviceContextVersion }}
+        </div>
+        {% if item.AppliesToThisDeviceStr == "true" %}
+        <div class="text-success">✔ This check applies to this device.</div>
+        {% elif item.AppliesToThisDeviceStr == "false" %}
+        <div class="text-warning">⚠ This check does not apply to this device (type/version mismatch).</div>
+        {% else %}
+        <div class="text-muted">No applicability constraints for this item.</div>
+        {% endif %}
+
+        {% else %}
+        <!-- System-Kontext: reine System-Instanz -->
+        <hr>
+        <div class="mb-1">
+          <strong>System context:</strong>
+          <a href="/sms_systems/show/{{ item.TargetObjectID }}">System #{{ item.TargetObjectID }}</a>
+        </div>
+        {% endif %}
+      </td>
+    </tr>
+    {% endif %}
+
     {% endfor %}
     </tbody>
   </table>
-
-  <a class="btn btn-secondary" href="/sms_checklistInstance/markStatus/{{ instance.ChecklistInstanceID }}?status=done">
-    Mark as done
-  </a>
 </div>
 {% endblock %}
 
