@@ -17,6 +17,7 @@ import (
 	"github.com/efi4st/efi4st/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"html" // ← FÜR html.EscapeString
 	"log"
 	"regexp"
 	"sort"
@@ -309,9 +310,21 @@ type Manager interface {
 	GetChecklistItemInstancesWithDefinition(checklistInstanceID int) []classes.Sms_ChecklistItemInstance
 	GetDeviceInstancesForProjectAndDeviceType(projectID, deviceTypeID int) []classes.MatchingDevice
 	GetDeviceBasicByID(deviceID int) (*classes.DeviceBasic, error)
-	AddChecklistInstanceForSystem(templateID int, systemID int, generatedBy string) (int, error)
+	AddChecklistInstanceForSystem(templateID int, systemID int, generatedBy string, includeDeviceItems bool, versionStrategy string, versionPattern string,) (int, error)
 	GetChecklistInstancesForSystem(systemID int) []ChecklistInstanceRow
+	GetAppVersionsForDevice(deviceID int) ([]AppVersionInfo, error)
+	RenderTextForProject(projectID int, text string) string
+	RenderTextForDevice(deviceID int, text string) string
+	RenderTextForSystem(systemID int, text string) string
+	GetArtefactVersionsForDevice(artefactTypeID, deviceID int) ([]string, error)
+	GetArtefactVersionsForDeviceInstance(artefactTypeID, deviceInstanceID int) ([]string, error)
+	GetArtefactVersionsForSystem(artefactTypeID, systemID int) ([]string, error)
+	GetArtefactVersionsForProject(artefactTypeID, projectID int) ([]string, error)
+	GetArtefactTypeIDByName(name string) int
 }
+
+var reApp = regexp.MustCompile(`%AppVersion:([^%]+)%`)
+var reArtefact = regexp.MustCompile(`%(ArtefactVersion|ArtefactVersions):([^|%]+)(?:\|(device|deviceInstance|system|project))?%`)
 
 type manager struct {
 	db *sqlx.DB
@@ -7941,88 +7954,97 @@ func (mgr *manager) UpdateChecklistItemInstance(item *classes.Sms_ChecklistItemI
 	return err
 }
 
+// AddChecklistInstance erstellt eine Checklist-Instanz für ein Projekt ODER ein Device
+// und rendert expected_value beim Insert der Items.
 func (mgr *manager) AddChecklistInstance(inst *classes.Sms_ChecklistInstance) error {
 	tx, err := mgr.db.Begin()
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
-	// Instanz speichern
-	stmt, err := tx.Prepare(dbUtils.INSERT_ChecklistInstanceAuto)
+	// 1) Instanz anlegen (mit generated_by & status)
+	stInst, err := tx.Prepare(dbUtils.INSERT_ChecklistInstance)
 	if err != nil {
 		return fmt.Errorf("prepare instance insert: %w", err)
 	}
-	defer stmt.Close()
+	defer stInst.Close()
 
-	res, err := stmt.Exec(inst.ChecklistTemplateID, inst.ProjectID, inst.DeviceID, inst.Status)
+	genBy := inst.GeneratedBy
+	if genBy == "" {
+		genBy = "system"
+	}
+	res, err := stInst.Exec(inst.ChecklistTemplateID, inst.ProjectID, inst.DeviceID, genBy, inst.Status)
 	if err != nil {
 		return fmt.Errorf("insert checklist instance: %w", err)
 	}
-	instanceID, err := res.LastInsertId()
+	instID64, err := res.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("get instance id: %w", err)
 	}
+	instanceID := int(instID64)
 
-	// Template-Items abrufen
+	// 2) Template-Items holen
 	items := mgr.GetChecklistTemplateItems(inst.ChecklistTemplateID)
-	log.Printf("📦 %d Template-Items werden verarbeitet für TemplateID %d", len(items), inst.ChecklistTemplateID)
+	log.Printf("📦 creating instance %d with %d items (tmpl=%d)", instanceID, len(items), inst.ChecklistTemplateID)
 
-	// Item-Insert vorbereiten
-	insertItemStmt, err := tx.Prepare(dbUtils.INSERT_ChecklistItemInstanceAuto)
+	// 3) Item-Insert (mit expected_value)
+	stItem, err := tx.Prepare(dbUtils.INSERT_ChecklistItemInstanceWithExpected)
 	if err != nil {
 		return fmt.Errorf("prepare item insert: %w", err)
 	}
-	defer insertItemStmt.Close()
+	defer stItem.Close()
 
-	for _, item := range items {
+	created := 0
+	for _, tmpl := range items {
 		var targetID int
 		var targetType string
+		var rendered string
 
-		switch item.TargetScope {
+		switch tmpl.TargetScope {
 		case "device":
 			if inst.DeviceID == nil {
-				log.Printf("⚠️  DeviceID fehlt – Item %d (Scope: device) übersprungen", item.ChecklistTemplateItemID)
+				log.Printf("⚠️ device scope but DeviceID is nil → skip item %d", tmpl.ChecklistTemplateItemID)
 				continue
 			}
 			targetID = *inst.DeviceID
 			targetType = "device"
+			rendered = mgr.RenderTextForDevice(*inst.DeviceID, tmpl.ExpectedValue)
 
 		case "deviceInstance":
 			if inst.ProjectID == nil {
-				log.Printf("⚠️  ProjectID fehlt – Item %d (Scope: deviceInstance) übersprungen", item.ChecklistTemplateItemID)
+				log.Printf("⚠️ deviceInstance scope but ProjectID is nil → skip item %d", tmpl.ChecklistTemplateItemID)
 				continue
 			}
+			// Bei Projekt-Kontext speichern wir die project_id als Target (dein aktueller Ansatz)
 			targetID = *inst.ProjectID
 			targetType = "deviceInstance"
+			rendered = mgr.RenderTextForProject(*inst.ProjectID, tmpl.ExpectedValue)
 
 		case "system":
 			if inst.ProjectID == nil {
-				log.Printf("⚠️  ProjectID fehlt – Item %d (Scope: system) übersprungen", item.ChecklistTemplateItemID)
+				log.Printf("⚠️ system scope but ProjectID is nil → skip item %d", tmpl.ChecklistTemplateItemID)
 				continue
 			}
-			targetID = *inst.ProjectID // system = project ID als Ersatz
+			// Bei Projekt-Kontext speicherst du system=project_id → konsistent bleiben
+			targetID = *inst.ProjectID
 			targetType = "system"
+			rendered = mgr.RenderTextForProject(*inst.ProjectID, tmpl.ExpectedValue)
 
 		default:
-			log.Printf("❌ Unbekannter Scope %q – Item %d übersprungen", item.TargetScope, item.ChecklistTemplateItemID)
+			log.Printf("❌ unknown scope %q → skip item %d", tmpl.TargetScope, tmpl.ChecklistTemplateItemID)
 			continue
 		}
 
-		log.Printf("🧩 Erzeuge Item: TemplateItemID=%d → Target: %s #%d", item.ChecklistTemplateItemID, targetType, targetID)
-		_, err := insertItemStmt.Exec(
-			instanceID,
-			item.ChecklistTemplateItemID,
-			targetID,
-			targetType,
-			item.ExpectedValue, // 🆕 hier übernehmen!
-		)
-		if err != nil {
-			return fmt.Errorf("insert item instance failed: %w", err)
+		_ = targetType // (nur informativ; persistiert wird `target_object_id` + scope via TemplateItemID)
+
+		if _, err := stItem.Exec(instanceID, targetID, tmpl.ChecklistTemplateItemID, rendered); err != nil {
+			return fmt.Errorf("insert item instance failed (tmplItem=%d): %w", tmpl.ChecklistTemplateItemID, err)
 		}
+		created++
 	}
 
-	log.Printf("✅ Neue ChecklistInstance (%d) erzeugt mit %d Items", instanceID, len(items))
+	log.Printf("✅ ChecklistInstance %d created with %d items", instanceID, created)
 	return tx.Commit()
 }
 
@@ -8134,30 +8156,38 @@ func (mgr *manager) GetDeviceBasicByID(deviceID int) (*classes.DeviceBasic, erro
 	return &d, nil
 }
 
-// 2.1 Instanz für ein System erzeugen (inkl. Items)
-func (mgr *manager) AddChecklistInstanceForSystem(templateID int, systemID int, generatedBy string) (int, error) {
-	// Optional: kurze Verbindungskontrolle
+// AddChecklistInstanceForSystem erzeugt eine System-Instanz.
+// Optional können device-scope Items aller Devices unter dem System mit instanziert werden.
+// expected_value wird gerendert (System/Device-Kontext).
+func (mgr *manager) AddChecklistInstanceForSystem(
+	templateID int,
+	systemID int,
+	generatedBy string,
+	includeDeviceItems bool,
+	versionStrategy string,   // "all" | "exact" | "wildcard"
+	versionPattern string,    // nur bei wildcard relevant (z.B. "3.*" oder "*-rc")
+) (int, error) {
+
 	if err := mgr.db.Ping(); err != nil {
 		return 0, fmt.Errorf("ping db: %w", err)
 	}
 
-	// ===== TX starten
 	tx, err := mgr.db.Begin()
 	if err != nil {
 		return 0, fmt.Errorf("begin tx: %w", err)
 	}
-	defer func() {
-		// nur rollback, wenn commit nicht erfolgt ist
-		_ = tx.Rollback()
-	}()
+	defer func() { _ = tx.Rollback() }()
 
-	// ===== 1) Instance anlegen (5 Platzhalter!)
+	// 1) Instance anlegen
 	stInst, err := tx.Prepare(dbUtils.INSERT_ChecklistInstance)
 	if err != nil {
 		return 0, fmt.Errorf("prepare insert instance: %w", err)
 	}
 	defer stInst.Close()
 
+	if generatedBy == "" {
+		generatedBy = "system"
+	}
 	res, err := stInst.Exec(templateID, nil, nil, generatedBy, "open")
 	if err != nil {
 		return 0, fmt.Errorf("exec insert instance: %w", err)
@@ -8168,50 +8198,143 @@ func (mgr *manager) AddChecklistInstanceForSystem(templateID int, systemID int, 
 	}
 	instID := int(instID64)
 
-	// ===== 2) System-Items lesen → IDs puffern → rows SCHLIESSEN
-	rows, err := tx.Query(dbUtils.SELECT_ChecklistTemplateItems_SystemOnly, templateID)
+	// 2) System-Items (id + expected_value)
+	rowsSys, err := tx.Query(dbUtils.SELECT_ChecklistTemplateItems_SystemOnlyMeta, templateID)
 	if err != nil {
 		return 0, fmt.Errorf("select system items: %w", err)
 	}
-
-	var tmplItemIDs []int
-	for rows.Next() {
+	var sysItems []struct {
+		ItemID       int
+		ExpectedRaw  string
+	}
+	for rowsSys.Next() {
 		var id int
-		if err := rows.Scan(&id); err != nil {
-			rows.Close()
-			return 0, fmt.Errorf("scan item id: %w", err)
+		var exp sql.NullString
+		if err := rowsSys.Scan(&id, &exp); err != nil {
+			rowsSys.Close()
+			return 0, fmt.Errorf("scan system item: %w", err)
 		}
-		tmplItemIDs = append(tmplItemIDs, id)
+		sysItems = append(sysItems, struct {
+			ItemID      int
+			ExpectedRaw string
+		}{ItemID: id, ExpectedRaw: nstr(exp)})
 	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return 0, fmt.Errorf("rows err: %w", err)
+	if err := rowsSys.Err(); err != nil {
+		rowsSys.Close()
+		return 0, err
 	}
-	// WICHTIG: jetzt wirklich schließen, bevor wir ein weiteres Prepare/Exec machen
-	rows.Close()
+	rowsSys.Close()
 
-	// ===== 3) Item-Insert vorbereiten und ausführen
-	stItem, err := tx.Prepare(dbUtils.INSERT_ChecklistItemInstanceWithExpected)
-	if err != nil {
-		return 0, fmt.Errorf("prepare insert item: %w", err)
-	}
+	// 3) Item-Insert (parametrisiert, mit expected_value)
+	stItem, err := tx.Prepare(dbUtils.INSERT_ChecklistItemInstanceWithExpectedParam)
+	if err != nil { return 0, fmt.Errorf("prepare insert item: %w", err) }
 	defer stItem.Close()
 
-	count := 0
-	for _, tmplItemID := range tmplItemIDs {
-		if _, err := stItem.Exec(instID, systemID, tmplItemID); err != nil {
-			return 0, fmt.Errorf("insert item instance (tmplItem=%d): %w", tmplItemID, err)
+	created := 0
+
+	// 3a) System-Items einfügen (target_object_type='system')
+	for _, it := range sysItems {
+		rendered := mgr.RenderTextForSystem(systemID, it.ExpectedRaw)
+		if _, err := stItem.Exec(
+			instID,
+			it.ItemID,
+			systemID,
+			"system",
+			rendered,
+		); err != nil {
+			return 0, fmt.Errorf("insert system item (tmplItem=%d): %w", it.ItemID, err)
 		}
-		count++
+		created++
 	}
 
-	// ===== Commit
+	// 4) Optional: Device-Items unterhalb des Systems
+	if includeDeviceItems {
+		// 4.1 Device-Scope Template-Items (inkl. device_type_id & applicable_versions)
+		rowsDevItems, err := tx.Query(dbUtils.SELECT_ChecklistTemplateItems_DeviceOnlyMeta, templateID)
+		if err != nil {
+			return 0, fmt.Errorf("select device items: %w", err)
+		}
+		type devItemMeta struct {
+			ItemID             int
+			ExpectedRaw        string
+			DeviceTypeID       int
+			ApplicableVersions string
+		}
+		var devItems []devItemMeta
+		for rowsDevItems.Next() {
+			var id int
+			var exp sql.NullString
+			var checkDefID, artefactTypeID, devTypeID int
+			var applicable sql.NullString
+			if err := rowsDevItems.Scan(&id, &exp, &checkDefID, &artefactTypeID, &devTypeID, &applicable); err != nil {
+				rowsDevItems.Close()
+				return 0, fmt.Errorf("scan device item: %w", err)
+			}
+			devItems = append(devItems, devItemMeta{
+				ItemID:             id,
+				ExpectedRaw:        nstr(exp),
+				DeviceTypeID:       devTypeID,
+				ApplicableVersions: nstr(applicable),
+			})
+		}
+		if err := rowsDevItems.Err(); err != nil {
+			rowsDevItems.Close()
+			return 0, err
+		}
+		rowsDevItems.Close()
+
+		// 4.2 Alle Devices dieses Systems (id, type, version)
+		rowsSysDevs, err := tx.Query(dbUtils.SELECT_DeviceIDsAndVersionsForSystem, systemID)
+		if err != nil {
+			return 0, fmt.Errorf("select system devices: %w", err)
+		}
+		type sysDev struct {
+			DeviceID     int
+			DeviceTypeID int
+			Version      string
+		}
+		var devices []sysDev
+		for rowsSysDevs.Next() {
+			var d sysDev
+			if err := rowsSysDevs.Scan(&d.DeviceID, &d.DeviceTypeID, &d.Version); err != nil {
+				rowsSysDevs.Close()
+				return 0, fmt.Errorf("scan system device: %w", err)
+			}
+			devices = append(devices, d)
+		}
+		if err := rowsSysDevs.Err(); err != nil {
+			rowsSysDevs.Close()
+			return 0, err
+		}
+		rowsSysDevs.Close()
+
+		// 4.3 Für jedes Device-Template-Item → alle Devices matchen
+		for _, di := range devItems {
+			for _, dv := range devices {
+				if di.DeviceTypeID != 0 && di.DeviceTypeID != dv.DeviceTypeID { continue }
+				if !matchApplicableVersions(dv.Version, di.ApplicableVersions) { continue }
+				if !versionMatches(dv.Version, di.ApplicableVersions, versionStrategy, versionPattern) { continue }
+
+				rendered := mgr.RenderTextForDevice(dv.DeviceID, di.ExpectedRaw)
+				if _, err := stItem.Exec(
+					instID,
+					di.ItemID,
+					dv.DeviceID,
+					"device",
+					rendered,
+				); err != nil {
+					return 0, fmt.Errorf("insert device item (tmplItem=%d, device=%d): %w", di.ItemID, dv.DeviceID, err)
+				}
+				created++
+			}
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("commit: %w", err)
 	}
-
-	log.Printf("✅ System-ChecklistInstance %d erzeugt (Template %d) mit %d Items für System #%d",
-		instID, templateID, count, systemID)
+	log.Printf("✅ System-ChecklistInstance %d created (tmpl=%d) with %d items for system #%d",
+		instID, templateID, created, systemID)
 	return instID, nil
 }
 
@@ -8247,4 +8370,395 @@ func (mgr *manager) GetChecklistInstancesForSystem(systemID int) []ChecklistInst
 		out = append(out, r)
 	}
 	return out
+}
+
+type AppVersionInfo struct {
+	DeviceName string
+	Name       string
+	Version    string
+}
+
+func (mgr *manager) GetAppVersionsForDevice(deviceID int) ([]AppVersionInfo, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_all_app_versions_for_device)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	var out []AppVersionInfo
+	for rows.Next() {
+		var a AppVersionInfo
+		if err := rows.Scan(&a.DeviceName, &a.Name, &a.Version); err != nil { continue }
+		out = append(out, a)
+	}
+	return out, nil
+}
+
+func (mgr *manager) RenderTextForProject(projectID int, text string) string {
+	if text == "" { return "" }
+	result := text
+
+	// 1) IPs & VLAN-IPs
+	if deviceIPs, vlanIPs, err := mgr.GetFilteredDeviceIPsForProject(projectID); err == nil {
+		vlanStr := make(map[string][]string)
+		for k, v := range vlanIPs { vlanStr[strconv.Itoa(k)] = v }
+		result = replaceDeviceIPTagsAsHTMLTable(result, deviceIPs)
+		result = replaceVlanIPTags(result, vlanStr)
+		result = replaceIPPlaceholders(result, deviceIPs, vlanStr, "")
+	}
+
+	// 2) App-Versionen (Projekt)
+	result = replaceAppVersionTagsProject(result, projectID, mgr)
+
+	// 3) Artefakte (Projekt)
+	result = mgr.renderArtefactPlaceholdersForContext(result, "project", struct {
+		ProjectID        *int
+		SystemID         *int
+		DeviceID         *int
+		DeviceInstanceID *int
+	}{ ProjectID: &projectID })
+
+	return result
+}
+
+func replaceAppVersionTagsProject(input string, projectID int, mgr *manager) string {
+	if !strings.Contains(input, "%AppVersion:") { return input }
+	// Nutze deine vorhandene Implementierung, aber mit robusterem Regex:
+	re := reApp // %AppVersion:([^%]+)%
+	result := input
+
+	// Lade Versionsmatrix einmal
+	appVersions, err := mgr.GetAppVersionsForProject(projectID)
+	if err != nil { return result }
+
+	// map[AppName]map[DeviceType][]Version
+	byApp := map[string]map[string][]string{}
+	for _, a := range appVersions {
+		if _, ok := byApp[a.Name]; !ok {
+			byApp[a.Name] = map[string][]string{}
+		}
+		byApp[a.Name][a.DeviceName] = append(byApp[a.Name][a.DeviceName], a.Version)
+	}
+
+	for _, m := range re.FindAllStringSubmatch(result, -1) {
+		placeholder := m[0]
+		appName := strings.TrimSpace(m[1])
+
+		if devMap, ok := byApp[appName]; ok {
+			var b strings.Builder
+			b.WriteString(`<table class="table-styled"><thead><tr><th>Gerätetyp</th><th>Software</th><th>Version(en)</th></tr></thead><tbody>`)
+			for devType, vers := range devMap {
+				b.WriteString("<tr><td>")
+				b.WriteString(html.EscapeString(devType))
+				b.WriteString("</td><td>")
+				b.WriteString(html.EscapeString(appName))
+				b.WriteString("</td><td>")
+				b.WriteString(html.EscapeString(strings.Join(vers, ", ")))
+				b.WriteString("</td></tr>")
+			}
+			b.WriteString("</tbody></table>")
+			result = strings.ReplaceAll(result, placeholder, b.String())
+		} else {
+			result = strings.ReplaceAll(result, placeholder, "(Keine Version gefunden)")
+		}
+	}
+	return result
+}
+
+func (mgr *manager) RenderTextForDevice(deviceID int, text string) string {
+	if text == "" { return "" }
+	result := text
+
+	// App-Versionen (Device)
+	if strings.Contains(result, "%AppVersion:") {
+		appVersions, err := mgr.GetAppVersionsForDevice(deviceID)
+		if err == nil {
+			byApp := map[string][]string{}
+			for _, a := range appVersions {
+				byApp[a.Name] = append(byApp[a.Name], a.Version)
+			}
+			for _, m := range reApp.FindAllStringSubmatch(result, -1) {
+				placeholder := m[0]
+				appName := strings.TrimSpace(m[1])
+				if vers, ok := byApp[appName]; ok && len(vers) > 0 {
+					result = strings.ReplaceAll(result, placeholder, html.EscapeString(strings.Join(vers, ", ")))
+				} else {
+					result = strings.ReplaceAll(result, placeholder, "(Keine Version gefunden)")
+				}
+			}
+		}
+	}
+
+	// Artefakte (Device)
+	result = mgr.renderArtefactPlaceholdersForContext(result, "device", struct {
+		ProjectID        *int
+		SystemID         *int
+		DeviceID         *int
+		DeviceInstanceID *int
+	}{ DeviceID: &deviceID })
+
+	return result
+}
+
+func (mgr *manager) RenderTextForSystem(systemID int, text string) string {
+	if text == "" { return "" }
+	result := text
+
+	// (Optional) App-Versionen für System
+	// result = replaceAppVersionTagsSystem(result, systemID, mgr)
+
+	// Artefakte (System)
+	result = mgr.renderArtefactPlaceholdersForContext(result, "system", struct {
+		ProjectID        *int
+		SystemID         *int
+		DeviceID         *int
+		DeviceInstanceID *int
+	}{ SystemID: &systemID })
+
+	return result
+}
+
+
+func matchVersions(deviceVersion, applicableVersions string) bool {
+	return utils.MatchesApplicable(deviceVersion, applicableVersions)
+}
+
+// versionMatches kombiniert applicable_versions mit der UI-Strategie.
+// strategy: "all" → immer true; "exact" → actual == pattern; "wildcard" → pattern als Glob (3.*, *-rc, etc.)
+func versionMatches(actual string, applicable string, strategy string, pattern string) bool {
+	// DB-Feld "applicable_versions" hat Vorrang: "all" bedeutet immer passend.
+	if strings.EqualFold(strings.TrimSpace(applicable), "all") {
+		return true
+	}
+
+	switch strategy {
+	case "exact":
+		return strings.TrimSpace(actual) == strings.TrimSpace(pattern)
+
+	case "wildcard":
+		if pattern == "" { return false }
+		re := wildcardToRegexp(pattern) // e.g. 3.* → ^3\..*$
+		return re.MatchString(actual)
+
+	default: // "all" (UI) → wir akzeptieren jede Version
+		return true
+	}
+}
+
+func wildcardToRegexp(wc string) *regexp.Regexp {
+	// Escape, dann * → .*
+	var b strings.Builder
+	b.WriteString("^")
+	for _, r := range wc {
+		switch r {
+		case '*':
+			b.WriteString(".*")
+		case '.', '(', ')', '+', '?', '^', '$', '|', '[', ']', '{', '}', '\\':
+			b.WriteRune('\\')
+			b.WriteRune(r)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	b.WriteString("$")
+	return regexp.MustCompile(b.String())
+}
+
+// matchApplicableVersions prüft das "applicable_versions" Feld aus dem Template-Item.
+// "all" → immer true, sonst kommagetrennte Liste exakter Matches (ohne Wildcards).
+func matchApplicableVersions(actualVersion, applicable string) bool {
+	applicable = strings.TrimSpace(applicable)
+	if applicable == "" || strings.EqualFold(applicable, "all") {
+		return true
+	}
+	parts := strings.Split(applicable, ",")
+	for _, p := range parts {
+		if strings.TrimSpace(p) == actualVersion {
+			return true
+		}
+	}
+	return false
+}
+
+// nstr wandelt sql.NullString in string
+func nstr(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
+}
+
+// "all" oder CSV-Liste wie "1.0,1.1"
+func applicableOK(deviceVersion, applicable string) bool {
+	if strings.EqualFold(strings.TrimSpace(applicable), "all") {
+		return true
+	}
+	for _, v := range strings.Split(applicable, ",") {
+		if strings.TrimSpace(v) == strings.TrimSpace(deviceVersion) {
+			return true
+		}
+	}
+	return false
+}
+
+
+// Artefact versions for a device
+func (mgr *manager) GetArtefactVersionsForDevice(artefactTypeID, deviceID int) ([]string, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ArtefactVersionsByTypeAndDevice)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(artefactTypeID, deviceID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var v sql.NullString
+		if err := rows.Scan(&v); err != nil { continue }
+		if v.Valid { out = append(out, v.String) }
+	}
+	return out, nil
+}
+
+func (mgr *manager) GetArtefactVersionsForDeviceInstance(artefactTypeID, deviceInstanceID int) ([]string, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ArtefactVersionsByTypeAndDeviceInstance)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(artefactTypeID, deviceInstanceID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var v sql.NullString
+		if err := rows.Scan(&v); err != nil { continue }
+		if v.Valid { out = append(out, v.String) }
+	}
+	return out, nil
+}
+
+func (mgr *manager) GetArtefactVersionsForSystem(artefactTypeID, systemID int) ([]string, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ArtefactVersionsByTypeAndSystem)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(artefactTypeID, systemID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var v sql.NullString
+		if err := rows.Scan(&v); err != nil { continue }
+		if v.Valid { out = append(out, v.String) }
+	}
+	return out, nil
+}
+
+func (mgr *manager) GetArtefactVersionsForProject(artefactTypeID, projectID int) ([]string, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ArtefactVersionsByTypeAndProject)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(artefactTypeID, projectID, artefactTypeID, projectID, artefactTypeID, projectID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var v sql.NullString
+		if err := rows.Scan(&v); err != nil { continue }
+		if v.Valid { out = append(out, v.String) }
+	}
+	return out, nil
+}
+
+// helper
+func firstOrEmpty(list []string) string {
+	if len(list) == 0 { return "" }
+	return list[0]
+}
+
+// Kontext-neutraler Wrapper, den du aus den drei bestehenden Renderern aufrufst
+func (mgr *manager) renderArtefactPlaceholdersForContext(
+	text string,
+	ctxScope string, // "project" | "system" | "device" | "deviceInstance"
+	ctxIDs struct {
+	ProjectID        *int
+	SystemID         *int
+	DeviceID         *int
+	DeviceInstanceID *int
+},
+) string {
+	if text == "" { return "" }
+	out := text
+
+	matches := reArtefact.FindAllStringSubmatch(out, -1)
+	for _, m := range matches {
+		full := m[0]
+		kind := m[1]         // ArtefactVersion | ArtefactVersions
+		typeName := strings.TrimSpace(m[2])
+		override := m[3]     // optional
+
+		// Artefakt-Type-ID holen
+		atypeID := mgr.GetArtefactTypeIDByName(typeName)
+		if atypeID == 0 {
+			out = strings.ReplaceAll(out, full, "(unknown artefact type)")
+			continue
+		}
+
+		scope := ctxScope
+		if override != "" {
+			scope = override
+		}
+
+		var versions []string
+		var err error
+
+		switch scope {
+		case "device":
+			if ctxIDs.DeviceID != nil {
+				versions, err = mgr.GetArtefactVersionsForDevice(atypeID, *ctxIDs.DeviceID)
+			}
+		case "deviceInstance":
+			if ctxIDs.DeviceInstanceID != nil {
+				versions, err = mgr.GetArtefactVersionsForDeviceInstance(atypeID, *ctxIDs.DeviceInstanceID)
+			}
+		case "system":
+			if ctxIDs.SystemID != nil {
+				versions, err = mgr.GetArtefactVersionsForSystem(atypeID, *ctxIDs.SystemID)
+			}
+		case "project":
+			if ctxIDs.ProjectID != nil {
+				versions, err = mgr.GetArtefactVersionsForProject(atypeID, *ctxIDs.ProjectID)
+			}
+		}
+		_ = err // optional loggen
+
+		repl := ""
+		if kind == "ArtefactVersion" {
+			repl = html.EscapeString(firstOrEmpty(versions))
+		} else {
+			repl = html.EscapeString(strings.Join(versions, ", "))
+		}
+		if repl == "" {
+			repl = "(no artefact found)"
+		}
+		out = strings.ReplaceAll(out, full, repl)
+	}
+	return out
+}
+
+func (mgr *manager) GetArtefactTypeIDByName(name string) int {
+	stmt, err := mgr.db.Prepare(`SELECT artefacttype_id FROM sms_artefacttype WHERE artefactType = ? LIMIT 1`)
+	if err != nil { return 0 }
+	defer stmt.Close()
+
+	var id int
+	if err := stmt.QueryRow(name).Scan(&id); err != nil { return 0 }
+	return id
 }

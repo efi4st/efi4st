@@ -83,6 +83,21 @@
 
         <!-- Scope-Zelle mit korrektem Link -->
         <td>
+          {% if instance.ProjectID %}
+          {# Projekt-Kontext: immer aufs Projekt linken #}
+          <a href="/sms_projects/show/{{ instance.ProjectID }}">
+            {% if item.TargetObjectType == "device" %}
+            Device (Project #{{ instance.ProjectID }})
+            {% elif item.TargetObjectType == "deviceInstance" %}
+            Device Instances (Project #{{ instance.ProjectID }})
+            {% elif item.TargetObjectType == "system" %}
+            System (Project #{{ instance.ProjectID }})
+            {% else %}
+            {{ item.TargetObjectType }} (Project #{{ instance.ProjectID }})
+            {% endif %}
+          </a>
+          {% else %}
+          {# Nicht Projekt-Kontext: auf das echte Ziel linken #}
           {% if item.TargetObjectType == "device" %}
           <a href="/sms_devices/show/{{ item.TargetObjectID }}">Device #{{ item.TargetObjectID }}</a>
           {% elif item.TargetObjectType == "deviceInstance" %}
@@ -92,10 +107,11 @@
           {% else %}
           {{ item.TargetObjectType }} #{{ item.TargetObjectID }}
           {% endif %}
+          {% endif %}
         </td>
 
         <!-- Erwarteter Wert (kopiert aus Template zum Zeitpunkt der Instanziierung) -->
-        <td>{{ item.ExpectedValue }}</td>
+        <td>{{ item.RenderedExpected|safe }}</td>
 
         <!-- Ist-Wert -->
         <td>
@@ -154,7 +170,7 @@
         <div class="small text-muted mb-2">{{ item.CheckDefExplanation }}</div>
         {% endif %}
         {% if item.CheckDefExpected %}
-        <div class="mb-2"><em>Expected result:</em> {{ item.CheckDefExpected }}</div>
+        <div class="mb-2"><em>Expected result:</em> {{ item.CheckDefRenderedExpected|safe }}</div>
         {% endif %}
 
         <!-- Kontext-spezifischer Teil -->

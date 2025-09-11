@@ -1320,3 +1320,116 @@ WHERE cii.target_object_type = 'system'
   AND cii.target_object_id = ?
 ORDER BY ci.checklistInstance_id DESC
 `
+
+var SELECT_all_app_versions_for_device = `
+SELECT dt.type AS device_type, st.typeName AS app_name, s.version AS app_version
+FROM sms_device d
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+JOIN sms_softwarePartOfDevice spd ON d.device_id = spd.device_id
+JOIN sms_software s ON spd.software_id = s.software_id
+JOIN sms_softwaretype st ON s.softwaretype_id = st.softwaretype_id
+WHERE d.device_id = ?
+ORDER BY dt.type, st.typeName, s.version
+`
+
+
+var SELECT_ChecklistTemplateItems_DeviceOnly = `
+SELECT checklistTemplateItem_id
+FROM sms_checklistTemplateItem
+WHERE checklistTemplate_id = ? AND targetScope = 'device'
+`
+
+var SELECT_TemplateItem_DeviceMeta = `
+SELECT dcd.device_type_id, dcd.applicable_versions
+FROM sms_checklistTemplateItem ti
+LEFT JOIN sms_deviceCheckDefinition dcd ON ti.checkDefinition_id = dcd.id
+WHERE ti.checklistTemplateItem_id = ?
+`
+
+var SELECT_DeviceIDsAndVersionsForSystem = `
+SELECT d.device_id, d.devicetype_id, d.version
+FROM sms_devicePartOfSystem dps
+JOIN sms_device d ON dps.device_id = d.device_id
+WHERE dps.system_id = ?
+`
+
+var SELECT_ArtefactVersionsByTypeAndDevice = `SELECT DISTINCT a.version
+FROM sms_artefact a
+JOIN sms_artefactPartOfDevice apd ON apd.artefact_id = a.artefact_id
+WHERE a.artefacttype_id = ? AND apd.device_id = ?
+ORDER BY a.version`
+
+var SELECT_ArtefactVersionsByTypeAndDeviceInstance = `SELECT DISTINCT a.version
+FROM sms_artefact a
+JOIN sms_artefactPartOfDeviceInstance apdi ON apdi.artefact_id = a.artefact_id
+WHERE a.artefacttype_id = ? AND apdi.deviceInstance_id = ?
+ORDER BY a.version`
+
+var SELECT_ArtefactVersionsByTypeAndSystem = `SELECT DISTINCT a.version
+FROM sms_artefact a
+JOIN sms_artefactPartOfSystem aps ON aps.artefact_id = a.artefact_id
+WHERE a.artefacttype_id = ? AND aps.system_id = ?
+ORDER BY a.version`
+
+
+var SELECT_ArtefactVersionsByTypeAndProject = `(
+  SELECT DISTINCT a.version
+  FROM sms_artefact a
+  JOIN sms_artefactPartOfDeviceInstance apdi ON apdi.artefact_id = a.artefact_id
+  JOIN sms_deviceInstance di ON di.deviceInstance_id = apdi.deviceInstance_id
+  WHERE a.artefacttype_id = ? AND di.project_id = ?
+)
+UNION
+(
+  SELECT DISTINCT a.version
+  FROM sms_artefact a
+  JOIN sms_artefactPartOfDevice apd ON apd.artefact_id = a.artefact_id
+  JOIN sms_deviceInstance di ON di.device_id = apd.device_id
+  WHERE a.artefacttype_id = ? AND di.project_id = ?
+)
+UNION
+(
+  SELECT DISTINCT a.version
+  FROM sms_artefact a
+  JOIN sms_artefactPartOfSystem aps ON aps.artefact_id = a.artefact_id
+  JOIN sms_devicePartOfSystem dps ON dps.system_id = aps.system_id
+  JOIN sms_deviceInstance di ON di.device_id = dps.device_id
+  WHERE a.artefacttype_id = ? AND di.project_id = ?
+)
+ORDER BY version`
+
+
+// Template-Items (SYSTEM scope) inkl. expected_value
+var SELECT_ChecklistTemplateItems_SystemOnlyMeta = `
+SELECT 
+  ti.checklistTemplateItem_id,
+  ti.expected_value
+FROM sms_checklistTemplateItem ti
+WHERE ti.checklistTemplate_id = ?
+  AND ti.targetScope = 'system'
+`
+
+// Template-Items (DEVICE scope) inkl. expected_value + Meta aus CheckDefinition
+// device_type_id / applicable_versions kommen (falls vorhanden) aus der verlinkten CheckDefinition
+var SELECT_ChecklistTemplateItems_DeviceOnlyMeta = `
+SELECT 
+  ti.checklistTemplateItem_id,
+  ti.expected_value,
+  COALESCE(ti.checkDefinition_id, 0)       AS checkDefinition_id,
+  COALESCE(ti.artefacttype_id, 0)          AS artefacttype_id,
+  COALESCE(dcd.device_type_id, 0)          AS device_type_id,
+  COALESCE(dcd.applicable_versions, 'all') AS applicable_versions
+FROM sms_checklistTemplateItem ti
+LEFT JOIN sms_deviceCheckDefinition dcd
+  ON ti.checkDefinition_id = dcd.id
+WHERE ti.checklistTemplate_id = ?
+  AND ti.targetScope = 'device'
+`
+
+// Einheitlicher Insert mit frei wählbarem target_object_type + expected_value als PARAM
+var INSERT_ChecklistItemInstanceWithExpectedParam = `
+INSERT INTO sms_checklistItemInstance
+  (checklistInstance_id, checklistTemplateItem_id, target_object_id, target_object_type,
+   is_ok, actual_value, comment, expected_value)
+VALUES (?, ?, ?, ?, NULL, NULL, NULL, ?)
+`

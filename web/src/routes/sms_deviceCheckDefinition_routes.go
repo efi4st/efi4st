@@ -50,10 +50,14 @@ func CreateSMSDeviceCheckDefinitions(ctx iris.Context) {
 		applicationList = []string{} // Fallback auf leere Liste
 	}
 
+	artefactTypes := dbprovider.GetDBManager().GetSMSArtefactTypes()      // ⬅️ schon vorhanden bei dir
+
+
 	// Daten an View übergeben
 	ctx.ViewData("deviceTypes", deviceTypes)
 	ctx.ViewData("checkTypes", checkTypes)
 	ctx.ViewData("applicationList", applicationList) // ✅ Neu hinzugefügt
+	ctx.ViewData("artefactTypes", artefactTypes)
 	ctx.View("sms_createDeviceCheckDefinition.html")
 }
 

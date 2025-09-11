@@ -13,6 +13,7 @@ import (
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
+	"html"
 	"log"
 	"net/http"
 	"strconv"
@@ -266,6 +267,32 @@ func ShowChecklistInstance(ctx iris.Context) {
 			}
 		}
 	}
+	mgr := dbprovider.GetDBManager()
+
+
+	// ▼ Platzhalter-Rendering einfügen:
+	if inst.ProjectID != nil {
+		for i := range items {
+			items[i].RenderedExpected = mgr.RenderTextForProject(*inst.ProjectID, items[i].ExpectedValue)
+			if items[i].CheckDefinitionID != nil {
+				items[i].CheckDefRenderedExpected = mgr.RenderTextForProject(*inst.ProjectID, items[i].CheckDefExpected)
+			}
+		}
+	} else if inst.DeviceID != nil {
+		for i := range items {
+			items[i].RenderedExpected = mgr.RenderTextForDevice(*inst.DeviceID, items[i].ExpectedValue)
+			if items[i].CheckDefinitionID != nil {
+				items[i].CheckDefRenderedExpected = mgr.RenderTextForDevice(*inst.DeviceID, items[i].CheckDefExpected)
+			}
+		}
+	} else {
+		for i := range items {
+			items[i].RenderedExpected = html.EscapeString(items[i].ExpectedValue)
+			if items[i].CheckDefinitionID != nil {
+				items[i].CheckDefRenderedExpected = html.EscapeString(items[i].CheckDefExpected)
+			}
+		}
+	}
 
 	ctx.ViewData("instance", inst)
 	ctx.ViewData("items", items)
@@ -338,12 +365,20 @@ func GenerateChecklistInstanceForSystem(ctx iris.Context) {
 	systemID, _ := strconv.Atoi(ctx.Params().Get("system_id"))
 	templateID, _ := strconv.Atoi(ctx.PostValue("ChecklistTemplateID"))
 
-	_, err := dbprovider.GetDBManager().AddChecklistInstanceForSystem(templateID, systemID, "system")
+	includeDevice := ctx.PostValue("IncludeDeviceItems") == "on"
+	versionStrategy := ctx.PostValueDefault("VersionStrategy", "all") // all|exact|wildcard
+	versionPattern  := ctx.PostValue("VersionPattern")
+	if versionStrategy != "wildcard" { versionPattern = "" }
+
+	_, err := dbprovider.GetDBManager().AddChecklistInstanceForSystem(
+		templateID, systemID, "system",
+		includeDevice, versionStrategy, versionPattern,
+	)
 	if err != nil {
-		log.Printf("❌ System-ChecklistInstance failed (sys=%d, tmpl=%d): %v", systemID, templateID, err)
-		ctx.ViewData("error", fmt.Sprintf("Fehler beim Erzeugen der System-Checkliste: %v", err))
-		// Zur System-Seite zurück
-		ctx.Redirect(fmt.Sprintf("/sms_systems/show/%d", systemID))
+		ctx.ViewData("error", fmt.Sprintf("System-Checklist konnte nicht erzeugt werden: %v", err))
+		system := dbprovider.GetDBManager().GetSMSSystemInfo(systemID)
+		ctx.ViewData("system", system)
+		ctx.View("sms_showSystem.html")
 		return
 	}
 	ctx.Redirect(fmt.Sprintf("/sms_systems/show/%d", systemID))

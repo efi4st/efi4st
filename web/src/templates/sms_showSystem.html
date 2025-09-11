@@ -298,8 +298,8 @@
           <div class="col-md-6">
             <h3>
               System-Checklisten&nbsp;&nbsp;
-              <form action="/sms_checklistInstance/generateForSystem/{{ system.System_id }}" method="POST" class="d-inline">
-                <div class="input-group">
+              <form action="/sms_checklistInstance/generateForSystem/{{ system.System_id }}" method="POST" class="d-inline w-100">
+                <div class="input-group mb-2">
                   <select name="ChecklistTemplateID" class="form-select" required>
                     <option value="">Neue Checkliste instanziieren...</option>
                     {% for tmpl in checklistTemplates %}
@@ -310,6 +310,43 @@
                     <i class="fa fa-plus-circle"></i>
                   </button>
                 </div>
+
+                <!-- Advanced options (collapsed by default) -->
+                <details class="mt-2">
+                  <summary class="text-muted" style="cursor:pointer;">
+                    Advanced options
+                  </summary>
+                  <div class="mt-2 ps-2 border-start" style="font-size:0.85rem;">
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" id="IncludeDeviceItems" name="IncludeDeviceItems">
+                      <label class="form-check-label small" for="IncludeDeviceItems">
+                        Include device items from this system
+                      </label>
+                    </div>
+
+                    <div class="row g-2 align-items-center mb-2">
+                      <div class="col-auto">
+                        <label class="col-form-label col-form-label-sm" for="VersionStrategy">Version strategy:</label>
+                      </div>
+                      <div class="col-auto">
+                        <select class="form-select form-select-sm" id="VersionStrategy" name="VersionStrategy">
+                          <option value="all" selected>Accept all</option>
+                          <option value="exact">Exact match only</option>
+                          <option value="wildcard">Wildcard pattern</option>
+                        </select>
+                      </div>
+                      <div class="col-auto">
+                        <input class="form-control form-control-sm" id="VersionPattern" name="VersionPattern"
+                               type="text" placeholder="e.g. 3.* or *-rc" disabled>
+                      </div>
+                    </div>
+
+                    <div class="form-text small text-muted">
+                      <strong>exact:</strong> only identical versions •
+                      <strong>wildcard:</strong> use * as joker (e.g. <code>3.*</code>, <code>*-rc</code>, <code>3.*.1</code>)
+                    </div>
+                  </div>
+                </details>
               </form>
             </h3>
 
@@ -354,5 +391,13 @@
 
       </div> <!-- /container -->
 <hr>
-
+<script>
+  (function () {
+    var sel = document.getElementById('VersionStrategy');
+    var inp = document.getElementById('VersionPattern');
+    function togglePattern() { inp.disabled = (sel.value !== 'wildcard'); if (inp.disabled) inp.value = ''; }
+    sel.addEventListener('change', togglePattern);
+    togglePattern();
+  })();
+</script>
 {% endblock %}

@@ -95,6 +95,42 @@
             </div>
 
           </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-2 align-items-end">
+            <div class="me-2">
+              <label for="artefact-type-dropdown"><strong>Artefact:</strong></label>
+              <select id="artefact-type-dropdown" class="form-control form-control-sm">
+                <option value="">-- Select Artefact Type --</option>
+                {% for a in artefactTypes %}
+                <option value="{{ a.artefactType }}">{{ a.artefactType }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="me-2">
+              <label for="artefact-scope-dropdown"><strong>Scope:</strong></label>
+              <select id="artefact-scope-dropdown" class="form-control form-control-sm">
+                <option value="">auto (by context)</option>
+                <option value="device">device</option>
+                <option value="deviceInstance">deviceInstance</option>
+                <option value="system">system</option>
+                <option value="project">project</option>
+              </select>
+            </div>
+
+            <div class="me-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="insertArtefactPlaceholder(true)">
+                Insert %ArtefactVersion:...%
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="insertArtefactPlaceholder(false)">
+                Insert %ArtefactVersions:...%
+              </button>
+            </div>
+
+            <div class="text-muted small">
+              e.g. <code>%ArtefactVersion:Firmware%</code> or <code>%ArtefactVersions:Config|project%</code>
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -146,6 +182,24 @@
     textarea.value = textarea.value.substring(0, startPos) + text + textarea.value.substring(endPos);
     textarea.selectionStart = textarea.selectionEnd = startPos + text.length;
   }
+
+  function insertArtefactPlaceholder(isSingle) {
+    var textarea = document.getElementById("expected_result");
+    var typeSel  = document.getElementById("artefact-type-dropdown");
+    var scopeSel = document.getElementById("artefact-scope-dropdown");
+
+    var type = (typeSel && typeSel.value) ? typeSel.value.trim() : "";
+    if (!type) return;
+
+    var scope = (scopeSel && scopeSel.value) ? scopeSel.value.trim() : "";
+    var kind  = isSingle ? "ArtefactVersion" : "ArtefactVersions";
+
+    var placeholder = "%" + kind + ":" + type + "%";
+    if (scope) placeholder = "%" + kind + ":" + type + "|" + scope + "%";
+
+    insertAtCursor(textarea, placeholder);
+  }
 </script>
+
 {% endblock %}
 

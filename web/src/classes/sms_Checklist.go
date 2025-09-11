@@ -63,6 +63,9 @@ type Sms_ChecklistItemInstance struct {
 	DeviceContextVersion  string // z.B. "1.2.3"
 	AppliesToThisDevice   *bool  // nil = nicht geprüft, true/false = Ergebnis
 	AppliesToThisDeviceStr string // "true" | "false" | "none"
+
+	RenderedExpected          string // ← gerenderte Variante von ExpectedValue
+	CheckDefRenderedExpected  string // ← gerenderte Variante von CheckDefExpected
 }
 
 type MatchingDevice struct {
