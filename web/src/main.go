@@ -644,6 +644,17 @@ func irisMain()() {
 	// Checklist Item Instances
 	app.Post("/sms_checklistItemInstance/update", routes.UpdateChecklistItemInstance)
 
+	// Download
+	app.Post("/sms_checklistTemplate/{id:int}/docasset/upload", routes.UploadChecklistTemplateDocAsset)
+	app.Get("/sms_checklistTemplate/{id:int}/docasset/delete/{kind:string}", routes.DeleteChecklistTemplateDocAsset)
+
+	app.Get("/sms_checklistInstance/print/{id:int}", routes.PrintChecklistInstance)
+	app.Get("/sms_checklistInstance/export/{id:int}", routes.ExportChecklistInstance)
+
+	app.Get("/docassets/cover/{template_id:int}", routes.DocAssetCover)
+	app.Get("/docassets/header/{template_id:int}", routes.DocAssetHeader)
+	app.Get("/docassets/footer/{template_id:int}", routes.DocAssetFooter)
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }
+

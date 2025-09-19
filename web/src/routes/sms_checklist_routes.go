@@ -14,10 +14,15 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
 	"html"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 /////////////
@@ -25,6 +30,21 @@ import (
 // ChecklistTemplates
 //
 /////////////
+
+
+var (
+	// wohin du die hochgeladenen HTML/MD-Dateien schreibst
+	docAssetBase = "/var/app/docs/checklist-assets"
+	// (nur falls du es woanders brauchst)
+	StaticFSDir  = "/var/app/static"
+)
+
+type DocAssets struct {
+	CoverPath  string // leer, wenn nicht vorhanden
+	FooterPath string // leer, wenn nicht vorhanden
+}
+
+
 func SMSChecklistTemplates(ctx iris.Context) {
 	templates := dbprovider.GetDBManager().GetAllChecklistTemplates()
 	ctx.ViewData("templateList", templates)
@@ -64,12 +84,19 @@ func ShowSMSChecklistTemplate(ctx iris.Context) {
 		log.Println("Fehler beim Abrufen der Check Definitions:", err)
 	}
 
+	scheme := "http"
+	if ctx.Request().TLS != nil { scheme = "https" }
+	assetInfo := GetDocAssetInfoForTemplate(id, scheme, ctx.Host())
+
 	ctx.ViewData("template", template)
 	ctx.ViewData("items", items)
 	ctx.ViewData("artefactTypes", artefactTypes)
 	ctx.ViewData("checkDefinitions", checkDefs)
+	ctx.ViewData("docAssets", assetInfo) // ← pass to view
+
 	ctx.View("sms_showChecklistTemplate.html")
 }
+
 
 func RemoveSMSChecklistTemplate(ctx iris.Context) {
 	idStr := ctx.Params().Get("id")
@@ -382,4 +409,349 @@ func GenerateChecklistInstanceForSystem(ctx iris.Context) {
 		return
 	}
 	ctx.Redirect(fmt.Sprintf("/sms_systems/show/%d", systemID))
+}
+
+// POST /sms_checklistTemplate/{id}/docasset/upload
+// form-data: kind(cover|footer), mime(html|md), file (required)
+func UploadChecklistTemplateDocAsset(ctx iris.Context) {
+	templateID, err := ctx.Params().GetInt("id")
+	if err != nil || templateID <= 0 {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("invalid template id")
+		return
+	}
+
+	kind := strings.ToLower(ctx.PostValue("kind"))
+	// allow: cover | header | footer
+	if kind != "cover" && kind != "header" && kind != "footer" {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("kind must be cover, header or footer")
+		return
+	}
+	mime := strings.ToLower(ctx.PostValue("mime"))
+	if mime != "html" && mime != "md" && mime != "" {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("mime must be html or md")
+		return
+	}
+	if mime == "" { mime = "html" }
+
+	file, fileHeader, err := ctx.FormFile("file")
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("file required")
+		return
+	}
+	defer file.Close()
+
+	// Dateiname bestimmen
+	ext := ".html"
+	if mime == "md" { ext = ".md" }
+	// /var/app/docs/checklist-assets/{templateID}/cover.html
+	dir := filepath.Join(docAssetBase, fmt.Sprintf("%d", templateID))
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("cannot create asset dir")
+		return
+	}
+	dstPath := filepath.Join(dir, kind+ext)
+
+	// Datei speichern
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("cannot write asset file")
+		return
+	}
+	defer dst.Close()
+	if _, err := io.Copy(dst, file); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("cannot save asset file")
+		return
+	}
+
+	// DB upsert
+	if err := dbprovider.GetDBManager().SaveChecklistTemplateDocAssetFile(templateID, kind, mime, dstPath); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("cannot persist asset in db: " + err.Error())
+		return
+	}
+
+	log.Printf("📄 uploaded %s (%s) for template %d: %s (src=%s)", kind, mime, templateID, dstPath, fileHeader.Filename)
+	ctx.Redirect(fmt.Sprintf("/sms_checklistTemplate/show/%d", templateID))
+}
+
+// GET /sms_checklistTemplate/{id}/docasset/delete/{kind}
+func DeleteChecklistTemplateDocAsset(ctx iris.Context) {
+	templateID, err := ctx.Params().GetInt("id")
+	if err != nil || templateID <= 0 {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("invalid template id")
+		return
+	}
+	kind := strings.ToLower(ctx.Params().GetStringDefault("kind", ""))
+	if kind != "cover" && kind != "footer" {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.WriteString("kind must be cover or footer")
+		return
+	}
+
+	// DB löschen
+	if err := dbprovider.GetDBManager().DeleteChecklistTemplateDocAsset(templateID, kind); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString("cannot delete doc asset: " + err.Error())
+		return
+	}
+
+	// Datei optional entfernen (wir löschen beide möglichen Endungen)
+	dir := filepath.Join(docAssetBase, fmt.Sprintf("%d", templateID))
+	_ = os.Remove(filepath.Join(dir, kind+".html"))
+	_ = os.Remove(filepath.Join(dir, kind+".md"))
+
+	log.Printf("🗑️ removed %s doc asset for template %d", kind, templateID)
+	ctx.Redirect(fmt.Sprintf("/sms_checklistTemplate/show/%d", templateID))
+}
+
+func getDocAssetPaths(baseDir string, checklistTemplateID int) DocAssets {
+	// baseDir z. B. "./doc_assets/templates"
+	dir := filepath.Join(baseDir, fmt.Sprintf("%d", checklistTemplateID))
+
+	cover := filepath.Join(dir, "cover.html")
+	if st, err := os.Stat(cover); err != nil || st.IsDir() {
+		cover = ""
+	}
+	footer := filepath.Join(dir, "footer.html")
+	if st, err := os.Stat(footer); err != nil || st.IsDir() {
+		footer = ""
+	}
+	return DocAssets{CoverPath: cover, FooterPath: footer}
+}
+
+// Hilfsfunktion: /static/... → file:///... umschreiben
+func staticURLToFileURL(webPath string) string {
+	if webPath == "" {
+		return ""
+	}
+	if len(webPath) >= 8 && webPath[:8] == "file:///" {
+		return webPath
+	}
+	if len(webPath) >= 8 && webPath[:8] == "https://" {
+		return webPath
+	}
+	if len(webPath) >= 7 && webPath[:7] == "http://" {
+		return webPath
+	}
+	if len(webPath) >= 8 && webPath[:8] == "/static/" {
+		abs := filepath.Join(StaticFSDir, webPath[len("/static/"):])
+		return "file://" + abs
+	}
+	// Falls relative Pfade verwendet werden, hier ggf. auflösen.
+	return webPath
+}
+
+// GET /sms_checklistInstance/print/{id:int}
+func PrintChecklistInstance(ctx iris.Context) {
+	id, err := ctx.Params().GetInt("id")
+	if err != nil || id <= 0 {
+		ctx.StatusCode(iris.StatusBadRequest)
+		_, _ = ctx.WriteString("invalid checklist instance id")
+		return
+	}
+
+	inst := dbprovider.GetDBManager().GetChecklistInstanceByID(id)
+	if inst == nil {
+		ctx.StatusCode(iris.StatusNotFound)
+		_, _ = ctx.WriteString("instance not found")
+		return
+	}
+	items := dbprovider.GetDBManager().GetChecklistItemInstancesWithDefinition(id)
+
+	// Falls TemplateName hier nicht gesetzt ist: (optional) aus Template-Tabelle nachladen
+	if inst.TemplateName == "" {
+		if name := dbprovider.GetDBManager().GetChecklistTemplateName(inst.ChecklistTemplateID); name != "" {
+			inst.TemplateName = name
+		}
+	}
+
+	// absolute Logo-URL (wkhtmltopdf ruft via HTTP auf)
+	scheme := "http"
+	if ctx.Request().TLS != nil { scheme = "https" }
+	logoURL := fmt.Sprintf("%s://%s/static/img/logo.png", scheme, ctx.Host())
+
+	// Kein globales Layout erzwingen:
+	ctx.ViewLayout(iris.NoLayout)
+
+	// „now“ als String, keine |date-Filter nötig
+	nowStr := time.Now().Format("2006-01-02 15:04")
+
+	ctx.ViewData("instance", inst)
+	ctx.ViewData("items", items)
+	ctx.ViewData("now", nowStr)
+	ctx.ViewData("logoPath", logoURL)
+
+	if err := ctx.View("sms_exportChecklistInstance.html"); err != nil {
+		// 500 loggen + Fehltext ausgeben, damit du im Browser/wkhtmltopdf siehst, WAS kaputt ist
+		ctx.StatusCode(iris.StatusInternalServerError)
+		log.Printf("print view render error: %v", err)
+		_, _ = ctx.WriteString("render error: " + err.Error())
+		return
+	}
+}
+
+// GET /sms_checklistInstance/export/{id:int}?fmt=pdf
+func ExportChecklistInstance(ctx iris.Context) {
+	id, err := ctx.Params().GetInt("id")
+	if err != nil || id <= 0 {
+		ctx.StatusCode(iris.StatusBadRequest)
+		_, _ = ctx.WriteString("invalid checklist instance id")
+		return
+	}
+
+	inst := dbprovider.GetDBManager().GetChecklistInstanceByID(id)
+	if inst == nil {
+		ctx.StatusCode(iris.StatusNotFound)
+		_, _ = ctx.WriteString("instance not found")
+		return
+	}
+
+	scheme := "http"
+	if ctx.Request().TLS != nil {
+		scheme = "https"
+	}
+	host := ctx.Host()
+	printURL := fmt.Sprintf("%s://%s/sms_checklistInstance/print/%d", scheme, host, id)
+
+	outFile := filepath.Join(os.TempDir(), fmt.Sprintf("checklist_%d.pdf", id))
+
+	args := []string{
+		"--enable-local-file-access",
+		"--encoding", "utf-8",
+		"--page-size", "A4",
+		"--margin-top", "12mm",
+		"--margin-bottom", "12mm",
+	}
+
+	// Optional: Cover / Header / Footer URLs holen
+	coverURL, headerURL, footerURL := dbprovider.GetDBManager().GetDocAssetURLs(docAssetBase, inst.ChecklistTemplateID, scheme, host)
+	if coverURL != "" {
+		args = append(args, "cover", coverURL)
+	}
+
+	// Hauptinhalt
+	args = append(args, printURL)
+
+	if headerURL != "" {
+		args = append(args, "--header-html", headerURL, "--header-spacing", "5")
+	}
+	if footerURL != "" {
+		args = append(args, "--footer-html", footerURL, "--footer-spacing", "5")
+	}
+
+	// Ausgabe-Datei
+	args = append(args, outFile)
+
+	cmd := exec.Command("wkhtmltopdf", args...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		log.Printf("wkhtmltopdf error: %s", string(out))
+		ctx.StatusCode(iris.StatusInternalServerError)
+		_, _ = ctx.WriteString("PDF generation failed")
+		return
+	}
+
+	ctx.Header("Content-Type", "application/pdf")
+	ctx.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="checklist_%d.pdf"`, id))
+	http.ServeFile(ctx.ResponseWriter(), ctx.Request(), outFile)
+}
+
+func sendDocAsset(ctx iris.Context, pathHTML, pathMD, downloadName string) {
+	if st, err := os.Stat(pathHTML); err == nil && !st.IsDir() {
+		ctx.ContentType("text/html")
+		ctx.SendFile(pathHTML, downloadName)
+		return
+	}
+	if st, err := os.Stat(pathMD); err == nil && !st.IsDir() {
+		b, err := os.ReadFile(pathMD)
+		if err != nil {
+			ctx.StatusCode(iris.StatusInternalServerError)
+			_, _ = ctx.WriteString("cannot read md")
+			return
+		}
+		// super-einfache Umwandlung; nimm gern eine Markdown-Lib (goldmark) falls du willst
+		html := "<!doctype html><meta charset=\"utf-8\"><body><pre>" +
+			htmlEscape(string(b)) + "</pre></body>"
+		ctx.ContentType("text/html")
+		_, _ = ctx.WriteString(html)
+		return
+	}
+	ctx.StatusCode(iris.StatusNotFound)
+	_, _ = ctx.WriteString("no asset")
+}
+
+func DocAssetCover(ctx iris.Context) {
+	tid, _ := ctx.Params().GetInt("template_id")
+	base := filepath.Join(docAssetBase, fmt.Sprintf("%d", tid))
+	sendDocAsset(ctx,
+		filepath.Join(base, "cover.html"),
+		filepath.Join(base, "cover.md"),
+		"cover.html",
+	)
+}
+
+func DocAssetHeader(ctx iris.Context) {
+	tid, _ := ctx.Params().GetInt("template_id")
+	base := filepath.Join(docAssetBase, fmt.Sprintf("%d", tid))
+	sendDocAsset(ctx,
+		filepath.Join(base, "header.html"),
+		filepath.Join(base, "header.md"),
+		"header.html",
+	)
+}
+
+func DocAssetFooter(ctx iris.Context) {
+	tid, _ := ctx.Params().GetInt("template_id")
+	base := filepath.Join(docAssetBase, fmt.Sprintf("%d", tid))
+	sendDocAsset(ctx,
+		filepath.Join(base, "footer.html"),
+		filepath.Join(base, "footer.md"),
+		"footer.html",
+	)
+}
+
+func htmlEscape(s string) string {
+	r := strings.NewReplacer(
+		"&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&#34;", "'", "&#39;",
+	)
+	return r.Replace(s)
+}
+
+// in dbprovider or routes utils – your choice
+type DocAssetInfo struct {
+	HasCover  bool
+	HasHeader bool
+	HasFooter bool
+	CoverURL  string
+	HeaderURL string
+	FooterURL string
+	DirPath   string
+}
+
+func GetDocAssetInfoForTemplate(templateID int, scheme, host string) DocAssetInfo {
+	base := filepath.Join(docAssetBase, fmt.Sprintf("%d", templateID))
+	info := DocAssetInfo{
+		DirPath: base,
+		CoverURL:  fmt.Sprintf("%s://%s/docassets/cover/%d",  scheme, host, templateID),
+		HeaderURL: fmt.Sprintf("%s://%s/docassets/header/%d", scheme, host, templateID),
+		FooterURL: fmt.Sprintf("%s://%s/docassets/footer/%d", scheme, host, templateID),
+	}
+	// a file counts if either HTML or MD exists
+	if _, err := os.Stat(filepath.Join(base, "cover.html")); err == nil { info.HasCover = true }
+	if _, err := os.Stat(filepath.Join(base, "cover.md"));   err == nil { info.HasCover = true }
+
+	if _, err := os.Stat(filepath.Join(base, "header.html")); err == nil { info.HasHeader = true }
+	if _, err := os.Stat(filepath.Join(base, "header.md"));   err == nil { info.HasHeader = true }
+
+	if _, err := os.Stat(filepath.Join(base, "footer.html")); err == nil { info.HasFooter = true }
+	if _, err := os.Stat(filepath.Join(base, "footer.md"));   err == nil { info.HasFooter = true }
+
+	return info
 }

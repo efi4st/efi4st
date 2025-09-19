@@ -1433,3 +1433,31 @@ INSERT INTO sms_checklistItemInstance
    is_ok, actual_value, comment, expected_value)
 VALUES (?, ?, ?, ?, NULL, NULL, NULL, ?)
 `
+
+// Select Pfade (für Export)
+var SELECT_DocAsset_PathsByTemplate = `
+SELECT kind, storage, file_path
+FROM sms_checklistTemplateDocAsset
+WHERE checklistTemplate_id = ?
+`
+
+// Upsert (nur Datei-Pfad-Variante, storage='file')
+var UPSERT_DocAsset_File = `
+INSERT INTO sms_checklistTemplateDocAsset
+(checklistTemplate_id, kind, mime, storage, file_path, content)
+VALUES (?, ?, ?, 'file', ?, NULL)
+ON DUPLICATE KEY UPDATE mime=VALUES(mime), storage='file', file_path=VALUES(file_path), content=NULL
+`
+
+// Delete
+var DELETE_DocAsset_ByTemplateAndKind = `
+DELETE FROM sms_checklistTemplateDocAsset
+WHERE checklistTemplate_id = ? AND kind = ?
+`
+
+var SELECT_ChecklistTemplateNameByID = `
+SELECT name 
+FROM sms_checklistTemplate
+WHERE checklistTemplate_id = ?
+LIMIT 1
+`

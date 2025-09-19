@@ -19,6 +19,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"html" // ← FÜR html.EscapeString
 	"log"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -321,6 +323,11 @@ type Manager interface {
 	GetArtefactVersionsForSystem(artefactTypeID, systemID int) ([]string, error)
 	GetArtefactVersionsForProject(artefactTypeID, projectID int) ([]string, error)
 	GetArtefactTypeIDByName(name string) int
+	SaveChecklistTemplateDocAssetFile(templateID int, kind string, mime string, filePath string) error
+	DeleteChecklistTemplateDocAsset(templateID int, kind string) error
+	GetDocAssetPaths(templateID int) (coverPath, footerPath string)
+	GetDocAssetURLs(docAssetBase string, templateID int, scheme, host string) (string, string, string)
+	GetChecklistTemplateName(templateID int) string
 }
 
 var reApp = regexp.MustCompile(`%AppVersion:([^%]+)%`)
@@ -8761,4 +8768,87 @@ func (mgr *manager) GetArtefactTypeIDByName(name string) int {
 	var id int
 	if err := stmt.QueryRow(name).Scan(&id); err != nil { return 0 }
 	return id
+}
+
+// Speichert einen Dateipfad für cover/footer
+func (mgr *manager) SaveChecklistTemplateDocAssetFile(templateID int, kind string, mime string, filePath string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.UPSERT_DocAsset_File)
+	if err != nil { return fmt.Errorf("prepare upsert docasset: %w", err) }
+	defer stmt.Close()
+	_, err = stmt.Exec(templateID, kind, mime, filePath)
+	if err != nil { return fmt.Errorf("exec upsert docasset: %w", err) }
+	return nil
+}
+
+// Löscht cover/footer-Zeile
+func (mgr *manager) DeleteChecklistTemplateDocAsset(templateID int, kind string) error {
+	stmt, err := mgr.db.Prepare(dbUtils.DELETE_DocAsset_ByTemplateAndKind)
+	if err != nil { return fmt.Errorf("prepare delete docasset: %w", err) }
+	defer stmt.Close()
+	_, err = stmt.Exec(templateID, kind)
+	if err != nil { return fmt.Errorf("exec delete docasset: %w", err) }
+	return nil
+}
+
+// Holt Pfade (cover/footer) für Export mit wkhtmltopdf
+func (mgr *manager) GetDocAssetPaths(templateID int) (coverPath, footerPath string) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_DocAsset_PathsByTemplate)
+	if err != nil { return "", "" }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(templateID)
+	if err != nil { return "", "" }
+	defer rows.Close()
+
+	for rows.Next() {
+		var kind, storage, path sql.NullString
+		if err := rows.Scan(&kind, &storage, &path); err != nil { continue }
+		if !kind.Valid || !storage.Valid || !path.Valid { continue }
+		if storage.String != "file" { continue }
+		switch kind.String {
+		case "cover":  coverPath = path.String
+		case "footer": footerPath = path.String
+		}
+	}
+	return
+}
+
+// Liefert (coverURL, headerURL, footerURL), leer wenn nichts vorhanden.
+func (mgr *manager) GetDocAssetURLs(docAssetBase string, templateID int, scheme, host string) (string, string, string) {
+	base := filepath.Join(docAssetBase, fmt.Sprintf("%d", templateID))
+	cover := filepath.Join(base, "cover.html")
+	header := filepath.Join(base, "header.html")
+	footer := filepath.Join(base, "footer.html")
+
+	cov := ""; head := ""; foot := ""
+
+	if st, err := os.Stat(cover); err == nil && !st.IsDir() {
+		cov = fmt.Sprintf("%s://%s/docassets/cover/%d", scheme, host, templateID)
+	}
+	if st, err := os.Stat(header); err == nil && !st.IsDir() {
+		head = fmt.Sprintf("%s://%s/docassets/header/%d", scheme, host, templateID)
+	}
+	if st, err := os.Stat(footer); err == nil && !st.IsDir() {
+		foot = fmt.Sprintf("%s://%s/docassets/footer/%d", scheme, host, templateID)
+	}
+	return cov, head, foot
+}
+
+func (mgr *manager) GetChecklistTemplateName(templateID int) string {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_ChecklistTemplateNameByID)
+	if err != nil {
+		log.Printf("GetChecklistTemplateName: prepare failed: %v", err)
+		return ""
+	}
+	defer stmt.Close()
+
+	var name sql.NullString
+	if err := stmt.QueryRow(templateID).Scan(&name); err != nil {
+		log.Printf("GetChecklistTemplateName: query failed: %v", err)
+		return ""
+	}
+	if name.Valid {
+		return name.String
+	}
+	return ""
 }

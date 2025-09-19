@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Checklist #{{ instance.ChecklistInstanceID }}</title>
+
+  <!-- Optional: eigene Print-CSS, falls vorhanden -->
+  <link rel="stylesheet" href="/static/css/print.css">
+
+  <style>
+    /* Grundlayout für A4 */
+    @page { size: A4; margin: 12mm; }
+    html, body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size: 12pt; color: #222; }
+    h1, h2, h3 { margin: 0 0 8px; }
+    .muted { color:#666; }
+    .small { font-size: 90%; }
+    .meta { font-size: 11pt; color:#666; margin-top: 4px; }
+
+    /* Tabellen */
+    table { width: 100%; border-collapse: collapse; }
+    .table th, .table td { border: 1px solid #ddd; padding: 6px; vertical-align: top; }
+    .thead { background:#f2f2f2; }
+    .section { page-break-inside: avoid; margin-top: 16px; }
+    .def { font-size: 11pt; background: #f9f9f9; padding: 8px; border: 1px solid #eee; margin-top: 8px; }
+
+    /* Header-Block */
+    .header { display:flex; align-items:center; gap:16px; margin-bottom:12px; }
+    .header img { height: 36px; }
+    .header-title { display:flex; flex-direction:column; }
+
+    /* Fußbereich – Signaturen */
+    .sign { height: 40mm; border:1px solid #ddd; }
+    .page-break { page-break-before: always; }
+
+    /* Icons */
+    .ok { color: #0a0; font-weight:600; }
+    .nok { color: #b00; font-weight:600; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header section">
+  {% if logoPath %}
+  <img src="{{ logoPath }}" alt="Logo">
+  {% endif %}
+  <div class="header-title">
+    <h1>Checklist – {{ instance.TemplateName }}</h1>
+    <!-- Kopfbereich -->
+    <div class="meta">
+      ID: {{ instance.ChecklistInstanceID }}
+      • Template: {% if instance.TemplateName %}{{ instance.TemplateName }}{% else %}#{{ instance.ChecklistTemplateID }}{% endif %}
+      • Status: {{ instance.Status }}<br>
+      Generated: {{ instance.GeneratedAt }}
+      • Exported: {{ now }}
+      {% if instance.ProjectID %} • Project #{{ instance.ProjectID }}{% endif %}
+      {% if instance.DeviceID %} • Device #{{ instance.DeviceID }}{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- CHECKS -->
+<div class="section">
+  <h2>Checks</h2>
+  <table class="table">
+    <thead class="thead">
+    <tr>
+      <th style="width:18%">Scope</th>
+      <th style="width:42%">Expected</th>
+      <th style="width:15%">Actual</th>
+      <th style="width:8%">OK?</th>
+      <th style="width:17%">Comment</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for it in items %}
+    <tr>
+      <!-- SCOPE -->
+      <td>
+        {{ it.TargetObjectType }} #{{ it.TargetObjectID }}
+        {% if it.DeviceContextTypeName %}
+        <div class="small muted">{{ it.DeviceContextTypeName }} {{ it.DeviceContextVersion }}</div>
+        {% endif %}
+      </td>
+
+      <!-- EXPECTED (inkl. CheckDefinition Details, Platzhalter schon gerendert) -->
+      <td>
+        {{ it.ExpectedValue|safe }}
+
+        {% if it.CheckDefinitionID %}
+        <div class="def">
+          <div>
+            <strong>{{ it.CheckDefName }}</strong>
+            {% if it.DeviceTypeName %} – <span class="muted">{{ it.DeviceTypeName }}</span>{% endif %}
+          </div>
+          {% if it.CheckDefDescription %}
+          <div>{{ it.CheckDefDescription }}</div>
+          {% endif %}
+          {% if it.CheckDefExplanation %}
+          <div class="small muted">{{ it.CheckDefExplanation }}</div>
+          {% endif %}
+          {% if it.CheckDefExpected %}
+          <div><em>Expected result (definition):</em> {{ it.CheckDefExpected|safe }}</div>
+          {% endif %}
+
+          {% if it.MatchingDevices and it.MatchingDevices|length > 0 %}
+          <div class="small muted" style="margin-top:6px;">Applicable device instances in this project:</div>
+          <ul class="small" style="margin:4px 0 0 16px;">
+            {% for md in it.MatchingDevices %}
+            <li>#{{ md.DeviceInstanceID }} – {{ md.DeviceTypeName }} {{ md.DeviceVersion }}{% if md.Serialnumber %} (SN {{ md.Serialnumber }}){% endif %}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+
+          {% if it.AppliesToThisDeviceStr == "true" %}
+          <div class="small" style="margin-top:6px; color:#0a0;">✔ This check applies to this device.</div>
+          {% elif it.AppliesToThisDeviceStr == "false" %}
+          <div class="small" style="margin-top:6px; color:#b58900;">⚠ This check does not apply to this device (type/version mismatch).</div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </td>
+
+      <!-- ACTUAL -->
+      <td>{{ it.ActualValue }}</td>
+
+      <!-- OK? -->
+      <td>
+        {% if it.IsOKStr == "true" %}
+        <span class="ok">✔</span>
+        {% elif it.IsOKStr == "false" %}
+        <span class="nok">✘</span>
+        {% else %}
+        –
+        {% endif %}
+      </td>
+
+      <!-- COMMENT -->
+      <td>{{ it.Comment }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- SIGNATURES -->
+<div class="section page-break">
+  <h2>Signatures</h2>
+  <table class="table">
+    <tr>
+      <th style="width:30%;">Technician</th>
+      <td class="sign"></td>
+    </tr>
+    <tr>
+      <th>Supervisor</th>
+      <td class="sign"></td>
+    </tr>
+    <tr>
+      <th>Date</th>
+      <td>{{ now }}</td>
+    </tr>
+  </table>
+</div>
+
+</body>
+</html>

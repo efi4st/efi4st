@@ -38,9 +38,18 @@
       <a class="btn btn-outline-success" href="/sms_checklistInstance/markStatus/{{ instance.ChecklistInstanceID }}?status=done">
         Als erledigt markieren
       </a>
+      <a class="btn btn-outline-secondary"
+         href="/sms_checklistInstance/print/{{ instance.ChecklistInstanceID }}"
+         target="_blank">
+        Print preview
+      </a>
+
+      <a class="btn btn-primary"
+         href="/sms_checklistInstance/export/{{ instance.ChecklistInstanceID }}">
+        Download PDF
+      </a>
     </div>
   </div>
-
   <div class="mb-3">
     <span class="mr-3"><strong>Status:</strong>
       {% if instance.Status == 'done' %}

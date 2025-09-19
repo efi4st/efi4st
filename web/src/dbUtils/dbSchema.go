@@ -759,3 +759,21 @@ CREATE TABLE IF NOT EXISTS sms_checklistItemInstance (
       REFERENCES sms_checklistTemplateItem (checklistTemplateItem_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_checklistTemplateDocAsset_schema = `
+CREATE TABLE IF NOT EXISTS sms_checklistTemplateDocAsset (
+  docAsset_id INT AUTO_INCREMENT PRIMARY KEY,
+  checklistTemplate_id INT NOT NULL,
+  kind ENUM('cover','footer') NOT NULL,
+  mime ENUM('html','md') NOT NULL DEFAULT 'html',
+  storage ENUM('file','db') NOT NULL DEFAULT 'file',
+  file_path VARCHAR(500) DEFAULT NULL,
+  content LONGBLOB DEFAULT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_template_kind (checklistTemplate_id, kind),
+  CONSTRAINT fk_docasset_template
+    FOREIGN KEY (checklistTemplate_id)
+    REFERENCES sms_checklistTemplate(checklistTemplate_id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
