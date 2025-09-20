@@ -328,6 +328,7 @@ type Manager interface {
 	GetDocAssetPaths(templateID int) (coverPath, footerPath string)
 	GetDocAssetURLs(docAssetBase string, templateID int, scheme, host string) (string, string, string)
 	GetChecklistTemplateName(templateID int) string
+	PostRenderChecklistItems(inst *classes.Sms_ChecklistInstance, items []classes.Sms_ChecklistItemInstance)
 }
 
 var reApp = regexp.MustCompile(`%AppVersion:([^%]+)%`)
@@ -7996,7 +7997,7 @@ func (mgr *manager) AddChecklistInstance(inst *classes.Sms_ChecklistInstance) er
 	log.Printf("📦 creating instance %d with %d items (tmpl=%d)", instanceID, len(items), inst.ChecklistTemplateID)
 
 	// 3) Item-Insert (mit expected_value)
-	stItem, err := tx.Prepare(dbUtils.INSERT_ChecklistItemInstanceWithExpected)
+	stItem, err := tx.Prepare(dbUtils.INSERT_ChecklistItemInstanceWithExpectedParam)
 	if err != nil {
 		return fmt.Errorf("prepare item insert: %w", err)
 	}
@@ -8045,7 +8046,13 @@ func (mgr *manager) AddChecklistInstance(inst *classes.Sms_ChecklistInstance) er
 
 		_ = targetType // (nur informativ; persistiert wird `target_object_id` + scope via TemplateItemID)
 
-		if _, err := stItem.Exec(instanceID, targetID, tmpl.ChecklistTemplateItemID, rendered); err != nil {
+		if _, err := stItem.Exec(
+			instanceID,
+			tmpl.ChecklistTemplateItemID,
+			targetID,
+			targetType,        // "device" | "deviceInstance" | "system"
+			rendered,          // bereits mit RenderText* verarbeitet
+		);err != nil {
 			return fmt.Errorf("insert item instance failed (tmplItem=%d): %w", tmpl.ChecklistTemplateItemID, err)
 		}
 		created++
@@ -8851,4 +8858,55 @@ func (mgr *manager) GetChecklistTemplateName(templateID int) string {
 		return name.String
 	}
 	return ""
+}
+
+// postRenderChecklistItems rendert ExpectedValue und CheckDefExpected kontextabhängig
+// → schreibt in RenderedExpected / CheckDefRenderedExpected (Rohwerte bleiben erhalten).
+func (mgr *manager) PostRenderChecklistItems(inst *classes.Sms_ChecklistInstance, items []classes.Sms_ChecklistItemInstance) {
+	for i := range items {
+		// ExpectedValue (aus der Instanz)
+		rawExp := items[i].ExpectedValue
+		switch {
+		case inst.ProjectID != nil:
+			items[i].RenderedExpected = mgr.RenderTextForProject(*inst.ProjectID, rawExp)
+
+		case inst.DeviceID != nil:
+			items[i].RenderedExpected = mgr.RenderTextForDevice(*inst.DeviceID, rawExp)
+
+		default:
+			// System-Instanzen (oder gemischt bei IncludeDeviceItems)
+			switch items[i].TargetObjectType {
+			case "system":
+				sysID := items[i].TargetObjectID
+				items[i].RenderedExpected = mgr.RenderTextForSystem(sysID, rawExp)
+			case "device":
+				devID := items[i].TargetObjectID
+				items[i].RenderedExpected = mgr.RenderTextForDevice(devID, rawExp)
+			default:
+				items[i].RenderedExpected = html.EscapeString(rawExp)
+			}
+		}
+
+		// CheckDefExpected (aus der Definition)
+		if items[i].CheckDefExpected != "" {
+			rawDef := items[i].CheckDefExpected
+			switch {
+			case inst.ProjectID != nil:
+				items[i].CheckDefRenderedExpected = mgr.RenderTextForProject(*inst.ProjectID, rawDef)
+			case inst.DeviceID != nil:
+				items[i].CheckDefRenderedExpected = mgr.RenderTextForDevice(*inst.DeviceID, rawDef)
+			default:
+				switch items[i].TargetObjectType {
+				case "system":
+					sysID := items[i].TargetObjectID
+					items[i].CheckDefRenderedExpected = mgr.RenderTextForSystem(sysID, rawDef)
+				case "device":
+					devID := items[i].TargetObjectID
+					items[i].CheckDefRenderedExpected = mgr.RenderTextForDevice(devID, rawDef)
+				default:
+					items[i].CheckDefRenderedExpected = html.EscapeString(rawDef)
+				}
+			}
+		}
+	}
 }

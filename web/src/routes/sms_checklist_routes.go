@@ -13,7 +13,6 @@ import (
 	"github.com/efi4st/efi4st/dbprovider"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
-	"html"
 	"io"
 	"log"
 	"net/http"
@@ -296,30 +295,7 @@ func ShowChecklistInstance(ctx iris.Context) {
 	}
 	mgr := dbprovider.GetDBManager()
 
-
-	// ▼ Platzhalter-Rendering einfügen:
-	if inst.ProjectID != nil {
-		for i := range items {
-			items[i].RenderedExpected = mgr.RenderTextForProject(*inst.ProjectID, items[i].ExpectedValue)
-			if items[i].CheckDefinitionID != nil {
-				items[i].CheckDefRenderedExpected = mgr.RenderTextForProject(*inst.ProjectID, items[i].CheckDefExpected)
-			}
-		}
-	} else if inst.DeviceID != nil {
-		for i := range items {
-			items[i].RenderedExpected = mgr.RenderTextForDevice(*inst.DeviceID, items[i].ExpectedValue)
-			if items[i].CheckDefinitionID != nil {
-				items[i].CheckDefRenderedExpected = mgr.RenderTextForDevice(*inst.DeviceID, items[i].CheckDefExpected)
-			}
-		}
-	} else {
-		for i := range items {
-			items[i].RenderedExpected = html.EscapeString(items[i].ExpectedValue)
-			if items[i].CheckDefinitionID != nil {
-				items[i].CheckDefRenderedExpected = html.EscapeString(items[i].CheckDefExpected)
-			}
-		}
-	}
+	mgr.PostRenderChecklistItems(inst, items)
 
 	ctx.ViewData("instance", inst)
 	ctx.ViewData("items", items)
@@ -512,43 +488,6 @@ func DeleteChecklistTemplateDocAsset(ctx iris.Context) {
 	ctx.Redirect(fmt.Sprintf("/sms_checklistTemplate/show/%d", templateID))
 }
 
-func getDocAssetPaths(baseDir string, checklistTemplateID int) DocAssets {
-	// baseDir z. B. "./doc_assets/templates"
-	dir := filepath.Join(baseDir, fmt.Sprintf("%d", checklistTemplateID))
-
-	cover := filepath.Join(dir, "cover.html")
-	if st, err := os.Stat(cover); err != nil || st.IsDir() {
-		cover = ""
-	}
-	footer := filepath.Join(dir, "footer.html")
-	if st, err := os.Stat(footer); err != nil || st.IsDir() {
-		footer = ""
-	}
-	return DocAssets{CoverPath: cover, FooterPath: footer}
-}
-
-// Hilfsfunktion: /static/... → file:///... umschreiben
-func staticURLToFileURL(webPath string) string {
-	if webPath == "" {
-		return ""
-	}
-	if len(webPath) >= 8 && webPath[:8] == "file:///" {
-		return webPath
-	}
-	if len(webPath) >= 8 && webPath[:8] == "https://" {
-		return webPath
-	}
-	if len(webPath) >= 7 && webPath[:7] == "http://" {
-		return webPath
-	}
-	if len(webPath) >= 8 && webPath[:8] == "/static/" {
-		abs := filepath.Join(StaticFSDir, webPath[len("/static/"):])
-		return "file://" + abs
-	}
-	// Falls relative Pfade verwendet werden, hier ggf. auflösen.
-	return webPath
-}
-
 // GET /sms_checklistInstance/print/{id:int}
 func PrintChecklistInstance(ctx iris.Context) {
 	id, err := ctx.Params().GetInt("id")
@@ -583,6 +522,8 @@ func PrintChecklistInstance(ctx iris.Context) {
 
 	// „now“ als String, keine |date-Filter nötig
 	nowStr := time.Now().Format("2006-01-02 15:04")
+
+	dbprovider.GetDBManager().PostRenderChecklistItems(inst, items)
 
 	ctx.ViewData("instance", inst)
 	ctx.ViewData("items", items)

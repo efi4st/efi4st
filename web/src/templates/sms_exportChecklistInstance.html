@@ -85,7 +85,7 @@
 
       <!-- EXPECTED (inkl. CheckDefinition Details, Platzhalter schon gerendert) -->
       <td>
-        {{ it.ExpectedValue|safe }}
+        {{ it.RenderedExpected|safe }}
 
         {% if it.CheckDefinitionID %}
         <div class="def">
@@ -99,8 +99,8 @@
           {% if it.CheckDefExplanation %}
           <div class="small muted">{{ it.CheckDefExplanation }}</div>
           {% endif %}
-          {% if it.CheckDefExpected %}
-          <div><em>Expected result (definition):</em> {{ it.CheckDefExpected|safe }}</div>
+          {% if it.CheckDefRenderedExpected %}
+          <div><em>Expected result (definition):</em> {{ it.CheckDefRenderedExpected|safe }}</div>
           {% endif %}
 
           {% if it.MatchingDevices and it.MatchingDevices|length > 0 %}
