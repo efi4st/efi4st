@@ -132,16 +132,19 @@ func ShowSMSProject(ctx iris.Context) {
 	// Hole Projektinformationen und andere Daten
 	project := dbprovider.GetDBManager().GetSMSProjectInfo(i)
 	deviceInstanceList := dbprovider.GetDBManager().GetDeviceInstanceListForProject(i)
+
 	systemList := dbprovider.GetDBManager().GetSMSProjectBOMForProject(i)
-	issuesForThisProject, err := dbprovider.GetDBManager().GetSMSIssuesForProject(i)
+	log.Printf("[PBOM] project=%d list len=%d", i, len(systemList))
 
 	var currentSystemVersion string
 	if len(systemList) > 0 {
-		currentSystemVersion = systemList[0].Tmp() // oder .Version(), wenn du das später umstellst
+		currentSystemVersion = systemList[0].SystemVersion // statt .Tmp()
 	} else {
-		currentSystemVersion = "" // oder ein Fallbackwert wie "0.0.0"
+		currentSystemVersion = ""
 		log.Println("Warnung: Kein System mit diesem Projekt verlinkt (systemList ist leer)")
 	}
+
+	issuesForThisProject, err := dbprovider.GetDBManager().GetSMSIssuesForProject(i)
 
 	for i := range deviceInstanceList {
 		dbprovider.GetDBManager().EnrichDeviceInstanceWithSystemInfo(&deviceInstanceList[i], currentSystemVersion)

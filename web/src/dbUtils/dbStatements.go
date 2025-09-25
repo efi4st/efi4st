@@ -302,10 +302,34 @@ var SELECT_sms_DevicePartOfSystemForSystem = `SELECT sms_devicePartOfSystem.syst
 var SELECT_sms_DevicePartOfSystemForDevice = `SELECT sms_devicePartOfSystem.system_id, sms_devicePartOfSystem.device_id, sms_devicePartOfSystem.additionalInfo, sms_systemtype.type, sms_system.version FROM sms_devicePartOfSystem LEFT JOIN sms_system ON sms_devicePartOfSystem.system_id = sms_system.system_id LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id WHERE sms_devicePartOfSystem.device_id = ?; `
 
 // SMS projectBOM
-var INSERT_sms_newProjectBOM = `INSERT INTO sms_projectBOM (project_id, system_id, orderNumber, additionalInfo) VALUES (?,?,?,?);`
+var INSERT_sms_newProjectBOM = `INSERT INTO sms_projectBOM
+(project_id, system_id, hardwaredesign_id, hardwaredesign_variant_id, orderNumber, additionalInfo)
+VALUES (?,?,?,?,?,?);
+`
 var DELETE_sms_ProjectBOM = `DELETE FROM sms_projectBOM WHERE projectBOM_id = ?;`
-var SELECT_sms_ProjectBOMForProject = `SELECT sms_projectBOM.projectBOM_id, sms_projectBOM.project_id, sms_projectBOM.system_id, sms_projectBOM.orderNumber, sms_projectBOM.additionalInfo, sms_systemtype.type, sms_system.version FROM sms_projectBOM LEFT JOIN sms_system ON sms_projectBOM.system_id = sms_system.system_id LEFT JOIN sms_systemtype ON sms_system.systemtype_id = sms_systemtype.systemtype_id WHERE sms_projectBOM.project_id = ?; `
-var SELECT_sms_ProjectBOMForSystem = `SELECT sms_projectBOM.projectBOM_id, sms_projectBOM.project_id, sms_projectBOM.system_id, sms_projectBOM.orderNumber, sms_projectBOM.additionalInfo, sms_project.name, sms_project.customer FROM sms_projectBOM LEFT JOIN sms_project ON sms_projectBOM.project_id = sms_project.project_id WHERE sms_projectBOM.system_id = ?; `
+var SELECT_sms_ProjectBOMForProject = `SELECT pb.projectBOM_id, pb.project_id, pb.system_id,
+       pb.orderNumber, pb.additionalInfo, pb.assigned_at,
+       st.type  AS system_type, sys.version AS system_version,
+       hd.hardwaredesign_id, hd.name AS hardwaredesign_name, hd.version AS hardwaredesign_version,
+       v.hardwaredesign_variant_id, v.code AS variant_code, v.name AS variant_name, v.spec AS variant_spec
+FROM sms_projectBOM pb
+JOIN sms_system sys ON pb.system_id = sys.system_id
+JOIN sms_systemtype st ON sys.systemtype_id = st.systemtype_id
+JOIN sms_hardwaredesign hd ON pb.hardwaredesign_id = hd.hardwaredesign_id
+JOIN sms_hardwaredesign_variant v ON pb.hardwaredesign_variant_id = v.hardwaredesign_variant_id
+WHERE pb.project_id = ?;
+`
+var SELECT_sms_ProjectBOMForSystem = `SELECT pb.projectBOM_id, pb.project_id, pb.system_id,
+       pb.orderNumber, pb.additionalInfo, pb.assigned_at,
+       pr.name AS project_name, pr.customer,
+       hd.hardwaredesign_id, hd.name AS hardwaredesign_name, hd.version AS hardwaredesign_version,
+       v.hardwaredesign_variant_id, v.code AS variant_code, v.name AS variant_name, v.spec AS variant_spec
+FROM sms_projectBOM pb
+JOIN sms_project pr ON pb.project_id = pr.project_id
+JOIN sms_hardwaredesign hd ON pb.hardwaredesign_id = hd.hardwaredesign_id
+JOIN sms_hardwaredesign_variant v ON pb.hardwaredesign_variant_id = v.hardwaredesign_variant_id
+WHERE pb.system_id = ?;
+`
 
 // SMS IssueAffectedSoftware
 var INSERT_sms_newIssueAffectedSoftware = `INSERT INTO sms_issueAffectedSoftware (software_id, issue_id, additionalInfo, confirmed) VALUES (?,?,?,?);`
@@ -1041,10 +1065,14 @@ ORDER BY name ASC, version ASC
 
 var SELECT_sms_HardwareDesignsForSystem = `
 SELECT h.hardwaredesign_id, h.name, h.version, h.date, h.description, h.author,
-       h.isApproved, h.revision_note, h.document_number, m.additionalInfo
+       h.isApproved, h.revision_note, h.document_number,
+       m.additionalInfo, m.is_default, m.compatibility_status
 FROM sms_hardwaredesign h
 JOIN sms_hardwaredesignPartOfSystem m ON h.hardwaredesign_id = m.hardwaredesign_id
 WHERE m.system_id = ?
+ORDER BY m.is_default DESC,
+         FIELD(m.compatibility_status, 'recommended','compatible','deprecated'),
+         h.name ASC, h.version ASC;
 `
 
 var SELECT_sms_HardwareDesignByID = `
@@ -1063,7 +1091,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 var INSERT_sms_HardwareDesignPartOfSystem = `
 INSERT INTO sms_hardwaredesignPartOfSystem
 (system_id, hardwaredesign_id, additionalInfo)
-VALUES (?, ?, ?)
+VALUES (?,?,?);
 `
 
 var DELETE_sms_HardwareDesignByID = `
@@ -1460,4 +1488,147 @@ SELECT name
 FROM sms_checklistTemplate
 WHERE checklistTemplate_id = ?
 LIMIT 1
+`
+
+
+// Hardwaredesign variants etc...
+// Verknüpfungen System ↔ Hardwaredesign (inkl. Default & Status)
+// NEW: Insert mit Defaults (is_default/compatibility_status greifen per DEFAULT)
+var INSERT_sms_HardwareDesignPartOfSystem_Defaults = `
+INSERT INTO sms_hardwaredesignPartOfSystem
+(system_id, hardwaredesign_id, additionalInfo)
+VALUES (?,?,?);
+`
+
+// NEW: Insert mit explizitem Default/Status (wenn du direkt setzen willst)
+var INSERT_sms_HardwareDesignPartOfSystem_WithFlags = `
+INSERT INTO sms_hardwaredesignPartOfSystem
+(system_id, hardwaredesign_id, additionalInfo, is_default, compatibility_status)
+VALUES (?,?,?,?,?);
+`
+
+// NEW: Status anpassen (recommended/compatible/deprecated)
+var UPDATE_sms_HardwareDesignMappingStatus = `
+UPDATE sms_hardwaredesignPartOfSystem
+SET compatibility_status = ?
+WHERE system_id = ? AND hardwaredesign_id = ?;
+`
+
+// NEW: Default setzen – als zwei Schritte (empfohlen in einer DB-Transaktion)
+var UPDATE_sms_ClearDefaultForSystem = `
+UPDATE sms_hardwaredesignPartOfSystem
+SET is_default = FALSE
+WHERE system_id = ?;
+`
+
+var UPDATE_sms_SetDefaultForSystem = `
+UPDATE sms_hardwaredesignPartOfSystem
+SET is_default = TRUE, compatibility_status = 'recommended'
+WHERE system_id = ? AND hardwaredesign_id = ?;
+`
+
+// NEW: Das aktuelle Default-Design für ein System
+var SELECT_sms_DefaultHardwareDesignForSystem = `
+SELECT h.hardwaredesign_id, h.name, h.version, h.date, h.description, h.author,
+       h.isApproved, h.revision_note, h.document_number,
+       m.additionalInfo, m.is_default, m.compatibility_status
+FROM sms_hardwaredesignPartOfSystem m
+JOIN sms_hardwaredesign h ON h.hardwaredesign_id = m.hardwaredesign_id
+WHERE m.system_id = ? AND m.is_default = TRUE
+LIMIT 1;
+`
+
+// NEW: Alle kompatiblen Designs (schön sortiert)
+var SELECT_sms_CompatibleHardwareDesignsForSystem = `
+SELECT h.hardwaredesign_id, h.name, h.version, h.date, h.description, h.author,
+       h.isApproved, h.revision_note, h.document_number,
+       m.additionalInfo, m.is_default, m.compatibility_status
+FROM sms_hardwaredesignPartOfSystem m
+JOIN sms_hardwaredesign h ON h.hardwaredesign_id = m.hardwaredesign_id
+WHERE m.system_id = ?
+ORDER BY m.is_default DESC,
+         FIELD(m.compatibility_status,'recommended','compatible','deprecated'),
+         h.name ASC, h.version ASC;
+`
+
+// Varianten-Management (CRUD)
+// NEW: Varianten zu einem Hardwaredesign auflisten (nur aktive)
+var SELECT_sms_VariantsForHardwareDesignActive = `
+SELECT hardwaredesign_variant_id, hardwaredesign_id, code, name, description, spec, is_active, created_at
+FROM sms_hardwaredesign_variant
+WHERE hardwaredesign_id = ? AND is_active = TRUE
+ORDER BY code ASC;
+`
+
+// NEW: Alle Varianten (inkl. inactive)
+var SELECT_sms_VariantsForHardwareDesignAll = `
+SELECT hardwaredesign_variant_id, hardwaredesign_id, code, name, description, spec, is_active, created_at
+FROM sms_hardwaredesign_variant
+WHERE hardwaredesign_id = ?
+ORDER BY code ASC;`
+
+
+// NEW: Einzelne Variante
+var SELECT_sms_VariantByID = `
+SELECT hardwaredesign_variant_id, hardwaredesign_id, code, name, description, spec, is_active, created_at
+FROM sms_hardwaredesign_variant
+WHERE hardwaredesign_variant_id = ?
+`
+
+// NEW: Variante anlegen
+var INSERT_sms_Variant = `
+INSERT INTO sms_hardwaredesign_variant
+(hardwaredesign_id, code, name, description, spec, is_active)
+VALUES (?,?,?,?,?,?);`
+
+
+// NEW: Variante bearbeiten (alle Felder außer PK/created_at)
+var UPDATE_sms_Variant = `
+UPDATE sms_hardwaredesign_variant
+SET code = ?, name = ?, description = ?, spec = ?, is_active = ?
+WHERE hardwaredesign_variant_id = ?;`
+
+
+// NEW: Variante aktiv/inaktiv schalten
+var UPDATE_sms_VariantActiveFlag = `
+UPDATE sms_hardwaredesign_variant
+SET is_active = ?
+WHERE hardwaredesign_variant_id = ?;`
+
+// NEW: Variante löschen (scheitert, falls in ProjectBOM genutzt – RESTRICT ist gewollt)
+var DELETE_sms_VariantByID = `
+DELETE FROM sms_hardwaredesign_variant
+WHERE hardwaredesign_variant_id = ?;`
+
+
+// ProjectBOM – mit gelieferter Variante arbeiten
+// NEW: Detail eines gelieferten Systems (inkl. Design & Variante)
+var SELECT_sms_ProjectBOMByID = `
+SELECT pb.projectBOM_id, pb.project_id, pb.system_id,
+       pb.orderNumber, pb.additionalInfo, pb.assigned_at,
+       pr.name AS project_name, pr.customer,
+       st.type AS system_type, sys.version AS system_version,
+       hd.hardwaredesign_id, hd.name AS hardwaredesign_name, hd.version AS hardwaredesign_version,
+       v.hardwaredesign_variant_id, v.code AS variant_code, v.name AS variant_name, v.spec AS variant_spec
+FROM sms_projectBOM pb
+JOIN sms_project pr ON pr.project_id = pb.project_id
+JOIN sms_system sys ON sys.system_id = pb.system_id
+JOIN sms_systemtype st ON st.systemtype_id = sys.systemtype_id
+JOIN sms_hardwaredesign hd ON hd.hardwaredesign_id = pb.hardwaredesign_id
+JOIN sms_hardwaredesign_variant v ON v.hardwaredesign_variant_id = pb.hardwaredesign_variant_id
+WHERE pb.projectBOM_id = ?;
+`
+
+// NEW: Nachträglich Design/Variante an einer Lieferung korrigieren (FKs sichern Kompatibilität)
+var UPDATE_sms_ProjectBOM_SetDesignAndVariant = `
+UPDATE sms_projectBOM
+SET hardwaredesign_id = ?, hardwaredesign_variant_id = ?
+WHERE projectBOM_id = ?;
+`
+
+var SELECT_sms_AllSystemsMinimal = `
+SELECT s.system_id, s.systemtype_id, st.type AS system_type, s.version
+FROM sms_system s
+JOIN sms_systemtype st ON st.systemtype_id = s.systemtype_id
+ORDER BY st.type ASC, s.version ASC;
 `

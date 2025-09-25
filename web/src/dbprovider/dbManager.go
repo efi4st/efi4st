@@ -150,10 +150,12 @@ type Manager interface {
 	GetSMSDevicePartOfSystemForSystem(system_id int) []classes.Sms_DevicePartOfSystem
 	GetSMSDevicePartOfSystemForDevice(device_id int) []classes.Sms_DevicePartOfSystem
 	RemoveSMSDevicePartOfSystem(id int) error
-	AddSMSProjectBOM(project_id int, system_id int, orderNumber string, additionalInfo string) error
-	GetSMSProjectBOMForProject(project_id int) []classes.Sms_ProjectBOM
-	GetSMSProjectBOMForSystem(system_id int) []classes.Sms_ProjectBOM
+	AddSMSProjectBOM(projectID, systemID, hardwareDesignID, variantID int, orderNumber, additionalInfo string) error
 	RemoveSMSProjectBOM(id int) error
+	UpdateProjectBOMDesignAndVariant(projectBOMID, hardwareDesignID, variantID int) error
+	GetProjectBOMByID(id int) *classes.Sms_ProjectBOMView
+	GetSMSProjectBOMForProject(projectID int) []classes.Sms_ProjectBOMView
+	GetSMSProjectBOMForSystem(systemID int) []classes.Sms_ProjectBOMView
 	AddSMSIssueAffectedSoftware(software_id int, issue_id int, additionalInfo string, confirmed bool) error
 	GetSMSIssueAffectedSoftwareWithInheritage(issueID int) ([]classes.Sms_IssueAffectedSoftwareWithInheritage, error)
 	GetSMSIssuesForSoftware(software_id int) (issueAffectedSoftwares []classes.Sms_IssueAffectedSoftwareWithInheritage)
@@ -291,6 +293,9 @@ type Manager interface {
 	DeleteSMSHardwareDesignByID(designID int) error
 	DeleteSMSHardwareDesignMappingsByDesignID(designID int) error
 	DeleteSMSHardwareDesignMapping(systemID int, designID int) error
+	AddSMSHardwareDesignMappingWithFlags(systemID, designID int, additionalInfo string, isDefault bool, compatStatus string) error
+	UpdateSMSHardwareDesignMappingStatus(systemID, designID int, compatStatus string) error
+	SetDefaultHardwareDesign(systemID, designID int) error
 	// Check Lists
 	GetAllChecklistTemplates() []classes.Sms_ChecklistTemplate
 	GetChecklistTemplateByID(id int) *classes.Sms_ChecklistTemplate
@@ -329,6 +334,16 @@ type Manager interface {
 	GetDocAssetURLs(docAssetBase string, templateID int, scheme, host string) (string, string, string)
 	GetChecklistTemplateName(templateID int) string
 	PostRenderChecklistItems(inst *classes.Sms_ChecklistInstance, items []classes.Sms_ChecklistItemInstance)
+	// Variants of HardwareDesign
+	GetVariantsForHardwareDesign(designID int, onlyActive bool) []classes.Sms_HardwareDesignVariant
+	GetVariantByID(variantID int) *classes.Sms_HardwareDesignVariant
+	AddVariant(v *classes.Sms_HardwareDesignVariant) error
+	UpdateVariant(v *classes.Sms_HardwareDesignVariant) error
+	SetVariantActiveFlag(variantID int, active bool) error
+	DeleteVariantByID(variantID int) error
+	GetAllSystemsMinimal() []classes.Sms_SystemMinimal
+	GetCompatibleHardwareDesignsForSystem(systemID int) []classes.Sms_HardwareDesign
+	GetDefaultHardwareDesignForSystem(systemID int) *classes.Sms_HardwareDesign
 }
 
 var reApp = regexp.MustCompile(`%AppVersion:([^%]+)%`)
@@ -3717,86 +3732,127 @@ func (mgr *manager) RemoveSMSDevicePartOfSystem(id int) (err error) {
 /////////////////////////////////////////
 ////	SMS DeviceInstance
 ////////////////////////////////////////
-func (mgr *manager) AddSMSProjectBOM(project_id int, system_id int, orderNumber string, additionalInfo string) (err error) {
-
-	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newProjectBOM)
-	if err != nil{
-		fmt.Print(err)
+// INSERT (neu, mit Design & Variante)
+func (mgr *manager) AddSMSProjectBOM(
+	projectID, systemID, hardwareDesignID, variantID int,
+	orderNumber, additionalInfo string,
+) error {
+	res, err := mgr.db.Exec(dbUtils.INSERT_sms_newProjectBOM,
+		projectID, systemID, hardwareDesignID, variantID, orderNumber, additionalInfo,
+	)
+	if err != nil {
+		return err
 	}
-
-	rows, err := stmt.Query(project_id, system_id, orderNumber, additionalInfo)
-
-	if rows == nil{
-		fmt.Println("rows should be null -> AddSMSprojectBOM")
+	id, _ := res.LastInsertId()
+	rows, _ := res.RowsAffected()
+	log.Printf("[PBOM] insert ok: id=%d rows=%d", id, rows)
+	if rows == 0 {
+		return fmt.Errorf("no row inserted (rows=0)")
 	}
+	return nil
+}
 
+// DELETE (Exec statt QueryRow)
+func (mgr *manager) RemoveSMSProjectBOM(id int) error {
+	_, err := mgr.db.Exec(dbUtils.DELETE_sms_ProjectBOM, id)
 	return err
 }
 
-func (mgr *manager) GetSMSProjectBOMForProject(project_id int) (soldSystemsPartOfProject []classes.Sms_ProjectBOM) {
+// UPDATE Design/Variante
+func (mgr *manager) UpdateProjectBOMDesignAndVariant(projectBOMID, hardwareDesignID, variantID int) error {
+	_, err := mgr.db.Exec(dbUtils.UPDATE_sms_ProjectBOM_SetDesignAndVariant,
+		hardwareDesignID, variantID, projectBOMID,
+	)
+	return err
+}
+
+// DETAIL by ID (View)
+func (mgr *manager) GetProjectBOMByID(id int) *classes.Sms_ProjectBOMView {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ProjectBOMByID)
+	if err != nil { fmt.Println(err); return nil }
+	defer stmt.Close()
+
+	row := stmt.QueryRow(id)
+	var rec classes.Sms_ProjectBOMView
+	var variantSpec sql.NullString
+
+	if err := row.Scan(
+		&rec.ProjectBOMID, &rec.ProjectID, &rec.SystemID,
+		&rec.OrderNumber, &rec.AdditionalInfo, &rec.AssignedAt,
+		new(string), new(string), // project_name, customer (nicht benötigt -> dummy)
+		&rec.SystemType, &rec.SystemVersion,
+		&rec.HardwareDesignID, &rec.HardwareDesignName, &rec.HardwareDesignVersion,
+		&rec.VariantID, &rec.VariantCode, &rec.VariantName, &variantSpec,
+	); err != nil {
+		fmt.Println("Scan error:", err)
+		return nil
+	}
+	if variantSpec.Valid { rec.VariantSpec = variantSpec.String }
+	return &rec
+}
+
+// LISTE: für Projekt
+func (mgr *manager) GetSMSProjectBOMForProject(projectID int) []classes.Sms_ProjectBOMView {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ProjectBOMForProject)
-	if err != nil{
-		fmt.Print(err)
-	}
-	rows, err := stmt.Query(project_id)
+	if err != nil { log.Println("[PBOM] prepare error:", err); return nil }
+	defer stmt.Close()
 
-	var ( 	dbProjectBOM_id int
-		dbProject_id int
-		dbSystem_id int
-		dbOrderNumber string
-		dbAdditionalInfo string
-		dbName string
-		dbTmp string
-	)
+	rows, err := stmt.Query(projectID)
+	if err != nil { log.Println("[PBOM] query error:", err); return nil }
+	defer rows.Close()
 
+	var out []classes.Sms_ProjectBOMView
 	for rows.Next() {
-		err := rows.Scan(&dbProjectBOM_id, &dbProject_id, &dbSystem_id, &dbOrderNumber, &dbAdditionalInfo, &dbName, &dbTmp)
-
-		var system = classes.NewSms_ProjectBOMFromDB(dbProjectBOM_id, dbProject_id, dbSystem_id, dbOrderNumber, dbAdditionalInfo, dbName, dbTmp)
-		soldSystemsPartOfProject=append(soldSystemsPartOfProject, *system)
-		if err != nil {
-			log.Fatal(err)
+		var rec classes.Sms_ProjectBOMView
+		var variantSpec sql.NullString
+		if err := rows.Scan(
+			&rec.ProjectBOMID, &rec.ProjectID, &rec.SystemID,
+			&rec.OrderNumber, &rec.AdditionalInfo, &rec.AssignedAt,
+			&rec.SystemType, &rec.SystemVersion,
+			&rec.HardwareDesignID, &rec.HardwareDesignName, &rec.HardwareDesignVersion,
+			&rec.VariantID, &rec.VariantCode, &rec.VariantName, &variantSpec,
+		); err != nil {
+			log.Println("[PBOM] scan error:", err)
+			continue
 		}
+		if variantSpec.Valid { rec.VariantSpec = variantSpec.String }
+		out = append(out, rec)
 	}
-
-	return soldSystemsPartOfProject
+	if err := rows.Err(); err != nil {
+		log.Println("[PBOM] rows err:", err)
+	}
+	log.Printf("[PBOM] list for project=%d -> %d rows", projectID, len(out))
+	return out
 }
 
-
-func (mgr *manager) GetSMSProjectBOMForSystem(system_id int) (projectsUsingSystem []classes.Sms_ProjectBOM) {
+// LISTE: für System
+func (mgr *manager) GetSMSProjectBOMForSystem(systemID int) []classes.Sms_ProjectBOMView {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_ProjectBOMForSystem)
-	if err != nil{
-		fmt.Print(err)
-	}
-	rows, err := stmt.Query(system_id)
+	if err != nil { fmt.Println(err); return nil }
+	defer stmt.Close()
 
-	var ( 	dbProjectBOM_id int
-		dbProject_id int
-		dbSystem_id int
-		dbOrderNumber string
-		dbAdditionalInfo string
-		dbName string
-		dbTmp string
-	)
+	rows, err := stmt.Query(systemID)
+	if err != nil { fmt.Println(err); return nil }
+	defer rows.Close()
 
+	var out []classes.Sms_ProjectBOMView
 	for rows.Next() {
-		err := rows.Scan(&dbProjectBOM_id, &dbProject_id, &dbSystem_id, &dbOrderNumber, &dbAdditionalInfo, &dbName, &dbTmp)
-		var project = classes.NewSms_ProjectBOMFromDB(dbProjectBOM_id, dbProject_id, dbSystem_id, dbOrderNumber, dbAdditionalInfo, dbName, dbTmp)
-		projectsUsingSystem=append(projectsUsingSystem, *project)
-		if err != nil {
-			log.Fatal(err)
+		var rec classes.Sms_ProjectBOMView
+		var variantSpec sql.NullString
+		if err := rows.Scan(
+			&rec.ProjectBOMID, &rec.ProjectID, &rec.SystemID,
+			&rec.OrderNumber, &rec.AdditionalInfo, &rec.AssignedAt,
+			new(string), new(string), // project_name, customer -> optional dummies
+			&rec.HardwareDesignID, &rec.HardwareDesignName, &rec.HardwareDesignVersion,
+			&rec.VariantID, &rec.VariantCode, &rec.VariantName, &variantSpec,
+		); err != nil {
+			log.Println("Scan error:", err)
+			continue
 		}
+		if variantSpec.Valid { rec.VariantSpec = variantSpec.String }
+		out = append(out, rec)
 	}
-
-	return projectsUsingSystem
-}
-
-func (mgr *manager) RemoveSMSProjectBOM(id int) (err error) {
-	stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_ProjectBOM)
-
-	stmt.QueryRow(id)
-
-	return err
+	return out
 }
 
 /////////////////////////////////////////
@@ -7455,12 +7511,12 @@ func (mgr *manager) GetSMSHardwareDesignsForSystem(systemID int) []classes.Sms_H
 	defer rows.Close()
 
 	var designs []classes.Sms_HardwareDesign
-
 	for rows.Next() {
 		var d classes.Sms_HardwareDesign
 		err := rows.Scan(
 			&d.HardwareDesignID, &d.Name, &d.Version, &d.Date, &d.Description, &d.Author,
-			&d.IsApproved, &d.RevisionNote, &d.DocumentNumber, &d.AdditionalInfo,
+			&d.IsApproved, &d.RevisionNote, &d.DocumentNumber,
+			&d.AdditionalInfo, &d.IsDefault, &d.CompatibilityStatus,
 		)
 		if err != nil {
 			log.Println("Scan error:", err)
@@ -7468,7 +7524,6 @@ func (mgr *manager) GetSMSHardwareDesignsForSystem(systemID int) []classes.Sms_H
 		}
 		designs = append(designs, d)
 	}
-
 	return designs
 }
 
@@ -7562,6 +7617,63 @@ func (mgr *manager) DeleteSMSHardwareDesignMapping(systemID int, designID int) e
 
 	_, err = stmt.Exec(systemID, designID)
 	return err
+}
+
+// Fügt Mapping ein; bei Duplicate-Entry wird aktualisiert.
+// Wenn isDefault=true: erst ClearDefault, dann SetDefault (in einer Transaktion).
+func (mgr *manager) AddSMSHardwareDesignMappingWithFlags(systemID, designID int, additionalInfo string, isDefault bool, compatStatus string) error {
+	tx, err := mgr.db.Begin()
+	if err != nil { return err }
+
+	// 1) Insert versuchen
+	_, err = tx.Exec(dbUtils.INSERT_sms_HardwareDesignPartOfSystem_WithFlags,
+		systemID, designID, additionalInfo, isDefault, compatStatus)
+
+	if err != nil {
+		// Exists? -> Update statt Insert
+		if strings.Contains(strings.ToLower(err.Error()), "duplicate") {
+			_, err = tx.Exec(`
+				UPDATE sms_hardwaredesignPartOfSystem
+				SET additionalInfo = ?, is_default = ?, compatibility_status = ?
+				WHERE system_id = ? AND hardwaredesign_id = ?`,
+				additionalInfo, isDefault, compatStatus, systemID, designID)
+		}
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	// 2) Default erzwingen?
+	if isDefault {
+		// Clear all, then set this one to default & recommended
+		if _, err = tx.Exec(dbUtils.UPDATE_sms_ClearDefaultForSystem, systemID); err != nil {
+			_ = tx.Rollback(); return err
+		}
+		if _, err = tx.Exec(dbUtils.UPDATE_sms_SetDefaultForSystem, systemID, designID); err != nil {
+			_ = tx.Rollback(); return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (mgr *manager) UpdateSMSHardwareDesignMappingStatus(systemID, designID int, compatStatus string) error {
+	_, err := mgr.db.Exec(dbUtils.UPDATE_sms_HardwareDesignMappingStatus, compatStatus, systemID, designID)
+	return err
+}
+
+// Komfort-Helfer, falls du separat "Als Default setzen" anbietest
+func (mgr *manager) SetDefaultHardwareDesign(systemID, designID int) error {
+	tx, err := mgr.db.Begin()
+	if err != nil { return err }
+	if _, err = tx.Exec(dbUtils.UPDATE_sms_ClearDefaultForSystem, systemID); err != nil {
+		_ = tx.Rollback(); return err
+	}
+	if _, err = tx.Exec(dbUtils.UPDATE_sms_SetDefaultForSystem, systemID, designID); err != nil {
+		_ = tx.Rollback(); return err
+	}
+	return tx.Commit()
 }
 
 // Checklist Template
@@ -8909,4 +9021,183 @@ func (mgr *manager) PostRenderChecklistItems(inst *classes.Sms_ChecklistInstance
 			}
 		}
 	}
+}
+
+
+// Variants of Hardware Design
+func (mgr *manager) GetVariantsForHardwareDesign(designID int, onlyActive bool) []classes.Sms_HardwareDesignVariant {
+	var stmt *sql.Stmt
+	var err error
+	if onlyActive {
+		stmt, err = mgr.db.Prepare(dbUtils.SELECT_sms_VariantsForHardwareDesignActive)
+	} else {
+		stmt, err = mgr.db.Prepare(dbUtils.SELECT_sms_VariantsForHardwareDesignAll)
+	}
+	if err != nil { fmt.Println(err); return nil }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(designID)
+	if err != nil { fmt.Println(err); return nil }
+	defer rows.Close()
+
+	var out []classes.Sms_HardwareDesignVariant
+	for rows.Next() {
+		var v classes.Sms_HardwareDesignVariant
+		var specRaw sql.NullString
+		if err := rows.Scan(
+			&v.HardwareDesignVariantID,
+			&v.HardwareDesignID,
+			&v.Code,
+			&v.Name,
+			&v.Description,
+			&specRaw,
+			&v.IsActive,
+			&v.CreatedAt,
+		); err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		if specRaw.Valid {
+			v.Spec = specRaw.String
+		}
+		out = append(out, v)
+	}
+	return out
+}
+
+func (mgr *manager) GetVariantByID(variantID int) *classes.Sms_HardwareDesignVariant {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_VariantByID)
+	if err != nil { fmt.Println(err); return nil }
+	defer stmt.Close()
+
+	row := stmt.QueryRow(variantID)
+	var v classes.Sms_HardwareDesignVariant
+	var specRaw sql.NullString
+	if err := row.Scan(
+		&v.HardwareDesignVariantID,
+		&v.HardwareDesignID,
+		&v.Code,
+		&v.Name,
+		&v.Description,
+		&specRaw,
+		&v.IsActive,
+		&v.CreatedAt,
+	); err != nil {
+		fmt.Println("Scan error:", err)
+		return nil
+	}
+	if specRaw.Valid { v.Spec = specRaw.String }
+	return &v
+}
+
+func (mgr *manager) AddVariant(v *classes.Sms_HardwareDesignVariant) error {
+	_, err := mgr.db.Exec(
+		dbUtils.INSERT_sms_Variant,
+		v.HardwareDesignID,
+		v.Code,
+		v.Name,
+		v.Description,
+		nullIfEmptyJSON(v.Spec), // siehe Helper unten
+		v.IsActive,
+	)
+	return err
+}
+
+func (mgr *manager) UpdateVariant(v *classes.Sms_HardwareDesignVariant) error {
+	_, err := mgr.db.Exec(
+		dbUtils.UPDATE_sms_Variant,
+		v.Code,
+		v.Name,
+		v.Description,
+		nullIfEmptyJSON(v.Spec),
+		v.IsActive,
+		v.HardwareDesignVariantID,
+	)
+	return err
+}
+
+func (mgr *manager) SetVariantActiveFlag(variantID int, active bool) error {
+	_, err := mgr.db.Exec(dbUtils.UPDATE_sms_VariantActiveFlag, active, variantID)
+	return err
+}
+
+func (mgr *manager) DeleteVariantByID(variantID int) error {
+	_, err := mgr.db.Exec(dbUtils.DELETE_sms_VariantByID, variantID)
+	return err
+}
+
+// ---- Helper (in dbprovider package) ----
+func nullIfEmptyJSON(s string) interface{} {
+	// leere Strings als NULL speichern; MySQL JSON-Spalte lehnt "" ab
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	return s
+}
+
+
+// 1) Systeme kompakt (für die Auswahl im ProjectBOM-Form)
+func (mgr *manager) GetAllSystemsMinimal() []classes.Sms_SystemMinimal {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_AllSystemsMinimal)
+	if err != nil { fmt.Println(err); return nil }
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil { fmt.Println(err); return nil }
+	defer rows.Close()
+
+	out := []classes.Sms_SystemMinimal{}
+	for rows.Next() {
+		var s classes.Sms_SystemMinimal
+		if err := rows.Scan(&s.SystemID, &s.SystemtypeID, &s.SystemType, &s.Version); err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
+// 2) Kompatible Hardwaredesigns (du rufst das im Create-Form auf)
+func (mgr *manager) GetCompatibleHardwareDesignsForSystem(systemID int) []classes.Sms_HardwareDesign {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_CompatibleHardwareDesignsForSystem)
+	if err != nil { fmt.Println(err); return nil }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(systemID)
+	if err != nil { fmt.Println(err); return nil }
+	defer rows.Close()
+
+	var out []classes.Sms_HardwareDesign
+	for rows.Next() {
+		var d classes.Sms_HardwareDesign
+		if err := rows.Scan(
+			&d.HardwareDesignID, &d.Name, &d.Version, &d.Date, &d.Description, &d.Author,
+			&d.IsApproved, &d.RevisionNote, &d.DocumentNumber,
+			&d.AdditionalInfo, &d.IsDefault, &d.CompatibilityStatus,
+		); err != nil {
+			log.Println("Scan error:", err)
+			continue
+		}
+		out = append(out, d)
+	}
+	return out
+}
+
+// 3) Default-Hardwaredesign für System ermitteln
+func (mgr *manager) GetDefaultHardwareDesignForSystem(systemID int) *classes.Sms_HardwareDesign {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_DefaultHardwareDesignForSystem)
+	if err != nil { fmt.Println(err); return nil }
+	defer stmt.Close()
+
+	row := stmt.QueryRow(systemID)
+	var d classes.Sms_HardwareDesign
+	if err := row.Scan(
+		&d.HardwareDesignID, &d.Name, &d.Version, &d.Date, &d.Description, &d.Author,
+		&d.IsApproved, &d.RevisionNote, &d.DocumentNumber,
+		&d.AdditionalInfo, &d.IsDefault, &d.CompatibilityStatus,
+	); err != nil {
+		return nil
+	}
+	return &d
 }

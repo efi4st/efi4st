@@ -1,0 +1,91 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <h3>Varianten für: {{design.Name}} <small class="text-muted">v{{design.Version}}</small></h3>
+    <div>
+      <a class="btn btn-outline-secondary" href="/sms_hardwaredesigns/{{design.HardwareDesignID}}/variants?all={% if showAll %}0{% else %}1{% endif %}">
+        {% if showAll %}Nur aktive anzeigen{% else %}Alle anzeigen{% endif %}
+      </a>
+      <a class="btn btn-primary" href="/sms_hardwaredesigns/{{design.HardwareDesignID}}/variants/create">
+        <i class="fa fa-plus-circle"></i> Neue Variante
+      </a>
+    </div>
+  </div>
+  <hr>
+
+  {% if error %}
+  <div class="alert alert-danger">{{error}}</div>
+  {% endif %}
+
+  <table class="table table-striped">
+    <thead>
+    <tr>
+      <th>Code</th>
+      <th>Name</th>
+      <th>Beschreibung</th>
+      <th>Spec (JSON)</th>
+      <th>Status</th>
+      <th>Erstellt</th>
+      <th class="text-end">Aktionen</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for v in variants %}
+    <tr>
+      <td><code>{{v.Code}}</code></td>
+      <td>{{v.Name}}</td>
+      <td>{{v.Description|truncatechars:60}}</td>
+      <td><pre class="mb-0" style="max-width:320px;white-space:pre-wrap;">{{v.Spec}}</pre></td>
+      <td>
+        {% if v.IsActive %}<span class="badge bg-success">active</span>
+        {% else %}<span class="badge bg-secondary">inactive</span>{% endif %}
+      </td>
+      <td>{{v.CreatedAt|truncatechars:19}}</td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-primary" href="/sms_hardwaredesigns/variants/{{v.HardwareDesignVariantID}}/edit">Edit</a>
+        {% if v.IsActive %}
+        <a class="btn btn-sm btn-outline-warning" href="/sms_hardwaredesigns/variants/{{v.HardwareDesignVariantID}}/toggle?active=0">Deactivate</a>
+        {% else %}
+        <a class="btn btn-sm btn-outline-success" href="/sms_hardwaredesigns/variants/{{v.HardwareDesignVariantID}}/toggle?active=1">Activate</a>
+        {% endif %}
+        <form action="/sms_hardwaredesigns/variants/{{v.HardwareDesignVariantID}}/delete" method="POST" style="display:inline-block" onsubmit="return confirm('Variante wirklich löschen?');">
+          <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="text-center text-muted">Keine Varianten vorhanden.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="mt-3">
+    <a href="/sms_hardwaredesigns/show/{{design.HardwareDesignID}}" class="btn btn-outline-secondary">
+      <i class="fa fa-arrow-left"></i> Zurück zum Design
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -22,47 +22,122 @@
         {% endif %}
       </div>
 
-      <div class="container">
+<div class="container">
+  <div class="row">
+    <div class="col-md-2"></div>
 
-        <div class="row">
-          <div class="col-md-2">
-          </div>
+    <div class="col-md-8">
+      <form action="/sms_projectBOM/addSMSProjectBOM" method="POST" id="pbomForm">
+        <div class="form-group">
+          <h3>Add new System to Project {{projectId}}:</h3>
+          <br>
 
-          <div class="col-md-8">
-            <form action="/sms_projectBOM/addSMSProjectBOM" method="POST">
-              <div class="form-group">
+          <label for="Project_id">Project_id:</label>
+          <input type="text" class="form-control" name="Project_id" id="Project_id" value="{{projectId}}" readonly>
+          <br>
 
-                <h3>Add new System to Project {{projectId}}:</h3>
-                </br>
-                <label for="Project_id">Project_id:</label>
-                <input type="text" class="form-control" name="Project_id" id="Project_id" value="{{projectId}}" readonly>
-                </br>
-                <label for="System_id">System_id:</label>
-                <select name="System_id" id="System_id" class="form-select" aria-label="Default select example">
-                  {% for system in systemList %}
-                  <option value="{{system.system_id}}">{{system.systemtype_id}} &nbsp; {{system.version}}</option>
-                  {% endfor %}
-                </select>
-                </br>
-                <label for="OrderNumber">OrderNumber:</label>
-                <input type="text" class="form-control" name="OrderNumber" id="OrderNumber" placeholder="OrderNumber">
-                </br>
-                <label for="AdditionalInfo">AdditionalInfo:</label>
-                <input type="text" class="form-control" name="AdditionalInfo" id="AdditionalInfo" placeholder="AdditionalInfo">
-                </br>
-                </br>
+          <label for="System_id">System_id:</label>
+          <select name="System_id" id="System_id" class="form-select" aria-label="Default select example" required>
+            {% for system in systemList %}
+            <option value="{{system.SystemID}}"
+                    {% if selectedSystemID and selectedSystemID == system.SystemID %}selected{% endif %}>
+              {{system.SystemType}} ({{system.SystemtypeID}}) — {{system.Version}}
+            </option>
+            {% endfor %}
+          </select>
+          <br>
 
-              </div>
-              <button type="submit" class="btn btn-primary">Add</button>
-            </form>
-          </div>
+          <label for="HardwareDesignID">Hardware Design:</label>
+          <select name="HardwareDesignID" id="HardwareDesignID" class="form-select" required>
+            {% if designs and designs|length > 0 %}
+            {% for d in designs %}
+            <option value="{{d.HardwareDesignID}}"
+                    {% if selectedDesignID and selectedDesignID == d.HardwareDesignID %}selected{% endif %}>
+              {{d.Name}} (v{{d.Version}}){% if d.IsDefault %} — Default{% endif %}
+            </option>
+            {% endfor %}
+            {% elif selectedSystemID %}
+            <option value="" disabled selected>Keine kompatiblen Designs für dieses System.</option>
+            {% else %}
+            <option value="" disabled selected>Bitte zuerst System wählen</option>
+            {% endif %}
+          </select>
+          <small class="form-text">
+            {% if selectedSystemID and (not designs or designs|length == 0) %}
+            <a href="/sms_hardwaredesignPartOfSystem/create/{{ selectedSystemID }}">Jetzt ein Hardware Design verknüpfen</a>
+            {% else %}
+            Default-Design wird automatisch vorausgewählt.
+            {% endif %}
+          </small>
+          <br>
 
-          <div class="col-md-2">
-          </div>
+          <!-- Variante -->
+          <label for="HardwareDesignVariantID">Variante:</label>
+          <select name="HardwareDesignVariantID" id="HardwareDesignVariantID" class="form-select" required>
+            {% if variants %}
+            {% for v in variants %}
+            <option value="{{v.HardwareDesignVariantID}}">
+              {{v.Code}} — {{v.Name}}
+            </option>
+            {% endfor %}
+            {% else %}
+            <option value="" disabled selected>Bitte Hardware Design wählen</option>
+            {% endif %}
+          </select>
+          <br>
+
+          <label for="OrderNumber">OrderNumber:</label>
+          <input type="text" class="form-control" name="OrderNumber" id="OrderNumber" placeholder="OrderNumber">
+          <br>
+
+          <label for="AdditionalInfo">AdditionalInfo:</label>
+          <input type="text" class="form-control" name="AdditionalInfo" id="AdditionalInfo" placeholder="AdditionalInfo">
+          <br><br>
         </div>
 
-        <hr>
-      </div> <!-- /container -->
+        <button type="submit" class="btn btn-primary">Add</button>
+      </form>
+    </div>
+
+    <div class="col-md-2"></div>
+  </div>
+
+  <hr>
+</div>
+
+<script>
+  // Wenn System geändert wird -> Designs & Varianten neu laden
+  document.getElementById('System_id').addEventListener('change', async function() {
+    const sysId = this.value;
+    // Seite neu laden mit system_id, damit Server Default-Design & Varianten setzt
+    const url = new URL(window.location.href);
+    url.searchParams.set('project_id', document.getElementById('Project_id').value);
+    url.searchParams.set('system_id', sysId);
+    window.location.href = url.toString();
+  });
+
+  // Wenn Design geändert wird -> Varianten per JSON nachladen
+  document.getElementById('HardwareDesignID')?.addEventListener('change', async function() {
+    const designId = this.value;
+    const resp = await fetch(`/sms_projectBOM/variants?hardwaredesign_id=${encodeURIComponent(designId)}`);
+    const data = await resp.json();
+    const sel = document.getElementById('HardwareDesignVariantID');
+    sel.innerHTML = '';
+    if (Array.isArray(data) && data.length > 0) {
+      for (const v of data) {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = `${v.code} — ${v.name}`;
+        sel.appendChild(opt);
+      }
+    } else {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Keine aktiven Varianten';
+      sel.appendChild(opt);
+    }
+  });
+</script>
       
 {% endblock %}
 

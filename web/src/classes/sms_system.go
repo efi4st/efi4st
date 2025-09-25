@@ -61,3 +61,10 @@ type Sms_System_Query struct {
 	Version      string `db:"version"`
 	Date         string `db:"date"`
 }
+
+type Sms_SystemMinimal struct {
+	SystemID     int
+	SystemtypeID int
+	SystemType   string
+	Version      string
+}

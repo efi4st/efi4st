@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container mt-4">
+  <h3>Variante bearbeiten – {{design.Name}} <small class="text-muted">v{{design.Version}}</small></h3>
+  <hr>
+  {% if error %}<div class="alert alert-danger">{{error}}</div>{% endif %}
+
+  <form method="POST" action="/sms_hardwaredesigns/variants/{{variant.HardwareDesignVariantID}}/update">
+    <div class="mb-3">
+      <label for="Code" class="form-label">Code *</label>
+      <input type="text" class="form-control" name="Code" id="Code" value="{{variant.Code}}" required>
+    </div>
+    <div class="mb-3">
+      <label for="Name" class="form-label">Name *</label>
+      <input type="text" class="form-control" name="Name" id="Name" value="{{variant.Name}}" required>
+    </div>
+    <div class="mb-3">
+      <label for="Description" class="form-label">Beschreibung</label>
+      <textarea class="form-control" name="Description" id="Description" rows="3">{{variant.Description}}</textarea>
+    </div>
+    <div class="mb-3">
+      <label for="Spec" class="form-label">Spec (JSON, optional)</label>
+      <textarea class="form-control" name="Spec" id="Spec" rows="4">{{variant.Spec}}</textarea>
+      <small class="text-muted">Wenn angegeben, muss es gültiges JSON sein.</small>
+    </div>
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" id="IsActive" name="IsActive" {% if variant.IsActive %}checked{% endif %}>
+      <label class="form-check-label" for="IsActive">Aktiv</label>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit"><i class="fa fa-save"></i> Aktualisieren</button>
+      <a class="btn btn-secondary" href="/sms_hardwaredesigns/{{design.HardwareDesignID}}/variants?all=1">Abbrechen</a>
+    </div>
+  </form>
+</div>
+      
+{% endblock %}
+

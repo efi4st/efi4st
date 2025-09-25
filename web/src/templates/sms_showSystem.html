@@ -276,16 +276,48 @@
               {% for hd in hardwaredesignListForSystem %}
               <li class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
-                  <strong><a href="/sms_hardwaredesigns/show/{{ hd.HardwareDesignID }}">{{ hd.Name }}</a></strong><br>
-                  <small>Version: {{ hd.Version }}, Author: {{ hd.Author }}</small><br>
+                  <strong>
+                    <a href="/sms_hardwaredesigns/show/{{ hd.HardwareDesignID }}">{{ hd.Name }}</a>
+                    <small class="text-muted">v{{ hd.Version }}</small>
+                  </strong><br>
+                  <small>Author: {{ hd.Author }}</small><br>
                   <small><em>{{ hd.Description|truncatechars:100 }}</em></small><br>
+
+                  <div class="mt-1">
+                    {% if hd.IsDefault %}
+                    <span class="badge bg-primary me-1">Default</span>
+                    {% else %}
+                    <span class="badge bg-info text-dark me-1">rückwärts kompatibel</span>
+                    {% endif %}
+
+                    {% if hd.CompatibilityStatus == "recommended" %}
+                    <span class="badge bg-success">recommended</span>
+                    {% elif hd.CompatibilityStatus == "compatible" %}
+                    <span class="badge bg-secondary">compatible</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">deprecated</span>
+                    {% endif %}
+                  </div>
+
                   {% if hd.AdditionalInfo %}
-                  <small class="text-muted">Note: {{ hd.AdditionalInfo }}</small>
+                  <div class="mt-1"><small class="text-muted">Note: {{ hd.AdditionalInfo }}</small></div>
                   {% endif %}
                 </div>
-                <a class="btn btn-sm btn-danger" href="/sms_hardwaredesignPartOfSystem/remove?system_id={{ system.System_id }}&hardwaredesign_id={{ hd.HardwareDesignID }}">
-                  <i class="fa fa-trash-o"></i>
-                </a>
+
+                <div class="btn-group">
+                  {% if not hd.IsDefault %}
+                  <a class="btn btn-sm btn-outline-primary"
+                     href="/sms_hardwaredesignPartOfSystem/setDefault?system_id={{ system.System_id }}&hardwaredesign_id={{ hd.HardwareDesignID }}"
+                     title="Als Default setzen">
+                    <i class="fa fa-star"></i>
+                  </a>
+                  {% endif %}
+                  <a class="btn btn-sm btn-danger"
+                     href="/sms_hardwaredesignPartOfSystem/remove?system_id={{ system.System_id }}&hardwaredesign_id={{ hd.HardwareDesignID }}"
+                     title="Verknüpfung entfernen">
+                    <i class="fa fa-trash-o"></i>
+                  </a>
+                </div>
               </li>
               {% endfor %}
             </ul>

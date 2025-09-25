@@ -352,14 +352,18 @@ func irisMain()() {
 	// GET: http://localhost:8144/sms_devicePartOfSystem/remove/1
 	app.Get("/sms_devicePartOfSystem/remove/{id:string}", routes.RemoveSMSDevicePartOfSystem)
 
-	// GET: http://localhost:8144/sms_projectBOM/createSMSProjectBOMForProject/1
-	app.Get("/sms_projectBOM/createSMSProjectBOMForProject/{id:string}", routes.CreateSMSProjectBOMForProject)
+	// beide Pfade -> derselbe Handler
+	app.Get("/sms_projectBOM/createSMSProjectBOMForProject/{project_id:int}", routes.CreateSMSProjectBOMForProject)
+	app.Get("/sms_projectBOM/create", routes.CreateSMSProjectBOMForProject) // ?project_id=&system_id=
+
 
 	// POST: http://localhost:8144/sms_projectBOM/addSMSProjectBOM
 	app.Post("/sms_projectBOM/addSMSProjectBOM", routes.AddSMSProjectBOM)
 
 	// GET: http://localhost:8144/sms_projectBOM/remove/1
-	app.Get("/sms_projectBOM/remove/{id:string}", routes.RemoveSMSProjectBOM)
+	app.Post("/sms_projectBOM/{id:int}/delete", routes.DeleteSMSProjectBOM)
+
+	app.Get("/sms_projectBOM/variants", routes.GetVariantsForDesignJSON)    // ?hardwaredesign_id=...
 
 	// GET: http://localhost:8144/sms_issueAffectedSoftware/createSMSIssueAffectedSoftware/1
 	app.Get("/sms_issueAffectedSoftware/createSMSIssueAffectedSoftware/{id:string}", routes.CreateSMSIssueAffectedSoftware)
@@ -644,16 +648,28 @@ func irisMain()() {
 	// Checklist Item Instances
 	app.Post("/sms_checklistItemInstance/update", routes.UpdateChecklistItemInstance)
 
-	// Download
+	// Download (Checklisten
 	app.Post("/sms_checklistTemplate/{id:int}/docasset/upload", routes.UploadChecklistTemplateDocAsset)
 	app.Get("/sms_checklistTemplate/{id:int}/docasset/delete/{kind:string}", routes.DeleteChecklistTemplateDocAsset)
-
 	app.Get("/sms_checklistInstance/print/{id:int}", routes.PrintChecklistInstance)
 	app.Get("/sms_checklistInstance/export/{id:int}", routes.ExportChecklistInstance)
-
 	app.Get("/docassets/cover/{template_id:int}", routes.DocAssetCover)
 	app.Get("/docassets/header/{template_id:int}", routes.DocAssetHeader)
 	app.Get("/docassets/footer/{template_id:int}", routes.DocAssetFooter)
+
+	// HardwareDesignVariants
+	app.Get("/sms_hardwaredesigns/{id:int}/variants", routes.SMSHardwareDesignVariants)
+	app.Get("/sms_hardwaredesigns/{id:int}/variants/create", routes.CreateSMSHardwareDesignVariant)
+	app.Post("/sms_hardwaredesigns/{id:int}/variants/add", routes.AddSMSHardwareDesignVariant)
+
+	app.Get("/sms_hardwaredesigns/variants/{variant_id:int}/edit", routes.EditSMSHardwareDesignVariant)
+	app.Post("/sms_hardwaredesigns/variants/{variant_id:int}/update", routes.UpdateSMSHardwareDesignVariant)
+	app.Get("/sms_hardwaredesigns/variants/{variant_id:int}/toggle", routes.ToggleSMSHardwareDesignVariantActive) // ?active=0/1
+	app.Post("/sms_hardwaredesigns/variants/{variant_id:int}/delete", routes.RemoveSMSHardwareDesignVariant)
+
+	// Route registrieren (analog zu deinem Remove-Link)
+	app.Get("/sms_hardwaredesignPartOfSystem/setDefault", routes.SetDefaultHardwareDesign)
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

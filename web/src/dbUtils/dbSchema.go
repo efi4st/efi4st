@@ -358,15 +358,24 @@ CREATE TABLE IF NOT EXISTS sms_devicePartOfSystem (
 
 var sms_projectBOM_schema = `
 CREATE TABLE IF NOT EXISTS sms_projectBOM (
-	projectBOM_id INT(11) NOT NULL AUTO_INCREMENT,
-	project_id INT(11) NOT NULL,
-	system_id INT(11) NOT NULL,
-	orderNumber VARCHAR(80) DEFAULT NULL,
-	additionalInfo VARCHAR(150) DEFAULT NULL,
-	PRIMARY KEY (projectBOM_id),
-	CONSTRAINT sms_projectBOM_ibfk_1 FOREIGN KEY (project_id) REFERENCES sms_project (project_id) ON UPDATE CASCADE ON DELETE NO ACTION,
-	CONSTRAINT sms_projectBOM_ibfk_2 FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION
-)ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  projectBOM_id INT(11) NOT NULL AUTO_INCREMENT,
+  project_id INT(11) NOT NULL,
+  system_id INT(11) NOT NULL,
+  hardwaredesign_id INT(11) NOT NULL,
+  hardwaredesign_variant_id INT(11) NOT NULL,
+  orderNumber VARCHAR(80) DEFAULT NULL,
+  additionalInfo VARCHAR(150) DEFAULT NULL,
+  assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (projectBOM_id),
+  KEY idx_pbom_proj (project_id),
+  KEY idx_pbom_sys (system_id),
+  KEY idx_pbom_hd (hardwaredesign_id),
+  KEY idx_pbom_var (hardwaredesign_variant_id),
+  CONSTRAINT fk_pbom_project FOREIGN KEY (project_id) REFERENCES sms_project (project_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+  CONSTRAINT fk_pbom_system FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+  CONSTRAINT fk_pbom_sys_hd FOREIGN KEY (system_id, hardwaredesign_id) REFERENCES sms_hardwaredesignPartOfSystem (system_id, hardwaredesign_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+  CONSTRAINT fk_pbom_var_hd FOREIGN KEY (hardwaredesign_variant_id, hardwaredesign_id) REFERENCES sms_hardwaredesign_variant (hardwaredesign_variant_id, hardwaredesign_id) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
 
 var sms_issueAffectedSoftware_schema = `
@@ -689,11 +698,34 @@ CREATE TABLE IF NOT EXISTS sms_hardwaredesignPartOfSystem (
 system_id INT(11) NOT NULL,
 hardwaredesign_id INT(11) NOT NULL,
 additionalInfo VARCHAR(150) DEFAULT NULL,
+is_default BOOLEAN NOT NULL DEFAULT FALSE,
+compatibility_status ENUM('recommended','compatible','deprecated') NOT NULL DEFAULT 'compatible',
+default_system_id INT(11) GENERATED ALWAYS AS (IF(is_default, system_id, NULL)) STORED,
 PRIMARY KEY (system_id, hardwaredesign_id),
-CONSTRAINT fk_hwdesign_system FOREIGN KEY (system_id)
-REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION,
-CONSTRAINT fk_hwdesign_design FOREIGN KEY (hardwaredesign_id)
-REFERENCES sms_hardwaredesign (hardwaredesign_id) ON UPDATE CASCADE ON DELETE NO ACTION
+UNIQUE KEY uq_one_default_per_system (default_system_id),
+KEY idx_hwps_status (system_id, compatibility_status),
+KEY idx_hwps_hw (hardwaredesign_id),
+CONSTRAINT fk_hwdesign_system FOREIGN KEY (system_id) REFERENCES sms_system (system_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+CONSTRAINT fk_hwdesign_design FOREIGN KEY (hardwaredesign_id) REFERENCES sms_hardwaredesign (hardwaredesign_id) ON UPDATE CASCADE ON DELETE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+
+var sms_hardwaredesign_variant_schema = `
+CREATE TABLE IF NOT EXISTS sms_hardwaredesign_variant (
+hardwaredesign_variant_id INT(11) NOT NULL AUTO_INCREMENT,
+hardwaredesign_id INT(11) NOT NULL,
+code VARCHAR(50) NOT NULL,
+name VARCHAR(150) NOT NULL,
+description TEXT DEFAULT NULL,
+spec JSON DEFAULT NULL,           -- optional: strukturierte Details (z.B. {"pcs":2,"switches":1})
+is_active BOOLEAN NOT NULL DEFAULT TRUE,
+created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (hardwaredesign_variant_id),
+CONSTRAINT uq_hdvar UNIQUE (hardwaredesign_id, code),
+UNIQUE KEY uq_var_pk_hd (hardwaredesign_variant_id, hardwaredesign_id),
+KEY idx_hdvar_hd (hardwaredesign_id),
+CONSTRAINT fk_hdvar_hd FOREIGN KEY (hardwaredesign_id) REFERENCES sms_hardwaredesign (hardwaredesign_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
 

@@ -1,5 +1,17 @@
 {% extends "layout.html" %}
-
+<style>
+  /* Nur für das ProjectBOM-Widget */
+  .project-bom-compact.small { font-size: .875rem; } /* Bootstrap "small" */
+  .project-bom-compact .card-header { padding: .35rem .75rem; }
+  .project-bom-compact .table td,
+  .project-bom-compact .table th { padding: .3rem .5rem; }
+  .project-bom-compact .btn-sm { padding: .125rem .4rem; font-size: .75rem; }
+  .project-bom-compact .badge { font-size: .65rem; }
+  .project-bom-compact .muted-code { opacity: .8; }
+  .project-bom-compact .truncate-200 {
+    max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+</style>
 {% block content %}
 <!-- Main jumbotron for a primary marketing message or call to action -->
 <div class="jumbotron banner">
@@ -71,29 +83,52 @@
       <a href="/sms_projectstatus/create/{{ project.Project_id }}">Update Status</a>
       <br />
       <br />
-      <h2>Included Systems:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <a class="btn btn-primary btn-lg" href="/sms_projectBOM/createSMSProjectBOMForProject/{{ project.Project_id }}" role="button" align="right">Add</a>
-      </h2>
-      <table class="table">
-        <thead>
-        <tr>
-          <th>System</th>
-          <th>Version</th>
-          <th>Order Number</th>
-          <th>Info</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for system in systemList %}
-        <tr>
-          <td><a href="/sms_systems/show/{{ system.system_id }}">{{ system.name }}</a></td>
-          <td>{{ system.tmp }}</td>
-          <td>{{ system.orderNumber }}</td>
-          <td>{{ system.additionalInfo }}</td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      <div class="card mt-3 shadow-sm project-bom-compact small">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+          <strong class="fs-6">Linked Systems (Project BOM)</strong>
+          <a class="btn btn-sm btn-outline-primary" href="/sms_projectBOM/createSMSProjectBOMForProject/{{ project.Project_id }}">Add</a>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0 align-middle">
+              <thead class="table-light">
+              <tr>
+                <th>System</th>
+                <th>Hardware Design</th>
+                <th>Variant</th>
+                <th>Order #</th>
+                <th class="text-end">Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for s in systemList %}
+              <tr>
+                <td>
+                  {{ s.SystemType }}
+                  <code class="muted-code">v{{ s.SystemVersion }}</code>
+                </td>
+                <td>
+                  <a href="/sms_hardwaredesigns/show/{{ s.HardwareDesignID }}">{{ s.HardwareDesignName }}</a>
+                  <small class="text-muted">v{{ s.HardwareDesignVersion }}</small>
+                </td>
+                <td>{{ s.VariantCode }} — {{ s.VariantName }}</td>
+                <td class="truncate-200">{{ s.OrderNumber }}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-primary" href="/sms_projectBOM/{{ s.ProjectBOMID }}/edit">Edit</a>
+                  <form action="/sms_projectBOM/{{ s.ProjectBOMID }}/delete" method="POST" style="display:inline-block" onsubmit="return confirm('Delete entry?');">
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center text-muted">No systems linked yet.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
     </div>
   </div>

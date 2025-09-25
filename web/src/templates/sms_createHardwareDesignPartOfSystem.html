@@ -47,6 +47,25 @@
           <textarea class="form-control" name="AdditionalInfo" rows="3" placeholder="Add any comment or note..."></textarea>
         </div>
 
+        <div class="form-group mt-3">
+          <label for="CompatibilityStatus">Kompatibilitätsstatus:</label>
+          <select class="form-select" id="CompatibilityStatus" name="CompatibilityStatus">
+            <option value="recommended">recommended</option>
+            <option value="compatible" selected>compatible</option>
+            <option value="deprecated">deprecated</option>
+          </select>
+        </div>
+
+        <div class="form-check mt-3">
+          <input class="form-check-input" type="checkbox" id="IsDefault" name="IsDefault">
+          <label class="form-check-label" for="IsDefault">
+            Als Default für diese Systemversion setzen
+          </label>
+          <small class="form-text text-muted d-block">
+            Hinweis: Es kann nur ein Default geben; falls bereits gesetzt, wird dieser überschrieben.
+          </small>
+        </div>
+
         <div class="mt-4">
           <button type="submit" class="btn btn-success">Link Hardware Design</button>
           <a href="/sms_systems/show/{{ systemID }}" class="btn btn-secondary">Cancel</a>

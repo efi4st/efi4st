@@ -107,6 +107,13 @@ func ShowSMSHardwareDesign(ctx iris.Context) {
 		design.ImageBase64 = base64.StdEncoding.EncodeToString(design.Image)
 	}
 
+	// ➕ Varianten-Vorschau laden (nur aktive), auf max. 5 begrenzen
+	variants := dbprovider.GetDBManager().GetVariantsForHardwareDesign(i, true) // onlyActive=true
+	if len(variants) > 5 {
+		variants = variants[:5]
+	}
+	ctx.ViewData("variantsPreview", variants)
+
 	ctx.ViewData("hardwareDesign", design)
 	ctx.View("sms_showHardwareDesign.html")
 }
@@ -139,9 +146,7 @@ func CreateSMSHardwareDesignPartOfSystem(ctx iris.Context) {
 		ctx.View("sms_hardwaredesigns.html")
 		return
 	}
-
 	designs := dbprovider.GetDBManager().GetAllSMSHardwareDesigns()
-
 	ctx.ViewData("systemID", systemID)
 	ctx.ViewData("hardwareDesignList", designs)
 	ctx.View("sms_createHardwareDesignPartOfSystem.html")
@@ -151,19 +156,51 @@ func AddSMSHardwareDesignPartOfSystem(ctx iris.Context) {
 	systemIDStr := ctx.PostValue("SystemID")
 	designIDStr := ctx.PostValue("HardwareDesignID")
 	additionalInfo := ctx.PostValue("AdditionalInfo")
+	isDefault := ctx.PostValue("IsDefault") == "on"
+
+	// 'recommended' | 'compatible' | 'deprecated'
+	compatStatus := ctx.PostValue("CompatibilityStatus")
+	switch compatStatus {
+	case "recommended", "compatible", "deprecated":
+	default:
+		compatStatus = "compatible"
+	}
+	// Default erzwingt recommended
+	if isDefault {
+		compatStatus = "recommended"
+	}
 
 	systemID, err1 := strconv.Atoi(systemIDStr)
 	designID, err2 := strconv.Atoi(designIDStr)
-
 	if err1 != nil || err2 != nil {
 		ctx.ViewData("error", "Invalid input values")
 		ctx.Redirect("/sms_systems/show/" + systemIDStr)
 		return
 	}
 
-	err := dbprovider.GetDBManager().AddSMSHardwareDesignMapping(systemID, designID, additionalInfo)
+	err := dbprovider.GetDBManager().AddSMSHardwareDesignMappingWithFlags(systemID, designID, additionalInfo, isDefault, compatStatus)
 	if err != nil {
-		ctx.ViewData("error", "Failed to link hardware design to system")
+		ctx.ViewData("error", "Failed to link hardware design to system: "+err.Error())
+	}
+
+	ctx.Redirect("/sms_systems/show/" + systemIDStr)
+}
+
+// Handler
+func SetDefaultHardwareDesign(ctx iris.Context) {
+	systemIDStr := ctx.URLParam("system_id")
+	designIDStr := ctx.URLParam("hardwaredesign_id")
+
+	systemID, err1 := strconv.Atoi(systemIDStr)
+	designID, err2 := strconv.Atoi(designIDStr)
+	if err1 != nil || err2 != nil {
+		ctx.ViewData("error", "Invalid parameters")
+		ctx.Redirect("/sms_systems/show/" + systemIDStr)
+		return
+	}
+
+	if err := dbprovider.GetDBManager().SetDefaultHardwareDesign(systemID, designID); err != nil {
+		ctx.ViewData("error", "Failed to set default: "+err.Error())
 	}
 
 	ctx.Redirect("/sms_systems/show/" + systemIDStr)
@@ -189,3 +226,4 @@ func RemoveSMSHardwareDesignPartOfSystem(ctx iris.Context) {
 
 	ctx.Redirect("/sms_systems/show/" + systemIDStr)
 }
+
