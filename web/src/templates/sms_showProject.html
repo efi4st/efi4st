@@ -1,15 +1,85 @@
 {% extends "layout.html" %}
 <style>
-  /* Nur für das ProjectBOM-Widget */
-  .project-bom-compact.small { font-size: .875rem; } /* Bootstrap "small" */
-  .project-bom-compact .card-header { padding: .35rem .75rem; }
-  .project-bom-compact .table td,
-  .project-bom-compact .table th { padding: .3rem .5rem; }
-  .project-bom-compact .btn-sm { padding: .125rem .4rem; font-size: .75rem; }
-  .project-bom-compact .badge { font-size: .65rem; }
-  .project-bom-compact .muted-code { opacity: .8; }
-  .project-bom-compact .truncate-200 {
-    max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* Harmonisierte BOM-Optik – auf ListGroup-Niveau */
+  .project-bom { font-size: 1rem; }
+  .project-bom .card-header { padding: .5rem .75rem; }
+  .project-bom .table td, .project-bom .table th { padding: .45rem .6rem; }
+  .project-bom .btn-sm { padding: .2rem .5rem; font-size: .8rem; }
+  .project-bom .muted-code { opacity: .8; }
+  .project-bom .truncate-200 { max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Neue, kompakte Card-Optik */
+  .card-tight .card-header { padding: .5rem .75rem; }
+  .card-tight .card-body  { padding: .75rem; }
+  .card-tight .table      { margin-bottom: 0; }
+
+  /* Button-Grid für Actions */
+  .btn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: .5rem;
+  }
+  .btn-grid .btn { width: 100%; }
+
+  /* Chips für betroffene Devices */
+  .device-chip{
+    display:inline-block; padding:.15rem .5rem; border-radius:999px;
+    background:#f1f3f5; margin:.1rem .15rem; font-size:.8rem;
+    border:1px solid rgba(0,0,0,.05);
+  }
+  .device-chip .muted{ opacity:.8; }
+  /* kompakte Card */
+  .card-tight .card-header{ padding:.5rem .75rem; }
+  .card-tight .card-body{ padding:.75rem; }
+  .card-tight .card-header{ padding:.5rem .75rem; }
+  .card-tight .card-body{ padding:.75rem; }
+  .project-meta .list-group-item{ padding:.6rem .75rem; }
+  .project-meta .label{ font-size:.75rem; letter-spacing:.02em; text-transform:uppercase; color:#6c757d; }
+  .project-meta .value{ font-weight:600; }
+  .project-meta .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  .project-meta .copy-btn{ border:none; background:transparent; color:#6c757d; padding:0 .25rem; }
+  .project-meta .copy-btn:hover{ color:#0d6efd; }
+  .clamp-3{
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  /* Titel der Kacheln deutlich hervorheben */
+  .tile-title{
+    font-weight: 700;          /* fett */
+    font-size: 1.05rem;        /* etwas größer als fs-6 */
+    line-height: 1.2;
+    letter-spacing: .02em;
+  }
+
+  /* (optional) minimal mehr Luft im Header, damit der Titel wirkt */
+  .card-tight .card-header{ padding: .65rem .9rem; }
+
+  /* Project Info – moderne Meta-Zeilen */
+  .project-meta .meta-item { padding:.6rem .75rem; }
+  .project-meta .meta-head {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:.2rem;
+  }
+  .project-meta .meta-head-left {
+    display:flex; align-items:center; gap:.5rem;
+  }
+  .project-meta .meta-icon {
+    width:1.25rem; text-align:center; color:#6c757d;
+  }
+  .project-meta .meta-title {
+    font-weight:700; font-size:.95rem; line-height:1.2;
+  }
+  .project-meta .meta-actions .copy-btn{
+    border:none; background:transparent; color:#6c757d; padding:0 .25rem;
+  }
+  .project-meta .meta-actions .copy-btn:hover{ color:#0d6efd; }
+  .project-meta .meta-value {
+    font-size:1.05rem; line-height:1.3;
+  }
+  .project-meta .mono{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  .clamp-3{
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
   }
 </style>
 {% block content %}
@@ -42,19 +112,109 @@
 
   <div class="row">
     <div class="col-md-4">
-      <ul class="list-group">
-        <li class="list-group-item"><strong>Name:</strong> {{ project.Name }}</li>
-        <li class="list-group-item"><strong>Customer:</strong> {{ project.Customer }}</li>
-        <li class="list-group-item"><strong>Date:</strong> {{ project.Date|truncatechars:13 }}</li>
-        <li class="list-group-item"><strong>Type:</strong> {{ project.Projecttype }}</li>
-        <li class="list-group-item"><strong>Reference:</strong> {{ project.Reference }}</li>
-        <li class="list-group-item"><strong>Project Reference:</strong> {{ project.Project_reference }}</li> <!-- NEU -->
-        <li class="list-group-item"><strong>Plant Number:</strong> {{ project.Plant_number }}</li> <!-- NEU -->
-        <li class="list-group-item"><strong>IMO/Plant/Factory:</strong> {{ project.Imo_plant_powerplant_factory }}</li> <!-- NEU -->
-        <li class="list-group-item"><strong>Plant Type:</strong> {{ project.Plant_type }}</li> <!-- NEU -->
-        <li class="list-group-item"><strong>Note:</strong> {{ project.Note }}</li> <!-- NEU -->
-        <li class="list-group-item"><strong>Active:</strong> {{ project.Active }}</li>
-      </ul>
+      <div class="card shadow-sm card-tight">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <strong class="fs-6">Project Info</strong>
+          {% if project.Plant_type %}
+          {% set badgeClass = "bg-secondary" %}
+          {% if project.Plant_type == "IMO" %}{% set badgeClass = "bg-primary" %}{% endif %}
+          {% if project.Plant_type == "Plant" %}{% set badgeClass = "bg-success" %}{% endif %}
+          {% if project.Plant_type == "PowerPlant" %}{% set badgeClass = "bg-warning text-dark" %}{% endif %}
+          {% if project.Plant_type == "Factory" %}{% set badgeClass = "bg-info text-dark" %}{% endif %}
+          <span class="badge {{ badgeClass }}">{{ project.Plant_type }}</span>
+          {% endif %}
+        </div>
+
+        <div class="list-group list-group-flush project-meta">
+
+          <div class="list-group-item meta-item">
+            <div class="meta-head">
+              <div class="meta-head-left">
+                <span class="meta-icon"><i class="fa fa-tag"></i></span>
+                <span class="meta-title"><b>Type</b></span>
+              </div>
+            </div>
+            <div class="meta-value">{{ project.Projecttype }}</div>
+          </div>
+
+          <div class="list-group-item meta-item">
+            <div class="meta-head">
+              <div class="meta-head-left">
+                <span class="meta-icon"><i class="fa fa-calendar"></i></span>
+                <span class="meta-title"><b>Date</b></span>
+              </div>
+            </div>
+            <div class="meta-value">{{ project.Date|truncatechars:13 }}</div>
+          </div>
+
+          {% if project.Reference %}
+          <div class="list-group-item meta-item">
+            <div class="meta-head">
+              <div class="meta-head-left">
+                <span class="meta-icon"><i class="fa fa-bookmark"></i></span>
+                <span class="meta-title"><b>Reference</b></span>
+              </div>
+              <div class="meta-actions">
+                <button class="copy-btn" title="Copy" data-copy="{{ project.Reference }}"><i class="fa fa-copy"></i></button>
+              </div>
+            </div>
+            <div class="meta-value mono">{{ project.Reference }}</div>
+          </div>
+          {% endif %}
+
+          {% if project.Project_reference %}
+          <div class="list-group-item meta-item">
+            <div class="meta-head">
+              <div class="meta-head-left">
+                <span class="meta-icon"><i class="fa fa-hashtag"></i></span>
+                <span class="meta-title"><b>Project Reference</b></span>
+              </div>
+            </div>
+            <div class="meta-value mono">{{ project.Project_reference }}</div>
+          </div>
+          {% endif %}
+
+          {% if project.Plant_number %}
+          <div class="list-group-item meta-item">
+            <div class="meta-head">
+              <div class="meta-head-left">
+                <span class="meta-icon"><i class="fa fa-industry"></i></span>
+                <span class="meta-title"><b>Plant Number</b></span>
+              </div>
+              <div class="meta-actions">
+                <button class="copy-btn" title="Copy" data-copy="{{ project.Plant_number }}"><i class="fa fa-copy"></i></button>
+              </div>
+            </div>
+            <div class="meta-value mono">{{ project.Plant_number }}</div>
+          </div>
+          {% endif %}
+
+          {% if project.Imo_plant_powerplant_factory %}
+          <div class="list-group-item meta-item">
+            <div class="meta-head">
+              <div class="meta-head-left">
+                <span class="meta-icon"><i class="fa fa-building"></i></span>
+                <span class="meta-title"><b>IMO/Plant/Factory</b></span>
+              </div>
+            </div>
+            <div class="meta-value">{{ project.Imo_plant_powerplant_factory }}</div>
+          </div>
+          {% endif %}
+
+          {% if project.Note %}
+          <div class="list-group-item meta-item">
+            <div class="meta-head">
+              <div class="meta-head-left">
+                <span class="meta-icon"><i class="fa fa-sticky-note-o"></i></span>
+                <span class="meta-title"><b>Note</b></span>
+              </div>
+            </div>
+            <div class="meta-value clamp-3" id="proj-note">{{ project.Note }}</div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
     </div>
 
     <div class="col-md-8">
@@ -83,8 +243,8 @@
       <a href="/sms_projectstatus/create/{{ project.Project_id }}">Update Status</a>
       <br />
       <br />
-      <div class="card mt-3 shadow-sm project-bom-compact small">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+      <div class="card mt-3 shadow-sm project-bom">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
           <strong class="fs-6">Linked Systems (Project BOM)</strong>
           <a class="btn btn-sm btn-outline-primary" href="/sms_projectBOM/createSMSProjectBOMForProject/{{ project.Project_id }}">Add</a>
         </div>
@@ -115,21 +275,72 @@
                 <td>{{ s.VariantCode }} — {{ s.VariantName }}</td>
                 <td class="truncate-200">{{ s.OrderNumber }}</td>
                 <td class="text-end">
-                  <a class="btn btn-sm btn-outline-primary" href="/sms_projectBOM/{{ s.ProjectBOMID }}/edit">Edit</a>
+                  <!-- Edit entfernt -->
                   <form action="/sms_projectBOM/{{ s.ProjectBOMID }}/delete" method="POST" style="display:inline-block" onsubmit="return confirm('Delete entry?');">
                     <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
                   </form>
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="7" class="text-center text-muted">No systems linked yet.</td></tr>
+              <tr><td colspan="5" class="text-center text-muted">No systems linked yet.</td></tr>
               {% endfor %}
               </tbody>
             </table>
           </div>
         </div>
       </div>
-
+      <br />
+      <br />
+      <div class="card mt-3 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <strong class="fs-6">Device Instances</strong>
+          <a class="btn btn-sm btn-primary" href="/sms_deviceInstances/createSMSDeviceInstanceForProject/{{ project.Project_id }}">Add</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle">
+              <thead class="table-light">
+              <tr>
+                <th>Device</th>
+                <th>Version</th>
+                <th>Belongs To</th>
+                <th>Serial</th>
+                <th>Status</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for d in deviceInstanceList %}
+              <tr class="
+            {% if d.VersionStatus == 'equal' %}table-success
+            {% elif d.VersionStatus == 'containsNewer' %}table-warning
+            {% elif d.VersionStatus == 'older' %}table-danger
+            {% elif d.VersionStatus == 'newer' %}table-primary
+            {% endif %}
+          ">
+                <td><a href="/sms_deviceInstances/show/{{ d.deviceInstance_id }}">{{ d.deviceType }}</a></td>
+                <td>{{ d.deviceVersion }}</td>
+                <td>
+                  {{ d.MinVersion }} – {{ d.MaxVersion }}
+                  {% if d.ContainsCurrent %}<br><strong>(contains current)</strong>{% endif %}
+                </td>
+                <td>{{ d.serialnumber }}</td>
+                <td>
+                  {% if d.VersionStatus == 'equal' %}✅ match
+                  {% elif d.VersionStatus == 'containsNewer' %}⚠️ newer sys ready
+                  {% elif d.VersionStatus == 'older' %}⬇️ outdated
+                  {% elif d.VersionStatus == 'newer' %}⬆️ too new
+                  {% else %}❓ unknown
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted">No devices for this project.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -138,52 +349,97 @@
 
   <div class="row">
     <div class="col-md-4">
-      <h2>Functions:</h2>
-      <div class="d-flex flex-column">
-        <a class="btn btn-primary btn-lg mb-2" href="/sms_projects/getiplist/{{ project.Project_id }}" role="button">IP List</a>
-        <a class="btn btn-primary btn-lg mb-2" href="/sms_project/{{ project.Project_id }}/export-structure" role="button">Component List (flat csv)</a>        <a class="btn btn-primary btn-lg mb-2" href="/sms_project/exportprojectstructureyaml/{{ project.Project_id }}" role="button">Component List (tree yaml txt)</a>
-        <form action="" method="GET" class="mb-3">
-          <div class="input-group">
-            <select class="form-select" id="checkTypeSelect">
-              <option value="all">Choose Checklist</option>
-              <option value="SL1 Abnahme">SL1 Abnahme</option>
-              <option value="Basic IBN Check">Basic IBN Check</option>
-              <option value="Production Check">Production Check</option>
-              <option value="Regular Re-Check">Regular Re-Check</option>
-            </select>
-            <a id="checkListButton" class="btn btn-primary btn-lg mb-2" href="#" role="button">Check Lists</a>
+      <div class="card shadow-sm card-tight">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <strong class="fs-6">Quick Actions</strong>
+        </div>
+        <div class="card-body">
+          <div class="btn-grid mb-2">
+            <a class="btn btn-outline-primary" href="/sms_projects/getiplist/{{ project.Project_id }}">
+              <i class="fa fa-sitemap me-1"></i> IP&nbsp;List
+            </a>
+            <a class="btn btn-outline-primary" href="/sms_project/{{ project.Project_id }}/export-structure">
+              <i class="fa fa-table me-1"></i> Component List (CSV)
+            </a>
+            <a class="btn btn-outline-primary" href="/sms_project/exportprojectstructureyaml/{{ project.Project_id }}">
+              <i class="fa fa-code me-1"></i> Component List (YAML)
+            </a>
+            <a class="btn btn-outline-secondary" href="/sms_projectUpdates/show/{{ project.Project_id }}">
+              <i class="fa fa-refresh me-1"></i> Updates
+            </a>
           </div>
-        </form>
-        <a class="btn btn-primary btn-lg" href="/sms_projectUpdates/show/{{ project.Project_id }}" role="button">Update</a>
+
+          <hr class="my-3">
+
+          <!-- Checklists: kompakte Input-Group, Buttons rechts ausgerichtet -->
+          <form action="" method="GET">
+            <div class="row g-2 align-items-center">
+              <div class="col-8">
+                <select class="form-select form-select-sm" id="checkTypeSelect">
+                  <option value="all">Choose Checklist</option>
+                  <option value="SL1 Abnahme">SL1 Abnahme</option>
+                  <option value="Basic IBN Check">Basic IBN Check</option>
+                  <option value="Production Check">Production Check</option>
+                  <option value="Regular Re-Check">Regular Re-Check</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <a id="checkListButton" class="btn btn-sm btn-primary w-100" href="#" role="button">
+                  <i class="fa fa-list-ul me-1"></i> Open
+                </a>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
 
     <div class="col-md-4">
-      <h3>Project Settings:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <a href="/sms_projectSettingsLink/createSMSProjectSettingsLink/{{ project.Project_id }}" class="btn btn-primary">Add</a>
-      </h3>
-      <table class="table">
-        <thead>
-        <tr>
-          <th>Setting Name</th>
-          <th>Value</th>
-          <th>Value Type</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for setting in projectSettings %}
-        <tr>
-          <td>{{ setting.KeyName }}</td>
-          <td>{{ setting.DefaultValue }}</td>
-          <td>{{ setting.ValueType }}</td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      <div class="card shadow-sm card-tight">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <strong class="fs-6">Project Settings</strong>
+          <a href="/sms_projectSettingsLink/createSMSProjectSettingsLink/{{ project.Project_id }}" class="btn btn-sm btn-primary">
+            <i class="fa fa-plus"></i> Add
+          </a>
+        </div>
+        <div class="card-body">
+          {% if projectSettings %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th>Value</th>
+                <th>Type</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for setting in projectSettings %}
+              <tr>
+                <td class="text-nowrap">{{ setting.KeyName }}</td>
+                <td class="text-truncate" style="max-width: 260px;">{{ setting.DefaultValue }}</td>
+                <td class="text-muted">{{ setting.ValueType }}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">No settings linked yet.</p>
+          {% endif %}
+        </div>
+      </div>
     </div>
 
     <div class="col-md-4">
-      <h2>Statistics:</h2>
+      <div class="card shadow-sm card-tight">
+        <div class="card-header bg-light">
+          <strong class="fs-6">Statistics</strong>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-0">Coming soon…</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -191,50 +447,6 @@
   <hr>
 
   <div class="row">
-    <div class="col-md-8">
-      <h2>DeviceInstances:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <a class="btn btn-primary btn-lg" href="/sms_deviceInstances/createSMSDeviceInstanceForProject/{{ project.Project_id }}" role="button" align="right">Add</a>
-      </h2>
-      <table class="table">
-        <thead>
-        <tr>
-          <th>Device</th>
-          <th>Version</th>
-          <th>Belongs To</th>
-          <th>Serial</th>
-          <th>Status</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for d in deviceInstanceList %}
-        <tr class="
-      {% if d.VersionStatus == 'equal' %}table-success
-      {% elif d.VersionStatus == 'containsNewer' %}table-warning
-      {% elif d.VersionStatus == 'older' %}table-danger
-      {% elif d.VersionStatus == 'newer' %}table-primary
-      {% endif %}
-    ">
-          <td><a href="/sms_deviceInstances/show/{{ d.deviceInstance_id }}">{{ d.deviceType }}</a></td>
-          <td>{{ d.deviceVersion }}</td>
-          <td>
-            {{ d.MinVersion }} – {{ d.MaxVersion }}
-            {% if d.ContainsCurrent %}<br><strong>(contains current)</strong>{% endif %}
-          </td>
-          <td>{{ d.serialnumber }}</td>
-          <td>
-            {% if d.VersionStatus == 'equal' %}✅ match
-            {% elif d.VersionStatus == 'containsNewer' %}⚠️ newer sys ready
-            {% elif d.VersionStatus == 'older' %}⬇️ outdated
-            {% elif d.VersionStatus == 'newer' %}⬆️ too new
-            {% else %}❓ unknown
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
     <div class="col-md-4">
     </div>
   </div>
@@ -245,43 +457,87 @@
   <div class="row">
     <div class="col-md-12">
       <h2>Issues:</h2>
-      <table class="table">
-        <thead>
-        <tr>
-          <th>Name</th>
-          <th>Crit.</th>
-          <th>Affected Devices</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for issue in issuesForThisProject %}
-        <tr>
-          <td><a href="/sms_issues/show/{{ issue.IssueID }}">{{ issue.IssueName|truncatechars:20 }}</a></td>
-          <td>
-            {% if issue.Criticality > 2 %}
-            <h3 style="color:red">HIGH</h3>
-            {% elif issue.Criticality < 2 %}
-            <h3 style="color:greenyellow">LOW</h3>
-            {% else %}
-            <h3 style="color:orange">MEDIUM</h3>
-            {% endif %}
-          </td>
-          <td>
-            <ul>
-              {% for device in issue.AffectedDevices %}
-              <li>
-                <strong>{{ device.DeviceName }}</strong> (ID: {{ device.DeviceID }}, Version: {{ device.DeviceVersion }})
-                {% if device.Inherit %}
-                <span class="text-muted">(Inherited)</span>
-                {% endif %}
-              </li>
+      <div class="card mt-3 shadow-sm card-tight">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <strong class="fs-6">Issues</strong>
+          <!-- optional: <a class="btn btn-sm btn-outline-primary" href="/sms_issues">Manage</a> -->
+        </div>
+
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0 align-middle">
+              <thead class="table-light">
+              <tr>
+                <th>Issue</th>
+                <th>Severity</th>
+                <th>Affected Devices</th>
+                <th class="text-end">Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for issue in issuesForThisProject %}
+              <tr>
+                <td>
+                  <a href="/sms_issues/show/{{ issue.IssueID }}">{{ issue.IssueName|truncatechars:40 }}</a>
+                </td>
+                <td>
+                  {% if issue.Criticality > 2 %}
+                  <span class="badge bg-danger">High</span>
+                  {% elif issue.Criticality < 2 %}
+                  <span class="badge bg-success">Low</span>
+                  {% else %}
+                  <span class="badge bg-warning text-dark">Medium</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div>
+                    {% for device in issue.AffectedDevices %}
+                    {% if forloop.counter <= 3 %}
+                    <span class="device-chip">
+                      <strong>{{ device.DeviceName }}</strong>
+                      <span class="muted">v{{ device.DeviceVersion }}</span>
+                      {% if device.Inherit %}<span class="muted"> · inherited</span>{% endif %}
+                    </span>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if issue.AffectedDevices|length > 3 %}
+                    <a class="btn btn-link btn-sm p-0 ms-1"
+                       data-bs-toggle="collapse"
+                       href="#aff-{{ issue.IssueID }}"
+                       role="button"
+                       aria-expanded="false"
+                       aria-controls="aff-{{ issue.IssueID }}">
+                      +{{ issue.AffectedDevices|length|add:"-3" }} more
+                    </a>
+                    <div class="collapse mt-2" id="aff-{{ issue.IssueID }}">
+                      {% for device in issue.AffectedDevices %}
+                      {% if forloop.counter > 3 %}
+                      <span class="device-chip">
+                          <strong>{{ device.DeviceName }}</strong>
+                          <span class="muted">v{{ device.DeviceVersion }}</span>
+                          {% if device.Inherit %}<span class="muted"> · inherited</span>{% endif %}
+                        </span>
+                      {% endif %}
+                      {% endfor %}
+                    </div>
+                    {% endif %}
+                  </div>
+                </td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-info" href="/sms_issues/show/{{ issue.IssueID }}">Details</a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">No issues for this project.</td>
+              </tr>
               {% endfor %}
-            </ul>
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <hr>
@@ -358,6 +614,17 @@
     let checkType = document.getElementById("checkTypeSelect").value;
     let url = "/sms_projects/checklist/" + projectID + "/" + encodeURIComponent(checkType);
     window.location.href = url;
+  });
+</script>
+<script>
+  document.querySelectorAll('.project-meta .copy-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const val = btn.getAttribute('data-copy') || '';
+      navigator.clipboard?.writeText(val).then(()=>{
+        btn.innerHTML = '<i class="fa fa-check text-success"></i>';
+        setTimeout(()=>btn.innerHTML='<i class="fa fa-copy"></i>', 1200);
+      });
+    });
   });
 </script>
 {% endblock %}
