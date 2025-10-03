@@ -81,6 +81,18 @@
   .clamp-3{
     display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
   }
+  .sys-link{
+    text-decoration: none;
+    font-weight: 600; /* Name etwas betont */
+  }
+  .sys-link:hover{ text-decoration: underline; }
+
+  .sys-version{
+    color: #dc3545;          /* rot */
+    font-weight: 700;        /* fett */
+    font-size: 1rem;         /* einen Tick größer als HD-Version (<small>) */
+    margin-left: .35rem;     /* Abstand zum Namen */
+  }
 </style>
 {% block content %}
 <!-- Main jumbotron for a primary marketing message or call to action -->
@@ -265,8 +277,10 @@
               {% for s in systemList %}
               <tr>
                 <td>
-                  {{ s.SystemType }}
-                  <code class="muted-code">v{{ s.SystemVersion }}</code>
+                  <a class="sys-link" href="/sms_systems/show/{{ s.SystemID }}">
+                    {{ s.SystemType }}
+                  </a>
+                  <span class="sys-version">v{{ s.SystemVersion }}</span>
                 </td>
                 <td>
                   <a href="/sms_hardwaredesigns/show/{{ s.HardwareDesignID }}">{{ s.HardwareDesignName }}</a>
