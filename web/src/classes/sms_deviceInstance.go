@@ -114,3 +114,20 @@ func NewSms_DeviceInstanceFromDB(deviceInstance_id int, project_id int, device_i
 	return &Sms_DeviceInstance{deviceInstance_id: deviceInstance_id, project_id: project_id, device_id: device_id, serialnumber: serialnumber, provisioner: provisioner, configuration: configuration, date: date, projectName: projectName, deviceType: deviceType, deviceVersion: deviceVersion}
 }
 
+
+type Sms_DeviceInstancePBOMView struct {
+	DeviceInstanceID int
+	DeviceID         int
+	DeviceName       string // dt.type
+	DeviceVersion    string // d.version
+	Serialnumber     string
+	Configuration    string
+	Provisioner      string
+	Date             string  // oder time.Time
+	// Optional: abgeleitete Felder (Status), wird in Route befüllt
+	VersionStatus    string
+	MinVersion       string
+	MaxVersion       string
+	ContainsCurrent  bool
+
+}

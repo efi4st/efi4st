@@ -65,8 +65,14 @@
           <input type="text" class="form-control" name="ImoPlantFactory" id="ImoPlantFactory" placeholder="IMO/Plant/Factory">
           <br>
 
-          <label for="PlantType">Plant Type:</label> <!-- NEU -->
-          <input type="text" class="form-control" name="PlantType" id="PlantType" placeholder="Plant Type">
+          <label for="PlantType">Plant Type:</label>
+          <select class="form-select" name="PlantType" id="PlantType">
+            <option value="">-- choose --</option>
+            <option value="IMO">IMO</option>
+            <option value="Plant">Plant</option>
+            <option value="PowerPlant">PowerPlant</option>
+            <option value="Factory">Factory</option>
+          </select>
           <br>
 
           <label for="Note">Note:</label> <!-- NEU -->

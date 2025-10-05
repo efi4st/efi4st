@@ -68,6 +68,6 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(sms_checklistItemInstance_schema)	// SMS
 	db.MustExec(sms_checklistTemplateDocAsset_schema) // SMS
 	db.MustExec(sms_hardwaredesign_variant_schema)	// SMS
-
+	db.MustExec(sms_deviceInstancePartOfProjectBOM_schema) // SMS
 }
 

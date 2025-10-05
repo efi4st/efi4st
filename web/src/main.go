@@ -670,6 +670,14 @@ func irisMain()() {
 	// Route registrieren (analog zu deinem Remove-Link)
 	app.Get("/sms_hardwaredesignPartOfSystem/setDefault", routes.SetDefaultHardwareDesign)
 
+	// DeviceInstancesToPBOM(System)
+	app.Get("/sms_deviceInstances/createForProjectBOM/{projectBOM_id:int}", routes.CreateDeviceInstanceForPBOM)
+	app.Post("/sms_deviceInstances/linkToPBOM", routes.LinkExistingDeviceInstanceToPBOM)      // falls du bestehende Devices verlinken willst
+	app.Post("/sms_deviceInstances/unlinkFromPBOM", routes.UnlinkDeviceInstanceFromPBOM)
+	app.Get("/sms_deviceInstances/createForProjectBOM/{projectBOM_id:int}", routes.CreateDeviceInstanceForPBOMForm)
+	app.Post("/sms_deviceInstances/createForProjectBOM", routes.CreateDeviceInstanceForPBOMSubmit)
+
+
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
 }

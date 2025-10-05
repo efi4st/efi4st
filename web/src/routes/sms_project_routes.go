@@ -53,12 +53,18 @@ func CreateSMSProject(ctx iris.Context) {
 
 // POST
 func AddSMSProject(ctx iris.Context) {
-	projectName := ctx.PostValue("ProjectName")
-	customer := ctx.PostValue("Customer")
+	projectName   := ctx.PostValue("ProjectName")
+	customer      := ctx.PostValue("Customer")
 	projecttypeId := ctx.PostValue("ProjecttypeId")
-	reference := ctx.PostValue("Reference")
+	reference     := ctx.PostValue("Reference")
 
-	// Projekt-Typ ID konvertieren
+	// neue Felder
+	projectRef    := ctx.PostValue("ProjectReference")
+	plantNumber   := ctx.PostValue("PlantNumber")
+	imoPlantFact  := ctx.PostValue("ImoPlantFactory")
+	plantType     := ctx.PostValue("PlantType") // muss zu ENUM passen (oder leer bleiben)
+	note          := ctx.PostValue("Note")
+
 	iProjectType, err := strconv.Atoi(projecttypeId)
 	if err != nil {
 		ctx.ViewData("error", "Error: Error parsing projecttypeId!")
@@ -66,53 +72,47 @@ func AddSMSProject(ctx iris.Context) {
 		return
 	}
 
-	// Neues Projekt erstellen und ID erhalten
-	projectID, err := dbprovider.GetDBManager().AddSMSProject(projectName, customer, iProjectType, reference)
+	// ENUM absichern (nur erlaubte Werte, sonst NULL schreiben)
+	switch plantType {
+	case "IMO", "Plant", "PowerPlant", "Factory":
+		// ok
+	default:
+		plantType = "" // wird später als NULL gespeichert
+	}
+
+	// Projekt anlegen (erweiterte Signatur)
+	projectID, err := dbprovider.GetDBManager().AddSMSProject(
+		projectName, customer, iProjectType, reference,
+		projectRef, plantNumber, imoPlantFact, plantType, note,
+	)
 	if err != nil {
 		ctx.ViewData("error", "Error: Not able to add project!")
 		ctx.View("sms_createProject.html")
 		return
 	}
 
-	// Alle ausgewählten Settings abrufen
-	selectedSettingsStr, err := ctx.PostValueMany("selectedSettings")
-	if err != nil {
-		ctx.ViewData("error", "Error retrieving selected settings!")
-		return
-	}
-
-	// Die ausgewählten Setting-IDs in eine Liste umwandeln (angenommen, sie sind durch Kommas getrennt)
-	selectedSettings := strings.Split(selectedSettingsStr, ",")
-
+	// Ausgewählte Settings (mehrere Checkboxen) – als Slice lesen, nicht splitten
+	selectedSettings, _ := ctx.PostValues("selectedSettings") // []string, <zweiter Rückgabewert>
 	for _, settingID := range selectedSettings {
-		// Die SettingID in int konvertieren
 		iSettingID, err := strconv.Atoi(settingID)
 		if err != nil {
 			fmt.Println("Error parsing setting ID:", err)
 			continue
 		}
-
-		// Benutzerdefinierten Wert abrufen (falls eingegeben)
+		// optionaler Wert zum Setting
 		settingValue := ctx.PostValue(fmt.Sprintf("SettingValue_%d", iSettingID))
-
-		// Falls kein Wert eingegeben wurde, den Default-Wert setzen
-		if settingValue == "" {
+		if strings.TrimSpace(settingValue) == "" {
+			// Default holen
 			defaultVal, err := dbprovider.GetDBManager().GetProjectSettingDefaultValue(iSettingID)
-			if err != nil {
-				fmt.Println("Error retrieving default value:", err)
-				continue
+			if err == nil {
+				settingValue = defaultVal
 			}
-			settingValue = defaultVal
 		}
-
-		// ProjectSettingLink speichern
-		err = dbprovider.GetDBManager().AddProjectSettingLink(projectID, iSettingID, settingValue)
-		if err != nil {
+		if err := dbprovider.GetDBManager().AddProjectSettingLink(projectID, iSettingID, settingValue); err != nil {
 			fmt.Println("Error adding project setting link:", err)
 		}
 	}
 
-	// Erfolgreicher Abschluss -> Projektliste neu laden
 	ctx.ViewData("error", "")
 	projects := dbprovider.GetDBManager().GetSMSProjects()
 	ctx.ViewData("projectList", projects)
@@ -120,58 +120,52 @@ func AddSMSProject(ctx iris.Context) {
 }
 
 func ShowSMSProject(ctx iris.Context) {
-	// Hole die Projekt-ID aus den URL-Parametern
 	id := ctx.Params().Get("id")
-
 	i, err := strconv.Atoi(id)
 	if err != nil {
 		ctx.ViewData("error", "Error: Error parsing project Id!")
 		return
 	}
 
-	// Hole Projektinformationen und andere Daten
 	project := dbprovider.GetDBManager().GetSMSProjectInfo(i)
-	deviceInstanceList := dbprovider.GetDBManager().GetDeviceInstanceListForProject(i)
+
+	// ↓ Unassigned statt der alten deviceInstanceList holen
+	unassigned := dbprovider.GetDBManager().GetUnassignedDeviceInstanceListForProject(i)
 
 	systemList := dbprovider.GetDBManager().GetSMSProjectBOMForProject(i)
 	log.Printf("[PBOM] project=%d list len=%d", i, len(systemList))
 
-	var currentSystemVersion string
-	if len(systemList) > 0 {
-		currentSystemVersion = systemList[0].SystemVersion // statt .Tmp()
-	} else {
-		currentSystemVersion = ""
-		log.Println("Warnung: Kein System mit diesem Projekt verlinkt (systemList ist leer)")
+	// Zugeordnete Devices je PBOM weiterhin präzise gegen dessen SystemVersion anreichern
+	for idx := range systemList {
+		s := &systemList[idx]
+		list := dbprovider.GetDBManager().GetDeviceInstancesForProjectBOM(s.ProjectBOMID)
+		for j := range list {
+			dbprovider.GetDBManager().EnrichPBOMDeviceInstanceWithSystemInfo(&list[j], s.SystemVersion)
+		}
+		s.DeviceList  = list
+		s.DeviceCount = len(list)
 	}
 
-	issuesForThisProject, err := dbprovider.GetDBManager().GetSMSIssuesForProject(i)
-
-	for i := range deviceInstanceList {
-		dbprovider.GetDBManager().EnrichDeviceInstanceWithSystemInfo(&deviceInstanceList[i], currentSystemVersion)
-	}
-
-	// Hole die verlinkten Settings für das Projekt
+	// KEIN currentSystemVersion mehr für unassigned nötig
+	issuesForThisProject, _ := dbprovider.GetDBManager().GetSMSIssuesForProject(i)
 	projectSettings, err := dbprovider.GetDBManager().GetLinkedProjectSettings(i)
 	if err != nil {
 		ctx.ViewData("error", "Error: Could not retrieve project settings!")
 		return
 	}
-
 	statusLogs := dbprovider.GetDBManager().GetSMSProjectStatusLogsForProject(i)
 	checklistTemplates := dbprovider.GetDBManager().GetAllChecklistTemplates()
 	checklistInstances := dbprovider.GetDBManager().GetChecklistInstancesForProject(i)
 
-	// Übergebe alle Daten an die View
+	ctx.ViewData("project", project)
+	ctx.ViewData("systemList", systemList)
+	ctx.ViewData("unassignedDeviceList", unassigned) // ← wichtig
+	ctx.ViewData("issuesForThisProject", issuesForThisProject)
+	ctx.ViewData("projectSettings", projectSettings)
+	ctx.ViewData("statusLogs", statusLogs)
 	ctx.ViewData("checklistTemplates", checklistTemplates)
 	ctx.ViewData("checklistInstances", checklistInstances)
-	ctx.ViewData("statusLogs", statusLogs)
-	ctx.ViewData("deviceInstanceList", deviceInstanceList)
-	ctx.ViewData("systemList", systemList)
-	ctx.ViewData("issuesForThisProject", issuesForThisProject)
-	ctx.ViewData("project", project)
-	ctx.ViewData("projectSettings", projectSettings)
 
-	// Lade die View
 	ctx.View("sms_showProject.html")
 }
 

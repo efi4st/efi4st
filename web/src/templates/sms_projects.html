@@ -142,7 +142,7 @@
         <tbody id="myTable">
         {% for project in projectList %}
         <tr>
-          <td>{{ project.Plant_number }}</td> <!-- NEU -->
+          <td>{{ project.PlantNumber }}</td> <!-- NEU -->
           <td><a href="/sms_projects/show/{{ project.Project_id }}">{{ project.Name }}</a></td>
           <td>{{ project.Date|truncatechars:13 }}</td>
           <td>{{ project.Projecttype }}</td>

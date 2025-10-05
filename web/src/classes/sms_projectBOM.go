@@ -41,4 +41,7 @@ type Sms_ProjectBOMView struct {
 	VariantCode string
 	VariantName string
 	VariantSpec string
+
+	DeviceList  []Sms_DeviceInstancePBOMView
+	DeviceCount int
 }

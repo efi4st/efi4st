@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron banner">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-8">
+        <h1 class="display-3" ></h1>
+      </div>
+      <div class="col-md-1"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="container">
+        {% if error|length > 1 %}
+        <div class="alert alert-warning" role="alert">
+          {{error}}
+        </div>
+        {% endif %}
+      </div>
+
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <strong class="fs-6">Add Device Instance to System</strong>
+          <span class="text-muted">{{ SystemLabel }}</span>
+        </div>
+        <div class="card-body">
+          <form action="/sms_deviceInstances/createForProjectBOM" method="POST">
+            <input type="hidden" name="ProjectBOMID" value="{{ ProjectBOMID }}">
+            <input type="hidden" name="ProjectID"    value="{{ ProjectID }}">
+
+            <div class="mb-3">
+              <label class="form-label">Device (Catalog)</label>
+              <select class="form-select" name="DeviceID" required>
+                {% for d in DeviceChoices %}
+                <option value="{{ d.DeviceID }}">{{ d.DeviceType }} — v{{ d.DeviceVersion }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label class="form-label">Serial Number</label>
+                <input class="form-control" name="Serialnumber" placeholder="e.g. SN-00123">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Provisioner</label>
+                <input class="form-control" name="Provisioner" placeholder="e.g. John Doe">
+              </div>
+            </div>
+
+            <div class="mb-3 mt-2">
+              <label class="form-label">Configuration</label>
+              <input class="form-control" name="Configuration" placeholder="e.g. profile ABC">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-control" name="Date" value="{{ Today }}" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Note (optional)</label>
+              <input class="form-control" name="AdditionalInfo" placeholder="Mapping note…">
+            </div>
+
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary" type="submit">Save</button>
+              <a class="btn btn-secondary" href="/sms_projects/show/{{ ProjectID }}">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+{% endblock %}
+

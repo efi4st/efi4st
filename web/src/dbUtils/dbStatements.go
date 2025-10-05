@@ -136,7 +136,13 @@ FROM sms_project
 LEFT JOIN sms_projecttype ON sms_project.projecttype_id = sms_projecttype.projecttype_id
 WHERE project_id = ?;
 `
-var INSERT_sms_newProject = `INSERT INTO sms_project (name, customer, projecttype_id, reference, date, active) VALUES (?,?,?,?,?,?);`
+var INSERT_sms_newProject = `
+INSERT INTO sms_project
+(name, customer, projecttype_id, reference, date, active,
+ plant_number, project_reference, imo_plant_powerplant_factory, plant_type, note)
+VALUES (?,?,?,?,?,?,
+        ?,?,?,?,?);
+`
 var DELETE_sms_project = `DELETE FROM sms_project WHERE project_id = ?;`
 var UPDATE_sms_projectActive = `UPDATE sms_project SET active = ? WHERE project_id = ?;`
 var SELECT_sms_projectTypes = `SELECT sms_projecttype.projecttype_id, sms_projecttype.type FROM sms_projecttype;`
@@ -167,7 +173,26 @@ ORDER BY date DESC;`
 
 // SMS DeviceInstance
 var SELECT_sms_deviceInstances = `SELECT sms_deviceInstance.deviceInstance_id, sms_deviceInstance.project_id, sms_deviceInstance.device_id, sms_deviceInstance.serialnumber, sms_deviceInstance.provisioner, sms_deviceInstance.configuration, sms_deviceInstance.date, sms_project.name, sms_device.devicetype_id, sms_device.version, sms_devicetype.type FROM sms_deviceInstance LEFT JOIN sms_project ON sms_deviceInstance.project_id = sms_project.project_id LEFT JOIN sms_device ON sms_deviceInstance.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id ; `
-var SELECT_sms_deviceInstanceInfo = `SELECT sms_deviceInstance.deviceInstance_id, sms_deviceInstance.project_id, sms_deviceInstance.device_id, sms_deviceInstance.serialnumber, sms_deviceInstance.provisioner, sms_deviceInstance.configuration, sms_deviceInstance.date, sms_project.name, sms_device.devicetype_id, sms_device.version, sms_devicetype.type FROM sms_deviceInstance LEFT JOIN sms_project ON sms_deviceInstance.project_id = sms_project.project_id LEFT JOIN sms_device ON sms_deviceInstance.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id WHERE deviceInstance_id = ?;`
+var SELECT_sms_deviceInstanceInfo = `
+SELECT
+  di.deviceInstance_id,
+  di.project_id,
+  di.device_id,
+  di.serialnumber,
+  di.provisioner,
+  di.configuration,
+  di.` + "`date`" + `,
+  p.name,
+  d.devicetype_id,
+  d.version,
+  dt.type
+FROM sms_deviceInstance di
+LEFT JOIN sms_project    p  ON di.project_id = p.project_id
+LEFT JOIN sms_device     d  ON di.device_id  = d.device_id
+LEFT JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+WHERE di.deviceInstance_id = ?
+LIMIT 1;
+`
 var INSERT_sms_newDeviceInstance = `INSERT INTO sms_deviceInstance (project_id, device_id, serialnumber, provisioner, configuration, date) VALUES (?,?,?,?,?,?);`
 var DELETE_sms_deviceInstance = `DELETE FROM sms_deviceInstance WHERE deviceInstance_id = ?;`
 var SELECT_sms_deviceInstancesForProject = `SELECT sms_deviceInstance.deviceInstance_id, sms_deviceInstance.project_id, sms_deviceInstance.device_id, sms_deviceInstance.serialnumber, sms_deviceInstance.provisioner, sms_deviceInstance.configuration, sms_deviceInstance.date, sms_project.name, sms_device.devicetype_id, sms_device.version, sms_devicetype.type FROM sms_deviceInstance LEFT JOIN sms_project ON sms_deviceInstance.project_id = sms_project.project_id LEFT JOIN sms_device ON sms_deviceInstance.device_id = sms_device.device_id LEFT JOIN sms_devicetype ON sms_device.devicetype_id = sms_devicetype.devicetype_id WHERE sms_deviceInstance.project_id = ?; `
@@ -1631,4 +1656,95 @@ SELECT s.system_id, s.systemtype_id, st.type AS system_type, s.version
 FROM sms_system s
 JOIN sms_systemtype st ON st.systemtype_id = s.systemtype_id
 ORDER BY st.type ASC, s.version ASC;
+`
+
+// INSERT/DELETE mapping
+var INSERT_sms_DeviceInstancePartOfProjectBOM = `
+INSERT INTO sms_deviceInstancePartOfProjectBOM
+(projectBOM_id, deviceInstance_id, additionalInfo) VALUES (?,?,?);
+`
+var DELETE_sms_DeviceInstancePartOfProjectBOM = `
+DELETE FROM sms_deviceInstancePartOfProjectBOM
+WHERE projectBOM_id = ? AND deviceInstance_id = ?;
+`
+
+// Liste Devices je PBOM
+var SELECT_sms_DeviceInstancesForProjectBOM = `
+SELECT
+  di.deviceInstance_id,
+  di.serialnumber,
+  di.provisioner,
+  di.configuration,
+  di.date,
+  d.device_id,
+  dt.type        AS device_type,
+  d.version      AS device_version
+FROM sms_deviceInstancePartOfProjectBOM m
+JOIN sms_deviceInstance di ON m.deviceInstance_id = di.deviceInstance_id
+JOIN sms_device d          ON di.device_id       = d.device_id
+JOIN sms_devicetype dt     ON d.devicetype_id    = dt.devicetype_id
+WHERE m.projectBOM_id = ?
+ORDER BY di.date DESC, di.deviceInstance_id DESC;
+`
+
+// Devices, die zu einem System gehören (für das Create-Form)
+var SELECT_sms_DevicesForSystem = `
+SELECT d.device_id, dt.type AS device_type, d.version AS device_version
+FROM sms_devicePartOfSystem m
+JOIN sms_device d      ON m.device_id = d.device_id
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+WHERE m.system_id = ?
+ORDER BY dt.type ASC, d.version ASC;
+`
+
+// DeviceInstance anlegen
+var INSERT_sms_DeviceInstance = `
+INSERT INTO sms_deviceInstance
+(project_id, device_id, serialnumber, provisioner, configuration, date)
+VALUES (?,?,?,?,?,?);
+`
+
+// Alle DeviceInstances des Projekts, die NICHT in sms_deviceInstancePartOfProjectBOM verknüpft sind
+var SELECT_sms_UnassignedDeviceInstancesForProject = `
+SELECT
+  di.deviceInstance_id,
+  di.project_id,
+  di.device_id,
+  di.serialnumber,
+  di.provisioner,
+  di.configuration,
+  di.` + "`date`" + `,
+  p.name        AS name,
+  dt.type       AS type,
+  d.version     AS version
+FROM sms_deviceInstance di
+JOIN sms_project      p  ON p.project_id       = di.project_id
+JOIN sms_device       d  ON d.device_id        = di.device_id
+JOIN sms_devicetype   dt ON dt.devicetype_id   = d.devicetype_id
+LEFT JOIN sms_deviceInstancePartOfProjectBOM m
+       ON m.deviceInstance_id = di.deviceInstance_id
+WHERE di.project_id = ?
+  AND m.deviceInstance_id IS NULL
+ORDER BY di.` + "`date`" + ` DESC, di.deviceInstance_id DESC;
+`
+
+// Einzelne DeviceInstance inkl. Projekt/Device-Metadaten
+var SELECT_sms_DeviceInstanceByID = `
+SELECT
+  di.deviceInstance_id,
+  di.project_id,
+  di.device_id,
+  di.serialnumber,
+  di.provisioner,
+  di.configuration,
+  di.` + "`date`" + `,
+  p.name      AS name,
+  dt.type     AS type,
+  d.version   AS version
+FROM sms_deviceInstance di
+JOIN sms_project    p  ON p.project_id      = di.project_id
+JOIN sms_device     d  ON d.device_id       = di.device_id
+JOIN sms_devicetype dt ON dt.devicetype_id  = d.devicetype_id
+WHERE di.deviceInstance_id = ?
+LIMIT 1;
 `

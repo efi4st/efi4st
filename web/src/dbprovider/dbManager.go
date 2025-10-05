@@ -72,7 +72,7 @@ type Manager interface {
 	RemoveBinaryAnalysisByRelevantApp(id int) error
 	UpdateBinaryAnalysis(id int, output string) error
 	GetSMSProjects() []classes.Sms_Project
-	AddSMSProject(projectName string, customer string, projecttypeId int, reference string) (int, error)
+	AddSMSProject(projectName string, customer string, projecttypeId int, reference string, projectReference string, plantNumber string, imoPlantFactory string, plantType string, note string, ) (int, error)
 	GetSMSProjectInfo(id int) *classes.Sms_Project
 	UpdateSMSProjectsActive(id int, active bool) error
 	RemoveSMSProject(id int) error
@@ -344,6 +344,14 @@ type Manager interface {
 	GetAllSystemsMinimal() []classes.Sms_SystemMinimal
 	GetCompatibleHardwareDesignsForSystem(systemID int) []classes.Sms_HardwareDesign
 	GetDefaultHardwareDesignForSystem(systemID int) *classes.Sms_HardwareDesign
+	// DeviceInstanceToPBOM (system)
+	LinkDeviceInstanceToPBOM(projectBOMID, deviceInstanceID int, info string) error
+	UnlinkDeviceInstanceFromPBOM(projectBOMID, deviceInstanceID int) error
+	GetDeviceInstancesForProjectBOM(projectBOMID int) []classes.Sms_DeviceInstancePBOMView
+	GetDevicesForSystem(systemID int) []classes.Sms_DeviceCatalogMinimal
+	CreateDeviceInstance(projectID, deviceID int, serial, provisioner, configuration, date string) (int64, error)
+	EnrichPBOMDeviceInstanceWithSystemInfo(d *classes.Sms_DeviceInstancePBOMView, currentSystemVersion string, )
+	GetUnassignedDeviceInstanceListForProject(projectID int) []classes.Sms_DeviceInstance
 }
 
 var reApp = regexp.MustCompile(`%AppVersion:([^%]+)%`)
@@ -1321,9 +1329,18 @@ func (mgr *manager) UpdateBinaryAnalysis(id int, output string) (err error) {
 /////////////////////////////////////////
 ////	SMS Project
 ////////////////////////////////////////
-func (mgr *manager) AddSMSProject(projectName string, customer string, projecttypeId int, reference string) (int, error) {
-	dt := time.Now()
+func (mgr *manager) AddSMSProject(projectName string, customer string, projecttypeId int, reference string, projectReference string, plantNumber string, imoPlantFactory string, plantType string, note string, ) (int, error) {
+
+	dt  := time.Now()
 	act := false
+
+	// helper: leere Strings als NULL speichern
+	nullIfEmpty := func(s string) interface{} {
+		if strings.TrimSpace(s) == "" {
+			return nil
+		}
+		return s
+	}
 
 	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_newProject)
 	if err != nil {
@@ -1332,21 +1349,25 @@ func (mgr *manager) AddSMSProject(projectName string, customer string, projectty
 	}
 	defer stmt.Close()
 
-	// Führe das INSERT aus
-	result, err := stmt.Exec(projectName, customer, projecttypeId, reference, dt, act)
+	res, err := stmt.Exec(
+		projectName, customer, projecttypeId, reference, dt, act,
+		nullIfEmpty(plantNumber),
+		nullIfEmpty(projectReference),
+		nullIfEmpty(imoPlantFactory),
+		nullIfEmpty(plantType), // bleibt NULL wenn nicht gesetzt/ungültig
+		nullIfEmpty(note),
+	)
 	if err != nil {
 		fmt.Println("Error executing statement:", err)
 		return 0, err
 	}
 
-	// Die letzte eingefügte ID abrufen
-	projectID, err := result.LastInsertId()
+	id, err := res.LastInsertId()
 	if err != nil {
 		fmt.Println("Error retrieving last insert ID:", err)
 		return 0, err
 	}
-
-	return int(projectID), nil
+	return int(id), nil
 }
 
 func (mgr *manager) GetSMSProjects() (projects []classes.Sms_Project) {
@@ -2234,32 +2255,46 @@ func (mgr *manager) GetSMSDeviceInstances() (deviceInstances []classes.Sms_Devic
 	return deviceInstances
 }
 
-func (mgr *manager) GetSMSDeviceInstanceInfo(id int) (*classes.Sms_DeviceInstance) {
+func (mgr *manager) GetSMSDeviceInstanceInfo(id int) *classes.Sms_DeviceInstance {
 	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_deviceInstanceInfo)
-	if err != nil{
-		fmt.Print(err)
+	if err != nil {
+		log.Println("GetSMSDeviceInstanceInfo prepare:", err)
+		return nil
 	}
+	defer stmt.Close()
 
-	var ( 	dbId int
-		dbProject_id int
-		dbDevice_id int
-		dbSerialnumber string
-		dbProvisioner string
-		dbConfiguration string
-		dbDate time.Time
-		dbprojectName string
-		dbdevicetypeId int
-		dbdeviceVersion string
-		dbdeviceType string)
+	var (
+		dbId             int
+		dbProjectID      int
+		dbDeviceID       int
+		dbSerialnumber   string
+		dbProvisioner    string
+		dbConfiguration  string
+		dbDate           time.Time
+		dbProjectName    string
+		dbDeviceTypeID   int
+		dbDeviceVersion  string
+		dbDeviceType     string
+	)
 
 	row := stmt.QueryRow(id)
-	row.Scan(&dbId, &dbProject_id, &dbDevice_id, &dbSerialnumber, &dbProvisioner, &dbConfiguration, &dbDate, &dbprojectName, &dbdevicetypeId, &dbdeviceVersion, &dbdeviceType)
+	if err := row.Scan(
+		&dbId, &dbProjectID, &dbDeviceID, &dbSerialnumber, &dbProvisioner,
+		&dbConfiguration, &dbDate, &dbProjectName, &dbDeviceTypeID,
+		&dbDeviceVersion, &dbDeviceType,
+	); err != nil {
+		if err != sql.ErrNoRows {
+			log.Println("GetSMSDeviceInstanceInfo scan:", err)
+		}
+		return nil
+	}
 
-	var deviceInstance = classes.NewSms_DeviceInstanceFromDB(dbId, dbProject_id, dbDevice_id, dbSerialnumber, dbProvisioner, dbConfiguration, dbDate.String(), dbprojectName, dbdeviceType, dbdeviceVersion)
-
-	return deviceInstance
+	return classes.NewSms_DeviceInstanceFromDB(
+		dbId, dbProjectID, dbDeviceID, dbSerialnumber, dbProvisioner,
+		dbConfiguration, dbDate.Format("2006-01-02"),
+		dbProjectName, dbDeviceType, dbDeviceVersion,
+	)
 }
-
 
 func (mgr *manager) EnrichDeviceInstanceWithSystemInfo(deviceInstance *classes.Sms_DeviceInstance, currentSystemVersion string) {
 	if currentSystemVersion == "" {
@@ -9200,4 +9235,232 @@ func (mgr *manager) GetDefaultHardwareDesignForSystem(systemID int) *classes.Sms
 		return nil
 	}
 	return &d
+}
+
+/////////////////
+//
+//// DeviceInstanceToPBOMSystem
+//
+/////////////////
+
+// dbprovider
+func (mgr *manager) LinkDeviceInstanceToPBOM(projectBOMID, deviceInstanceID int, info string) error {
+	_, err := mgr.db.Exec(dbUtils.INSERT_sms_DeviceInstancePartOfProjectBOM,
+		projectBOMID, deviceInstanceID, info,
+	)
+	return err
+}
+
+func (mgr *manager) UnlinkDeviceInstanceFromPBOM(projectBOMID, deviceInstanceID int) error {
+	_, err := mgr.db.Exec(dbUtils.DELETE_sms_DeviceInstancePartOfProjectBOM,
+		projectBOMID, deviceInstanceID,
+	)
+	return err
+}
+
+func (mgr *manager) GetDeviceInstancesForProjectBOM(projectBOMID int) []classes.Sms_DeviceInstancePBOMView {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_DeviceInstancesForProjectBOM)
+	if err != nil { log.Println(err); return nil }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectBOMID)
+	if err != nil { log.Println(err); return nil }
+	defer rows.Close()
+
+	out := []classes.Sms_DeviceInstancePBOMView{}
+	for rows.Next() {
+		var r classes.Sms_DeviceInstancePBOMView
+		if err := rows.Scan(
+			&r.DeviceInstanceID,
+			&r.Serialnumber,
+			&r.Provisioner,
+			&r.Configuration,
+			&r.Date,
+			&r.DeviceID,
+			&r.DeviceName,
+			&r.DeviceVersion,
+		); err != nil {
+			log.Println("scan err:", err); continue
+		}
+		out = append(out, r)
+	}
+	if err := rows.Err(); err != nil { log.Println(err) }
+	return out
+}
+
+
+// Liste der zum System gehörenden Devices (für das Create-Form)
+func (mgr *manager) GetDevicesForSystem(systemID int) []classes.Sms_DeviceCatalogMinimal {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_DevicesForSystem)
+	if err != nil { log.Println(err); return nil }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(systemID)
+	if err != nil { log.Println(err); return nil }
+	defer rows.Close()
+
+	out := []classes.Sms_DeviceCatalogMinimal{}
+	for rows.Next() {
+		var r classes.Sms_DeviceCatalogMinimal
+		if err := rows.Scan(&r.DeviceID, &r.DeviceType, &r.DeviceVersion); err != nil {
+			log.Println("scan:", err); continue
+		}
+		out = append(out, r)
+	}
+	return out
+}
+
+// DeviceInstance anlegen und ID zurückgeben
+func (mgr *manager) CreateDeviceInstance(projectID, deviceID int, serial, provisioner, configuration, date string) (int64, error) {
+	res, err := mgr.db.Exec(dbUtils.INSERT_sms_DeviceInstance,
+		projectID, deviceID, serial, provisioner, configuration, date,
+	)
+	if err != nil { return 0, err }
+	id, _ := res.LastInsertId()
+	return id, nil
+}
+
+// Enrich für die Unterliste pro PBOM-Zeile
+func (mgr *manager) EnrichPBOMDeviceInstanceWithSystemInfo(
+	d *classes.Sms_DeviceInstancePBOMView,
+	currentSystemVersion string,
+) {
+	if currentSystemVersion == "" {
+		d.VersionStatus = "unknown"
+		return
+	}
+
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_systemVersionsforDevice)
+	if err != nil {
+		log.Println("Prepare failed:", err)
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(d.DeviceID)
+	if err != nil {
+		log.Println("Query failed:", err)
+		return
+	}
+	defer rows.Close()
+
+	var semverList []*semver.Version
+	for rows.Next() {
+		var version string
+		if err := rows.Scan(&version); err == nil {
+			v, err := semver.NewVersion(version)
+			if err == nil {
+				semverList = append(semverList, v)
+			} else {
+				log.Printf("Invalid semver version: %s", version)
+			}
+		}
+	}
+	if len(semverList) == 0 {
+		d.VersionStatus = "unknown"
+		return
+	}
+
+	sort.Sort(semver.Collection(semverList))
+	d.MinVersion = semverList[0].String()
+	d.MaxVersion = semverList[len(semverList)-1].String()
+
+	current, err := semver.NewVersion(currentSystemVersion)
+	if err != nil {
+		log.Printf("Invalid currentSystemVersion: %s", currentSystemVersion)
+		d.VersionStatus = "unknown"
+		return
+	}
+
+	containsCurrent := false
+	for _, v := range semverList {
+		if v.Equal(current) {
+			containsCurrent = true
+			break
+		}
+	}
+	d.ContainsCurrent = containsCurrent
+
+	switch {
+	case containsCurrent && semverList[len(semverList)-1].GreaterThan(current):
+		d.VersionStatus = "containsNewer"
+	case containsCurrent:
+		d.VersionStatus = "equal"
+	case semverList[len(semverList)-1].LessThan(current):
+		d.VersionStatus = "older"
+	case semverList[0].GreaterThan(current):
+		d.VersionStatus = "newer"
+	default:
+		d.VersionStatus = "unknown"
+	}
+}
+
+func (mgr *manager) GetUnassignedDeviceInstanceListForProject(projectID int) []classes.Sms_DeviceInstance {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_UnassignedDeviceInstancesForProject)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	var out []classes.Sms_DeviceInstance
+	for rows.Next() {
+		var (
+			deviceInstanceID int
+			projectIDDB      int
+			deviceID         int
+			serialnumber     string
+			provisioner      string
+			configuration    string
+			date             string
+			projectName      string
+			deviceType       string
+			deviceVersion    string
+		)
+
+		if err := rows.Scan(
+			&deviceInstanceID,
+			&projectIDDB,
+			&deviceID,
+			&serialnumber,
+			&provisioner,
+			&configuration,
+			&date,
+			&projectName,   // name
+			&deviceType,    // type
+			&deviceVersion, // version
+		); err != nil {
+			log.Println("scan err:", err)
+			continue
+		}
+
+		// Objekt über deinen Constructor erzeugen (keine direkten Feldzugriffe nötig)
+		inst := classes.NewSms_DeviceInstanceFromDB(
+			deviceInstanceID,
+			projectIDDB,
+			deviceID,
+			serialnumber,
+			provisioner,
+			configuration,
+			date,
+			projectName,
+			deviceType,
+			deviceVersion,
+		)
+
+		// Als Wert (nicht Pointer) in den Slice legen – passt zu deiner Signatur
+		out = append(out, *inst)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println(err)
+	}
+	return out
 }

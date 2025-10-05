@@ -809,3 +809,22 @@ CREATE TABLE IF NOT EXISTS sms_checklistTemplateDocAsset (
     ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_deviceInstancePartOfProjectBOM_schema = `
+CREATE TABLE IF NOT EXISTS sms_deviceInstancePartOfProjectBOM (
+projectBOM_id      INT(11) NOT NULL,
+deviceInstance_id  INT(11) NOT NULL,
+additionalInfo     VARCHAR(150) DEFAULT NULL,
+assigned_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (projectBOM_id, deviceInstance_id),
+UNIQUE KEY uq_deviceInstance_single_pbom (deviceInstance_id),
+KEY idx_dipb_pbom (projectBOM_id),
+KEY idx_dipb_di (deviceInstance_id),
+CONSTRAINT fk_dipb_pbom FOREIGN KEY (projectBOM_id)
+REFERENCES sms_projectBOM (projectBOM_id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_dipb_deviceInstance FOREIGN KEY (deviceInstance_id)
+REFERENCES sms_deviceInstance (deviceInstance_id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`

@@ -45,3 +45,10 @@ type SoftwareInfo struct {
 	UpdateVersion           string
 	ShortenedSystemVersions string // 👈 HINZUGEFÜGT
 }
+
+// Minimaler DTO für die Device-Auswahlliste
+type Sms_DeviceCatalogMinimal struct {
+	DeviceID      int
+	DeviceType    string
+	DeviceVersion string
+}
