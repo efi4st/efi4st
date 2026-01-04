@@ -31,35 +31,55 @@ func CreateSMSProjectBOMForProject(ctx iris.Context) {
 		return
 	}
 
-	// Systeme für Auswahl
+	// Systeme für Auswahl laden
 	systemList := dbprovider.GetDBManager().GetAllSystemsMinimal()
 	ctx.ViewData("systemList", systemList)
 	ctx.ViewData("projectId", projectID)
 
-	// optional vorgewähltes System
-	selectedSystemID, _ := strconv.Atoi(ctx.URLParamDefault("system_id", "0"))
-	if selectedSystemID > 0 {
-		designs := dbprovider.GetDBManager().GetCompatibleHardwareDesignsForSystem(selectedSystemID)
-		// Logging hilft beim Debuggen
-		fmt.Printf("[PBOM] selectedSystemID=%d, compatible designs=%d\n", selectedSystemID, len(designs))
-
-		selectedDesignID := 0
-		if def := dbprovider.GetDBManager().GetDefaultHardwareDesignForSystem(selectedSystemID); def != nil {
-			selectedDesignID = def.HardwareDesignID
-		} else if len(designs) > 0 {
-			selectedDesignID = designs[0].HardwareDesignID
-		}
-
-		variants := []classes.Sms_HardwareDesignVariant{}
-		if selectedDesignID != 0 {
-			variants = dbprovider.GetDBManager().GetVariantsForHardwareDesign(selectedDesignID, true)
-		}
-
-		ctx.ViewData("selectedSystemID", selectedSystemID)
-		ctx.ViewData("designs", designs)
-		ctx.ViewData("selectedDesignID", selectedDesignID)
-		ctx.ViewData("variants", variants)
+	if len(systemList) == 0 {
+		// Kein System vorhanden -> einfach View ohne Design/Variants rendern
+		ctx.ViewData("designs", nil)
+		ctx.ViewData("variants", nil)
+		ctx.View("sms_createProjectBOMForProject.html")
+		return
 	}
+
+	// 1) system_id aus Query lesen (falls vorhanden)
+	selectedSystemID := 0
+	if sidStr := ctx.URLParam("system_id"); sidStr != "" {
+		if sidParsed, err := strconv.Atoi(sidStr); err == nil {
+			selectedSystemID = sidParsed
+		}
+	}
+
+	// 2) Wenn kein system_id angegeben -> erstes System in der Liste als Default nehmen
+	if selectedSystemID == 0 {
+		selectedSystemID = systemList[0].SystemID // Feldname gemäß deinem Template
+	}
+
+	// Kompatible Hardware-Designs für das gewählte System laden
+	designs := dbprovider.GetDBManager().GetCompatibleHardwareDesignsForSystem(selectedSystemID)
+	fmt.Printf("[PBOM] selectedSystemID=%d, compatible designs=%d\n", selectedSystemID, len(designs))
+
+	// Default-Design bestimmen (falls vorhanden), sonst erstes Design
+	selectedDesignID := 0
+	if def := dbprovider.GetDBManager().GetDefaultHardwareDesignForSystem(selectedSystemID); def != nil {
+		selectedDesignID = def.HardwareDesignID
+	} else if len(designs) > 0 {
+		selectedDesignID = designs[0].HardwareDesignID
+	}
+
+	// Varianten für das gewählte Design laden
+	var variants []classes.Sms_HardwareDesignVariant
+	if selectedDesignID != 0 {
+		variants = dbprovider.GetDBManager().GetVariantsForHardwareDesign(selectedDesignID, true)
+	}
+
+	// Werte in Template verfügbar machen
+	ctx.ViewData("selectedSystemID", selectedSystemID)
+	ctx.ViewData("designs", designs)
+	ctx.ViewData("selectedDesignID", selectedDesignID)
+	ctx.ViewData("variants", variants)
 
 	ctx.View("sms_createProjectBOMForProject.html")
 }
