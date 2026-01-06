@@ -677,6 +677,14 @@ func irisMain()() {
 	app.Get("/sms_deviceInstances/createForProjectBOM/{projectBOM_id:int}", routes.CreateDeviceInstanceForPBOMForm)
 	app.Post("/sms_deviceInstances/createForProjectBOM", routes.CreateDeviceInstanceForPBOMSubmit)
 
+	// Project Timeline
+	// Timeline actions
+	app.Post("/sms_projects/{id:int}/timeline/doc", routes.AddSMSProjectTimelineDoc)
+	app.Post("/sms_projects/{id:int}/timeline/doc/upload", routes.UploadSMSProjectTimelineDocImage)
+
+	// optional: static file serving (wenn du lokal speicherst)
+	app.HandleDir("/uploads", iris.Dir("./uploads"), iris.DirOptions{ShowList: false})
+
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

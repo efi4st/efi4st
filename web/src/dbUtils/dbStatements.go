@@ -1748,3 +1748,168 @@ JOIN sms_devicetype dt ON dt.devicetype_id  = d.devicetype_id
 WHERE di.deviceInstance_id = ?
 LIMIT 1;
 `
+
+// Projekt Timeline
+var SELECT_sms_projectTimeline = `
+SELECT
+  project_id,
+  source,
+  source_id,
+  occurred_at,
+  created_at,
+  actor,
+  entry_type,
+  title,
+  body,
+  access_group,
+  deviceInstance_id,
+  update_center_id,
+  update_id,
+  package_id,
+  from_system_id,
+  to_system_id,
+  exec_status,
+  exec_exit_code
+FROM sms_projectTimeline
+WHERE project_id = ?
+ORDER BY occurred_at DESC, source ASC, source_id DESC
+LIMIT ? OFFSET ?;
+`
+
+var SELECT_sms_projectTimelineSince = `
+SELECT
+  project_id, source, source_id, occurred_at, created_at, actor, entry_type, title, body,
+  access_group, deviceInstance_id, update_center_id, update_id, package_id, from_system_id, to_system_id,
+  exec_status, exec_exit_code
+FROM sms_projectTimeline
+WHERE project_id = ?
+  AND occurred_at > ?
+ORDER BY occurred_at DESC, source ASC, source_id DESC;
+`
+
+var SELECT_sms_projectDocEntriesForProject = `
+SELECT
+  entry_id, project_id, title, body, entry_type, created_at, created_by, access_group,
+  source_type, source_id, event_time
+FROM sms_projectDocEntry
+WHERE project_id = ?
+ORDER BY COALESCE(event_time, created_at) DESC, entry_id DESC;
+`
+
+var SELECT_sms_projectDocAssetsByEntry = `
+SELECT
+  asset_id, entry_id, kind, storage, mime, original_filename, stored_filename, file_path,
+  file_size, sha256, width, height, created_at, created_by
+FROM sms_projectDocAsset
+WHERE entry_id = ?
+ORDER BY asset_id ASC;
+`
+
+var INSERT_sms_projectDocEntry = `
+INSERT INTO sms_projectDocEntry
+(project_id, title, body, entry_type, created_by, access_group, source_type, source_id, event_time)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+`
+
+var INSERT_sms_projectDocAsset_File = `
+INSERT INTO sms_projectDocAsset
+(entry_id, kind, storage, mime, original_filename, stored_filename, file_path, file_size, sha256, width, height, created_by)
+VALUES (?, 'image', 'file', ?, ?, ?, ?, ?, ?, ?, ?, ?);
+`
+
+var INSERT_sms_projectDocAsset_DB = `
+INSERT INTO sms_projectDocAsset
+(entry_id, kind, storage, mime, original_filename, file_size, sha256, width, height, content, created_by)
+VALUES (?, 'image', 'db', ?, ?, ?, ?, ?, ?, ?, ?);
+`
+
+var DELETE_sms_projectDocEntry = `
+DELETE FROM sms_projectDocEntry
+WHERE entry_id = ? AND project_id = ?;
+`
+
+var DELETE_sms_projectDocAsset = `
+DELETE FROM sms_projectDocAsset
+WHERE asset_id = ? AND entry_id = ?;
+`
+
+var SELECT_sms_projectTimelineWithDeviceInfo = `
+SELECT
+  project_id, source, source_id, occurred_at, created_at, actor, entry_type, title, body, access_group,
+  deviceInstance_id, update_center_id, update_id, package_id, from_system_id, to_system_id, exec_status, exec_exit_code,
+
+  deviceInstance_serialnumber, deviceInstance_provisioner, deviceInstance_configuration,
+  device_id, device_type, device_version,
+
+  from_system_type, from_system_version,
+  to_system_type, to_system_version
+FROM sms_projectTimelineWithDeviceInfo
+WHERE project_id = ?
+ORDER BY occurred_at DESC, source ASC, source_id DESC
+LIMIT ? OFFSET ?;
+`
+
+var SELECT_sms_projectDocAssetsByProjectAndEntryIDs = `
+SELECT
+  a.asset_id, a.entry_id, a.kind, a.storage, a.mime, a.original_filename, a.stored_filename, a.file_path,
+  a.file_size, a.sha256, a.width, a.height, a.created_at, a.created_by
+FROM sms_projectDocAsset a
+JOIN sms_projectDocEntry e ON a.entry_id = e.entry_id
+WHERE e.project_id = ?
+  AND a.entry_id IN (%s)
+ORDER BY a.entry_id ASC, a.asset_id ASC;
+`
+
+var SELECT_sms_projectDocAssetsByEntryIDs = `
+SELECT
+  asset_id, entry_id, kind, storage, mime, original_filename, stored_filename, file_path,
+  file_size, sha256, width, height, created_at, created_by
+FROM sms_projectDocAsset
+WHERE entry_id IN (%s)
+ORDER BY entry_id ASC, asset_id ASC;
+`
+
+var SELECT_sms_projectTimelinePrettySince = `
+SELECT
+  project_id, source, source_id, occurred_at, created_at, actor, entry_type,
+  title, body, access_group,
+  deviceInstance_id, update_center_id, update_id, package_id,
+  from_system_id, to_system_id, exec_status, exec_exit_code,
+  deviceInstance_serialnumber, device_type, device_version,
+  from_system_type, from_system_version,
+  to_system_type, to_system_version
+FROM sms_projectTimelinePretty
+WHERE project_id = ?
+  AND occurred_at > ?
+ORDER BY occurred_at DESC, source ASC, source_id DESC;
+`
+
+var SELECT_sms_projectTimelinePretty = `
+SELECT
+  project_id, source, source_id, occurred_at, created_at, actor, entry_type, title, body, access_group,
+  deviceInstance_id, update_center_id, update_id, package_id, from_system_id, to_system_id, exec_status, exec_exit_code,
+  deviceInstance_serialnumber, device_type, device_version,
+  from_system_type, from_system_version, to_system_type, to_system_version
+FROM sms_projectTimelinePretty
+WHERE project_id = ?
+ORDER BY occurred_at DESC, source ASC, source_id DESC
+LIMIT ? OFFSET ?;
+`
+
+// dbUtils.SELECT_sms_projectDocAssetsByProjectAndEntryIDs_BASE
+var SELECT_sms_projectDocAssetsByProjectAndEntryIDs_BASE = `
+SELECT
+  a.asset_id, a.entry_id, a.kind, a.storage, a.mime, a.original_filename, a.stored_filename, a.file_path,
+  a.file_size, a.sha256, a.width, a.height, a.created_at, a.created_by
+FROM sms_projectDocAsset a
+JOIN sms_projectDocEntry e ON a.entry_id = e.entry_id
+WHERE e.project_id = ?
+  AND a.entry_id IN (%s)
+ORDER BY a.entry_id ASC, a.asset_id ASC;
+`
+
+var SELECT_sms_projectDocEntryBelongsToProject = `
+SELECT COUNT(*)
+FROM sms_projectDocEntry
+WHERE entry_id = ? AND project_id = ?;
+`

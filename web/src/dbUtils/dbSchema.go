@@ -828,3 +828,397 @@ REFERENCES sms_deviceInstance (deviceInstance_id)
 ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_update_execution_schema = `
+CREATE TABLE IF NOT EXISTS sms_update_execution (
+execution_id INT(11) NOT NULL AUTO_INCREMENT,
+
+-- Wer/was hat das Update ausgelöst/ausgeführt
+update_center_id INT(11) NOT NULL,
+
+-- Ziel der Ausführung (konkrete Feld-Instanz)
+deviceInstance_id INT(11) NOT NULL,
+
+-- Optional: Verweis auf den "Update-Pfad" (Definition)
+update_id INT(11) DEFAULT NULL,
+
+-- Optional: Verwendetes Paket (falls eindeutig)
+package_id INT(11) DEFAULT NULL,
+
+-- Denormalisiert für Audit/History (damit spätere Änderungen an sms_update nicht verfälschen)
+from_system_id INT(11) NOT NULL,
+to_system_id   INT(11) NOT NULL,
+
+-- Status + Metadaten
+status ENUM('queued','running','success','failed','rolled_back','canceled') NOT NULL DEFAULT 'queued',
+triggered_by VARCHAR(150) DEFAULT NULL,          -- User/Service
+source ENUM('manual','scheduled','auto') NOT NULL DEFAULT 'manual',
+
+-- Zeitpunkte
+queued_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+started_at  DATETIME DEFAULT NULL,
+finished_at DATETIME DEFAULT NULL,
+
+-- Ergebnisdetails
+exit_code INT(11) DEFAULT NULL,
+message VARCHAR(255) DEFAULT NULL,
+log TEXT DEFAULT NULL,                            -- oder später in File/Artefact auslagern
+
+-- Idempotency / Korrelation (praktisch für Updater)
+correlation_id VARCHAR(100) DEFAULT NULL,
+
+PRIMARY KEY (execution_id),
+
+-- Indizes (wichtig für Projekt-Doku / Timeline)
+KEY idx_exec_deviceInstance (deviceInstance_id, queued_at),
+KEY idx_exec_center (update_center_id, queued_at),
+KEY idx_exec_status (status, queued_at),
+KEY idx_exec_from_to (from_system_id, to_system_id),
+KEY idx_exec_corr (correlation_id),
+
+CONSTRAINT sms_update_execution_ibfk_1
+FOREIGN KEY (update_center_id)
+REFERENCES sms_update_center (update_center_id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+
+CONSTRAINT sms_update_execution_ibfk_2
+FOREIGN KEY (deviceInstance_id)
+REFERENCES sms_deviceInstance (deviceInstance_id)
+ON UPDATE CASCADE ON DELETE CASCADE,
+
+CONSTRAINT sms_update_execution_ibfk_3
+FOREIGN KEY (update_id)
+REFERENCES sms_update (update_id)
+ON UPDATE CASCADE ON DELETE SET NULL,
+
+CONSTRAINT sms_update_execution_ibfk_4
+FOREIGN KEY (package_id)
+REFERENCES sms_update_package (package_id)
+ON UPDATE CASCADE ON DELETE SET NULL,
+
+CONSTRAINT sms_update_execution_ibfk_5
+FOREIGN KEY (from_system_id)
+REFERENCES sms_system (system_id)
+ON UPDATE CASCADE ON DELETE NO ACTION,
+
+CONSTRAINT sms_update_execution_ibfk_6
+FOREIGN KEY (to_system_id)
+REFERENCES sms_system (system_id)
+ON UPDATE CASCADE ON DELETE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_projectDocEntry_schema = `
+CREATE TABLE IF NOT EXISTS sms_projectDocEntry (
+entry_id INT(11) NOT NULL AUTO_INCREMENT,
+
+project_id INT(11) NOT NULL,
+
+-- Inhalt
+title VARCHAR(150) DEFAULT NULL,
+body TEXT DEFAULT NULL,
+
+-- Klassifizierung
+entry_type ENUM('note','event','maintenance','incident','update','photo','attachment') NOT NULL DEFAULT 'note',
+
+-- Wer / wann
+created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+created_by VARCHAR(150) NOT NULL,
+
+-- Optional: Sichtbarkeit/Organisation (passt zu deinem access_group Konzept)
+access_group VARCHAR(100) DEFAULT NULL,
+
+-- Optional: Verlinkung auf “Quelle”, damit du auch fremde Logs einsortieren kannst
+-- Beispiel: source_type='deviceInstance' + source_id=deviceInstance_id
+source_type ENUM('project','deviceInstance','updateHistory','updateExecution') NOT NULL DEFAULT 'project',
+source_id INT(11) DEFAULT NULL,
+
+-- Optional: “Eventzeit” falls abweichend vom Erfassungszeitpunkt (z.B. Foto aufgenommen vorher)
+event_time DATETIME DEFAULT NULL,
+
+PRIMARY KEY (entry_id),
+
+KEY idx_doc_proj_time (project_id, created_at),
+KEY idx_doc_proj_eventtime (project_id, event_time),
+KEY idx_doc_source (source_type, source_id),
+
+CONSTRAINT sms_projectDocEntry_ibfk_1
+FOREIGN KEY (project_id)
+REFERENCES sms_project (project_id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_projectDocAsset_schema = `
+CREATE TABLE IF NOT EXISTS sms_projectDocAsset (
+asset_id INT(11) NOT NULL AUTO_INCREMENT,
+entry_id INT(11) NOT NULL,
+
+kind ENUM('image','file') NOT NULL DEFAULT 'image',
+
+-- Storage-Strategie
+storage ENUM('file','db') NOT NULL DEFAULT 'file',
+
+-- Metadaten
+mime VARCHAR(100) NOT NULL,              -- z.B. image/jpeg, image/png
+original_filename VARCHAR(255) DEFAULT NULL,
+stored_filename VARCHAR(255) DEFAULT NULL,  -- falls du serverseitig umbenennst
+file_path VARCHAR(500) DEFAULT NULL,        -- wenn storage='file'
+file_size INT(11) DEFAULT NULL,
+sha256 CHAR(64) DEFAULT NULL,
+
+-- Bildoptionen (optional)
+width INT(11) DEFAULT NULL,
+height INT(11) DEFAULT NULL,
+
+-- Content nur falls storage='db'
+content LONGBLOB DEFAULT NULL,
+
+created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+created_by VARCHAR(150) DEFAULT NULL,
+
+PRIMARY KEY (asset_id),
+
+KEY idx_asset_entry (entry_id),
+KEY idx_asset_sha (sha256),
+
+CONSTRAINT sms_projectDocAsset_ibfk_1
+FOREIGN KEY (entry_id)
+REFERENCES sms_projectDocEntry (entry_id)
+ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_projectTimeline_schema = `
+CREATE OR REPLACE VIEW sms_projectTimeline AS
+(
+    SELECT
+        e.project_id                                       AS project_id,
+        _latin1'doc' COLLATE latin1_swedish_ci             AS source,
+        e.entry_id                                         AS source_id,
+        COALESCE(e.event_time, e.created_at)               AS occurred_at,
+        e.created_at                                       AS created_at,
+        e.created_by                                       AS actor,
+        e.entry_type                                       AS entry_type,
+        e.title                                            AS title,
+        e.body                                             AS body,
+        e.access_group                                     AS access_group,
+
+        CASE WHEN e.source_type = 'deviceInstance' THEN e.source_id ELSE NULL END AS deviceInstance_id,
+        NULL                                               AS update_center_id,
+        NULL                                               AS update_id,
+        NULL                                               AS package_id,
+        NULL                                               AS from_system_id,
+        NULL                                               AS to_system_id,
+        NULL                                               AS exec_status,
+        NULL                                               AS exec_exit_code
+    FROM sms_projectDocEntry e
+)
+UNION ALL
+(
+    SELECT
+        uc.project_id                                      AS project_id,
+        _latin1'updateExecution' COLLATE latin1_swedish_ci  AS source,
+        ex.execution_id                                    AS source_id,
+        COALESCE(ex.finished_at, ex.started_at, ex.queued_at) AS occurred_at,
+        ex.queued_at                                       AS created_at,
+        ex.triggered_by                                    AS actor,
+        _latin1'update' COLLATE latin1_swedish_ci           AS entry_type,
+        NULL                                               AS title,
+        ex.message                                         AS body,
+        NULL                                               AS access_group,
+
+        ex.deviceInstance_id                               AS deviceInstance_id,
+        ex.update_center_id                                AS update_center_id,
+        ex.update_id                                       AS update_id,
+        ex.package_id                                      AS package_id,
+        ex.from_system_id                                  AS from_system_id,
+        ex.to_system_id                                    AS to_system_id,
+        ex.status                                          AS exec_status,
+        ex.exit_code                                       AS exec_exit_code
+    FROM sms_update_execution ex
+    JOIN sms_update_center uc ON ex.update_center_id = uc.update_center_id
+)
+UNION ALL
+(
+    SELECT
+        di.project_id                                      AS project_id,
+        _latin1'updateHistory' COLLATE latin1_swedish_ci    AS source,
+        uh.updateHistory_id                                AS source_id,
+        CAST(uh.date AS DATETIME)                          AS occurred_at,
+        CAST(uh.date AS DATETIME)                          AS created_at,
+        uh.user                                            AS actor,
+        _latin1'log' COLLATE latin1_swedish_ci              AS entry_type,
+        uh.updateType                                      AS title,
+        uh.description                                     AS body,
+        NULL                                               AS access_group,
+
+        uh.deviceInstance_id                               AS deviceInstance_id,
+        NULL                                               AS update_center_id,
+        NULL                                               AS update_id,
+        NULL                                               AS package_id,
+        NULL                                               AS from_system_id,
+        NULL                                               AS to_system_id,
+        NULL                                               AS exec_status,
+        NULL                                               AS exec_exit_code
+    FROM sms_updateHistory uh
+    JOIN sms_deviceInstance di ON uh.deviceInstance_id = di.deviceInstance_id
+);
+`
+
+var sms_projectTimelineWithDeviceInfo_schema = `
+CREATE OR REPLACE VIEW sms_projectTimelineWithDeviceInfo AS
+SELECT
+tl.project_id,
+tl.source,
+tl.source_id,
+tl.occurred_at,
+tl.created_at,
+tl.actor,
+tl.entry_type,
+tl.title,
+tl.body,
+tl.access_group,
+
+tl.deviceInstance_id,
+tl.update_center_id,
+tl.update_id,
+tl.package_id,
+tl.from_system_id,
+tl.to_system_id,
+tl.exec_status,
+tl.exec_exit_code,
+
+-- DeviceInstance Kontext
+di.serialnumber                         AS deviceInstance_serialnumber,
+di.provisioner                          AS deviceInstance_provisioner,
+di.configuration                        AS deviceInstance_configuration,
+di.device_id                            AS device_id,
+
+-- Device Kontext
+dt.type                                 AS device_type,
+d.version                               AS device_version,
+
+-- System Kontext (from/to)
+stf.type                                AS from_system_type,
+sysf.version                            AS from_system_version,
+
+stt.type                                AS to_system_type,
+syst.version                            AS to_system_version
+
+FROM sms_projectTimeline tl
+LEFT JOIN sms_deviceInstance di
+ON tl.deviceInstance_id = di.deviceInstance_id
+LEFT JOIN sms_device d
+ON di.device_id = d.device_id
+LEFT JOIN sms_devicetype dt
+ON d.devicetype_id = dt.devicetype_id
+
+LEFT JOIN sms_system sysf
+ON tl.from_system_id = sysf.system_id
+LEFT JOIN sms_systemtype stf
+ON sysf.systemtype_id = stf.systemtype_id
+
+LEFT JOIN sms_system syst
+ON tl.to_system_id = syst.system_id
+LEFT JOIN sms_systemtype stt
+ON syst.systemtype_id = stt.systemtype_id;
+`
+
+var sms_projectTimelinePretty_schema = `
+CREATE OR REPLACE VIEW sms_projectTimelinePretty AS
+SELECT
+  tl.project_id,
+  tl.source,
+  tl.source_id,
+  tl.occurred_at,
+  tl.created_at,
+  tl.actor,
+  tl.entry_type,
+
+  CASE
+    WHEN tl.source = 'doc' THEN
+      COALESCE(
+        NULLIF(tl.title,''),
+        CONCAT(_latin1'Doku: ' COLLATE latin1_swedish_ci, tl.entry_type)
+      )
+
+    WHEN tl.source = 'updateExecution' THEN
+      CONCAT(
+        _latin1'Update: ' COLLATE latin1_swedish_ci,
+        COALESCE(CONCAT(stf.type, _latin1' ' COLLATE latin1_swedish_ci, sysf.version), CONCAT(_latin1'SYSTEM#' COLLATE latin1_swedish_ci, tl.from_system_id)),
+        _latin1' -> ' COLLATE latin1_swedish_ci,
+        COALESCE(CONCAT(stt.type, _latin1' ' COLLATE latin1_swedish_ci, syst.version), CONCAT(_latin1'SYSTEM#' COLLATE latin1_swedish_ci, tl.to_system_id)),
+        _latin1' (' COLLATE latin1_swedish_ci, tl.exec_status, _latin1')' COLLATE latin1_swedish_ci
+      )
+
+    WHEN tl.source = 'updateHistory' THEN
+      CONCAT(
+        _latin1'DILog: ' COLLATE latin1_swedish_ci,
+        COALESCE(NULLIF(tl.title,''), _latin1'Eintrag' COLLATE latin1_swedish_ci)
+      )
+
+    ELSE
+      COALESCE(NULLIF(tl.title,''), _latin1'Timeline Event' COLLATE latin1_swedish_ci)
+  END AS title,
+
+  CASE
+    WHEN tl.source = 'doc' THEN
+      tl.body
+
+    WHEN tl.source = 'updateExecution' THEN
+      CONCAT(
+        _latin1'DI: ' COLLATE latin1_swedish_ci,
+        COALESCE(di.serialnumber, CONCAT(_latin1'#' COLLATE latin1_swedish_ci, tl.deviceInstance_id)),
+        IF(dt.type IS NOT NULL OR d.version IS NOT NULL,
+           CONCAT(
+             _latin1' (' COLLATE latin1_swedish_ci,
+             COALESCE(dt.type, _latin1'' COLLATE latin1_swedish_ci),
+             IF(d.version IS NOT NULL, CONCAT(_latin1' ' COLLATE latin1_swedish_ci, d.version), _latin1'' COLLATE latin1_swedish_ci),
+             _latin1')' COLLATE latin1_swedish_ci
+           ),
+           _latin1'' COLLATE latin1_swedish_ci
+        ),
+        IF(tl.body IS NOT NULL AND tl.body <> '', CONCAT(_latin1'\n' COLLATE latin1_swedish_ci, tl.body), _latin1'' COLLATE latin1_swedish_ci)
+      )
+
+    WHEN tl.source = 'updateHistory' THEN
+      CONCAT(
+        _latin1'DILog DI: ' COLLATE latin1_swedish_ci,
+        COALESCE(di.serialnumber, CONCAT(_latin1'#' COLLATE latin1_swedish_ci, tl.deviceInstance_id)),
+        IF(tl.body IS NOT NULL AND tl.body <> '', CONCAT(_latin1'\n' COLLATE latin1_swedish_ci, tl.body), _latin1'' COLLATE latin1_swedish_ci)
+      )
+
+    ELSE
+      tl.body
+  END AS body,
+
+  tl.access_group,
+
+  tl.deviceInstance_id,
+  tl.update_center_id,
+  tl.update_id,
+  tl.package_id,
+  tl.from_system_id,
+  tl.to_system_id,
+  tl.exec_status,
+  tl.exec_exit_code,
+
+  di.serialnumber AS deviceInstance_serialnumber,
+  dt.type         AS device_type,
+  d.version       AS device_version,
+
+  stf.type        AS from_system_type,
+  sysf.version    AS from_system_version,
+  stt.type        AS to_system_type,
+  syst.version    AS to_system_version
+
+FROM sms_projectTimeline tl
+LEFT JOIN sms_deviceInstance di ON tl.deviceInstance_id = di.deviceInstance_id
+LEFT JOIN sms_device d          ON di.device_id = d.device_id
+LEFT JOIN sms_devicetype dt     ON d.devicetype_id = dt.devicetype_id
+LEFT JOIN sms_system sysf       ON tl.from_system_id = sysf.system_id
+LEFT JOIN sms_systemtype stf    ON sysf.systemtype_id = stf.systemtype_id
+LEFT JOIN sms_system syst       ON tl.to_system_id = syst.system_id
+LEFT JOIN sms_systemtype stt    ON syst.systemtype_id = stt.systemtype_id;
+`

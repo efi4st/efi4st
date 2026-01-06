@@ -599,6 +599,124 @@
   <hr>
   <hr>
 
+  <div class="row mt-4">
+    <div class="col-md-12">
+      <div class="card mt-3 shadow-sm card-tight">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <strong class="fs-6">Project Timeline / Doku</strong>
+          <div class="d-flex gap-2">
+            {% if timelineOffset > 0 %}
+            <a class="btn btn-sm btn-outline-secondary"
+               href="?tl_offset={{ timelinePrevOffset }}&tl_limit={{ timelineLimit }}">
+              Newer
+            </a>
+            {% endif %}
+            <a class="btn btn-sm btn-outline-secondary"
+               href="?tl_offset={{ timelineNextOffset }}&tl_limit={{ timelineLimit }}">
+              Older
+            </a>
+          </div>
+        </div>
+
+        <div class="card-body">
+
+          <form action="/sms_projects/{{ project.Project_id }}/timeline/doc" method="POST" class="mb-3">
+            <div class="row g-2">
+              <div class="col-md-2">
+                <select name="entry_type" class="form-select form-select-sm">
+                  <option value="note">Note</option>
+                  <option value="event">Event</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="incident">Incident</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <input name="title" class="form-control form-control-sm" placeholder="Title (optional)">
+              </div>
+              <div class="col-md-2">
+                <input name="created_by" class="form-control form-control-sm" placeholder="User">
+              </div>
+              <div class="col-md-3">
+                <input name="event_time" class="form-control form-control-sm" placeholder="Event time (YYYY-MM-DD HH:MM:SS)">
+              </div>
+              <div class="col-md-2 d-grid">
+                <button class="btn btn-sm btn-primary" type="submit">
+                  <i class="fa fa-plus me-1"></i> Add
+                </button>
+              </div>
+              <div class="col-12">
+                <textarea name="body" class="form-control form-control-sm" rows="3" placeholder="Write a note..."></textarea>
+              </div>
+            </div>
+          </form>
+
+          {% if timeline and timeline|length > 0 %}
+          <div class="list-group">
+            {% for it in timeline %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between align-items-start">
+                <div style="min-width:0;">
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge bg-secondary">{{ it.Source }}</span>
+                    {% if it.ExecStatus %}<span class="badge bg-info text-dark">{{ it.ExecStatus }}</span>{% endif %}
+                    <strong>{{ it.Title }}</strong>
+                  </div>
+                  <div class="text-muted small mt-1">
+                    {{ it.OccurredAt }} · {{ it.Actor }}
+                    {% if it.DeviceInstanceSerialnumber %}
+                    · <code>{{ it.DeviceInstanceSerialnumber }}</code>
+                    {% endif %}
+                    {% if it.DeviceType %}
+                    · {{ it.DeviceType }}{% if it.DeviceVersion %} v{{ it.DeviceVersion }}{% endif %}
+                    {% endif %}
+                  </div>
+                  {% if it.Body %}
+                  <div class="mt-2" style="white-space:pre-line;">{{ it.Body }}</div>
+                  {% endif %}
+
+                  {% if it.Source == "doc" %}
+                  <div class="mt-2">
+                    <form action="/sms_projects/{{ project.Project_id }}/timeline/doc/upload"
+                          method="POST" enctype="multipart/form-data"
+                          class="d-flex flex-wrap gap-2 align-items-center">
+                      <input type="hidden" name="entry_id" value="{{ it.SourceID }}">
+                      <input type="file" name="image" accept="image/*" class="form-control form-control-sm" style="max-width:360px;">
+                      <input type="text" name="created_by" class="form-control form-control-sm" placeholder="User" style="max-width:180px;">
+                      <button class="btn btn-sm btn-outline-primary" type="submit">
+                        <i class="fa fa-upload me-1"></i> Upload
+                      </button>
+                    </form>
+
+                    {% if it.Assets and it.Assets|length > 0 %}
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                      {% for a in it.Assets %}
+                      {% if a.FilePath %}
+                      <a href="/{{ a.FilePath }}" target="_blank">
+                        <img src="/{{ a.FilePath }}" style="max-height:120px;border:1px solid #dee2e6;border-radius:6px;">
+                      </a>
+                      {% endif %}
+                      {% endfor %}
+                    </div>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">No timeline entries yet.</p>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+  <hr>
+
   <div class="row">
     <div class="col-md-12">
       <h2>Issues:</h2>

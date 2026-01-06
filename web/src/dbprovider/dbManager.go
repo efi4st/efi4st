@@ -352,6 +352,11 @@ type Manager interface {
 	CreateDeviceInstance(projectID, deviceID int, serial, provisioner, configuration, date string) (int64, error)
 	EnrichPBOMDeviceInstanceWithSystemInfo(d *classes.Sms_DeviceInstancePBOMView, currentSystemVersion string, )
 	GetUnassignedDeviceInstanceListForProject(projectID int) []classes.Sms_DeviceInstance
+	// Project Timeline
+	GetSMSProjectTimelinePretty(projectID int, limit int, offset int) (items []classes.Sms_ProjectTimelineItem)
+	GetSMSProjectDocAssetsForEntries(projectID int, entryIDs []int) map[int][]classes.Sms_ProjectDocAsset
+	AddSMSProjectDocEntry(projectID int, title, body, entryType, createdBy, accessGroup, eventTime string) (int, error)
+	AddSMSProjectDocAssetFile(projectID int, entryID int, mime, originalFilename, storedFilename, relPath string, fileSize int, createdBy string) error
 }
 
 var reApp = regexp.MustCompile(`%AppVersion:([^%]+)%`)
@@ -9463,4 +9468,329 @@ func (mgr *manager) GetUnassignedDeviceInstanceListForProject(projectID int) []c
 		log.Println(err)
 	}
 	return out
+}
+
+
+func (mgr *manager) GetSMSProjectTimelinePretty(projectID int, limit int, offset int) (items []classes.Sms_ProjectTimelineItem) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_projectTimelinePretty)
+	if err != nil {
+		fmt.Print("Prepare Error:", err)
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectID, limit, offset)
+	if err != nil {
+		fmt.Print("Query Error:", err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var it classes.Sms_ProjectTimelineItem
+
+		var dbOccurredAt sql.NullTime
+		var dbCreatedAt sql.NullTime
+
+		var dbTitle sql.NullString
+		var dbBody  sql.NullString
+
+		var (
+			dbAccessGroup sql.NullString
+
+			dbDeviceInstanceID sql.NullInt64
+			dbUpdateCenterID   sql.NullInt64
+			dbUpdateID         sql.NullInt64
+			dbPackageID        sql.NullInt64
+			dbFromSystemID     sql.NullInt64
+			dbToSystemID       sql.NullInt64
+			dbExecStatus       sql.NullString
+			dbExecExitCode     sql.NullInt64
+
+			dbDISerial      sql.NullString
+			dbDeviceType    sql.NullString
+			dbDeviceVersion sql.NullString
+
+			dbFromSystemType    sql.NullString
+			dbFromSystemVersion sql.NullString
+			dbToSystemType      sql.NullString
+			dbToSystemVersion   sql.NullString
+		)
+
+		err := rows.Scan(
+			&it.ProjectID,
+			&it.Source,
+			&it.SourceID,
+			&dbOccurredAt,
+			&dbCreatedAt,
+			&it.Actor,
+			&it.EntryType,
+			&dbTitle,
+			&dbBody,
+			&dbAccessGroup,
+
+			&dbDeviceInstanceID,
+			&dbUpdateCenterID,
+			&dbUpdateID,
+			&dbPackageID,
+			&dbFromSystemID,
+			&dbToSystemID,
+			&dbExecStatus,
+			&dbExecExitCode,
+
+			&dbDISerial,
+			&dbDeviceType,
+			&dbDeviceVersion,
+
+			&dbFromSystemType,
+			&dbFromSystemVersion,
+			&dbToSystemType,
+			&dbToSystemVersion,
+		)
+		if err != nil {
+			log.Fatal("Scan Error:", err)
+		}
+
+		// times -> strings
+		if dbOccurredAt.Valid {
+			it.OccurredAt = dbOccurredAt.Time.Format("2006-01-02 15:04:05")
+		}
+		if dbCreatedAt.Valid {
+			it.CreatedAt = dbCreatedAt.Time.Format("2006-01-02 15:04:05")
+		}
+
+		// NULL -> ""
+		if dbTitle.Valid {
+			it.Title = dbTitle.String
+		} else {
+			it.Title = ""
+		}
+		if dbBody.Valid {
+			it.Body = dbBody.String
+		} else {
+			it.Body = ""
+		}
+
+
+		// assign nullables
+		if dbAccessGroup.Valid {
+			it.AccessGroup = &dbAccessGroup.String
+		}
+
+		if dbDeviceInstanceID.Valid {
+			v := int(dbDeviceInstanceID.Int64)
+			it.DeviceInstanceID = &v
+		}
+		if dbUpdateCenterID.Valid {
+			v := int(dbUpdateCenterID.Int64)
+			it.UpdateCenterID = &v
+		}
+		if dbUpdateID.Valid {
+			v := int(dbUpdateID.Int64)
+			it.UpdateID = &v
+		}
+		if dbPackageID.Valid {
+			v := int(dbPackageID.Int64)
+			it.PackageID = &v
+		}
+		if dbFromSystemID.Valid {
+			v := int(dbFromSystemID.Int64)
+			it.FromSystemID = &v
+		}
+		if dbToSystemID.Valid {
+			v := int(dbToSystemID.Int64)
+			it.ToSystemID = &v
+		}
+		if dbExecStatus.Valid {
+			it.ExecStatus = &dbExecStatus.String
+		}
+		if dbExecExitCode.Valid {
+			v := int(dbExecExitCode.Int64)
+			it.ExecExitCode = &v
+		}
+
+		if dbDISerial.Valid {
+			it.DeviceInstanceSerialnumber = &dbDISerial.String
+		}
+		if dbDeviceType.Valid {
+			it.DeviceType = &dbDeviceType.String
+		}
+		if dbDeviceVersion.Valid {
+			it.DeviceVersion = &dbDeviceVersion.String
+		}
+
+		if dbFromSystemType.Valid {
+			it.FromSystemType = &dbFromSystemType.String
+		}
+		if dbFromSystemVersion.Valid {
+			it.FromSystemVersion = &dbFromSystemVersion.String
+		}
+		if dbToSystemType.Valid {
+			it.ToSystemType = &dbToSystemType.String
+		}
+		if dbToSystemVersion.Valid {
+			it.ToSystemVersion = &dbToSystemVersion.String
+		}
+
+		// Assets werden im Controller später batchweise angehängt
+		items = append(items, it)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal("Row Iteration Error:", err)
+	}
+
+	return items
+}
+
+func (mgr *manager) GetSMSProjectDocAssetsForEntries(projectID int, entryIDs []int) map[int][]classes.Sms_ProjectDocAsset {
+	out := make(map[int][]classes.Sms_ProjectDocAsset)
+	if len(entryIDs) == 0 {
+		return out
+	}
+
+	placeholders := make([]string, 0, len(entryIDs))
+	args := make([]interface{}, 0, 1+len(entryIDs))
+	args = append(args, projectID)
+
+	for _, id := range entryIDs {
+		placeholders = append(placeholders, "?")
+		args = append(args, id)
+	}
+
+	q := fmt.Sprintf(dbUtils.SELECT_sms_projectDocAssetsByProjectAndEntryIDs_BASE, strings.Join(placeholders, ","))
+
+	stmt, err := mgr.db.Prepare(q)
+	if err != nil {
+		fmt.Print("Prepare Error:", err)
+		return out
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(args...)
+	if err != nil {
+		fmt.Print("Query Error:", err)
+		return out
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var a classes.Sms_ProjectDocAsset
+
+		var (
+			dbOriginal sql.NullString
+			dbStored   sql.NullString
+			dbPath     sql.NullString
+			dbSize     sql.NullInt64
+			dbSha      sql.NullString
+			dbW        sql.NullInt64
+			dbH        sql.NullInt64
+			dbCreatedAt sql.NullTime
+			dbCreatedBy sql.NullString
+		)
+
+		err := rows.Scan(
+			&a.AssetID,
+			&a.EntryID,
+			&a.Kind,
+			&a.Storage,
+			&a.Mime,
+			&dbOriginal,
+			&dbStored,
+			&dbPath,
+			&dbSize,
+			&dbSha,
+			&dbW,
+			&dbH,
+			&dbCreatedAt,
+			&dbCreatedBy,
+		)
+		if err != nil {
+			log.Fatal("Scan Error:", err)
+		}
+
+		if dbOriginal.Valid { a.OriginalFile = &dbOriginal.String }
+		if dbStored.Valid   { a.StoredFilename = &dbStored.String }
+		if dbPath.Valid     { a.FilePath = &dbPath.String }
+		if dbSize.Valid     { v := int(dbSize.Int64); a.FileSize = &v }
+		if dbSha.Valid      { a.Sha256 = &dbSha.String }
+		if dbW.Valid        { v := int(dbW.Int64); a.Width = &v }
+		if dbH.Valid        { v := int(dbH.Int64); a.Height = &v }
+		if dbCreatedAt.Valid { s := dbCreatedAt.Time.String(); a.CreatedAt = &s }
+		if dbCreatedBy.Valid { a.CreatedBy = &dbCreatedBy.String }
+
+		out[a.EntryID] = append(out[a.EntryID], a)
+	}
+
+	return out
+}
+
+func (mgr *manager) AddSMSProjectDocEntry(projectID int, title, body, entryType, createdBy, accessGroup, eventTime string) (int, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_projectDocEntry)
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+
+	var (
+		dbTitle interface{} = nil
+		dbBody interface{} = nil
+		dbAccess interface{} = nil
+		dbEventTime interface{} = nil
+	)
+
+	if strings.TrimSpace(title) != "" { dbTitle = title }
+	if strings.TrimSpace(body) != "" { dbBody = body }
+	if strings.TrimSpace(accessGroup) != "" { dbAccess = accessGroup }
+	if strings.TrimSpace(eventTime) != "" { dbEventTime = eventTime }
+
+	// source_type='project', source_id=NULL
+	res, err := stmt.Exec(projectID, dbTitle, dbBody, entryType, createdBy, dbAccess, "project", nil, dbEventTime)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return int(id), nil
+}
+
+func (mgr *manager) AddSMSProjectDocAssetFile(projectID int, entryID int, mime, originalFilename, storedFilename, relPath string, fileSize int, createdBy string) error {
+	// 1) check ownership
+	stmtCheck, err := mgr.db.Prepare(dbUtils.SELECT_sms_projectDocEntryBelongsToProject)
+	if err != nil {
+		return err
+	}
+	defer stmtCheck.Close()
+
+	var cnt int
+	if err := stmtCheck.QueryRow(entryID, projectID).Scan(&cnt); err != nil {
+		return err
+	}
+	if cnt != 1 {
+		return fmt.Errorf("entry does not belong to project")
+	}
+
+	// 2) insert asset
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_projectDocAsset_File)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		entryID,
+		mime,
+		originalFilename,
+		storedFilename,
+		relPath,
+		fileSize,
+		nil, // sha256 optional
+		nil, // width optional
+		nil, // height optional
+		createdBy,
+	)
+	return err
 }

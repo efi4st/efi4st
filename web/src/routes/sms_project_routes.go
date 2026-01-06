@@ -14,9 +14,13 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kataras/iris/v12"
 	"gopkg.in/yaml.v3"
+	"io"
 	"log"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func SMSProjects(ctx iris.Context) {
@@ -166,7 +170,167 @@ func ShowSMSProject(ctx iris.Context) {
 	ctx.ViewData("checklistTemplates", checklistTemplates)
 	ctx.ViewData("checklistInstances", checklistInstances)
 
+	// Timeline laden (Paging via Query-Params)
+	limit := 40
+	offset := 0
+	if v, err := ctx.URLParamInt("tl_limit"); err == nil && v > 0 && v <= 200 {
+		limit = v
+	}
+	if v, err := ctx.URLParamInt("tl_offset"); err == nil && v >= 0 {
+		offset = v
+	}
+
+	prevOffset := offset - limit
+	if prevOffset < 0 {
+		prevOffset = 0
+	}
+	nextOffset := offset + limit
+
+	ctx.ViewData("timelinePrevOffset", prevOffset)
+	ctx.ViewData("timelineNextOffset", nextOffset)
+
+	timeline := dbprovider.GetDBManager().GetSMSProjectTimelinePretty(i, limit, offset)
+
+	// Assets zu doc-Entries batch nachladen (2 Queries total)
+	docEntryIDs := make([]int, 0, 32)
+	for _, t := range timeline {
+		if t.Source == "doc" {
+			docEntryIDs = append(docEntryIDs, t.SourceID) // source_id == entry_id
+		}
+	}
+	assetsByEntry := dbprovider.GetDBManager().GetSMSProjectDocAssetsForEntries(i, docEntryIDs)
+
+	// in-memory zuweisen
+	for ti := range timeline {
+		if timeline[ti].Source == "doc" {
+			entryID := timeline[ti].SourceID
+			timeline[ti].Assets = assetsByEntry[entryID]
+		}
+	}
+
+	ctx.ViewData("timeline", timeline)
+	ctx.ViewData("timelineLimit", limit)
+	ctx.ViewData("timelineOffset", offset)
+
 	ctx.View("sms_showProject.html")
+}
+
+func AddSMSProjectTimelineDoc(ctx iris.Context) {
+	projectID, err := ctx.Params().GetInt("id")
+	if err != nil {
+		ctx.ViewData("error", "Invalid project ID!")
+		return
+	}
+
+	entryType := ctx.PostValue("entry_type")
+	if entryType == "" {
+		entryType = "note"
+	}
+
+	title := ctx.PostValue("title")
+	body := ctx.PostValue("body")
+	createdBy := ctx.PostValue("created_by")
+	if createdBy == "" {
+		createdBy = "unknown"
+	}
+
+	accessGroup := ctx.PostValue("access_group") // optional
+	eventTime := ctx.PostValue("event_time")     // optional: "YYYY-MM-DD HH:MM:SS"
+
+	_, err = dbprovider.GetDBManager().AddSMSProjectDocEntry(
+		projectID,
+		title,
+		body,
+		entryType,
+		createdBy,
+		accessGroup,
+		eventTime,
+	)
+	if err != nil {
+		ctx.ViewData("error", "Error adding timeline entry!")
+		// fallback: zurück zur Projektseite
+		ctx.Redirect(fmt.Sprintf("/sms_projects/show/%d", projectID))
+		return
+	}
+
+	ctx.Redirect(fmt.Sprintf("/sms_projects/show/%d", projectID))
+}
+
+func UploadSMSProjectTimelineDocImage(ctx iris.Context) {
+	projectID, err := ctx.Params().GetInt("id")
+	if err != nil {
+		ctx.StopWithStatus(400)
+		return
+	}
+
+	entryIDStr := ctx.PostValue("entry_id")
+	entryID, err := strconv.Atoi(entryIDStr)
+	if err != nil || entryID <= 0 {
+		ctx.StopWithStatus(400)
+		return
+	}
+
+	createdBy := ctx.PostValue("created_by")
+	if createdBy == "" {
+		createdBy = "unknown"
+	}
+
+	file, header, err := ctx.FormFile("image")
+	if err != nil {
+		ctx.ViewData("error", "No image uploaded!")
+		ctx.Redirect(fmt.Sprintf("/sms_projects/show/%d", projectID))
+		return
+	}
+	defer file.Close()
+
+	// Speicherort
+	baseDir := "./uploads/projectdoc"
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		ctx.StopWithError(500, err)
+		return
+	}
+
+	ext := filepath.Ext(header.Filename)
+	stored := fmt.Sprintf("p%d_e%d_%d%s", projectID, entryID, time.Now().UnixNano(), ext)
+	relPath := filepath.ToSlash(filepath.Join("uploads/projectdoc", stored))
+	absPath := filepath.Join(baseDir, stored)
+
+	out, err := os.Create(absPath)
+	if err != nil {
+		ctx.StopWithError(500, err)
+		return
+	}
+	defer out.Close()
+
+	n, err := io.Copy(out, file)
+	if err != nil {
+		ctx.StopWithError(500, err)
+		return
+	}
+
+	mime := header.Header.Get("Content-Type")
+	if mime == "" {
+		mime = "application/octet-stream"
+	}
+
+	// DB Insert (mit Project-Check)
+	err = dbprovider.GetDBManager().AddSMSProjectDocAssetFile(
+		projectID,
+		entryID,
+		mime,
+		header.Filename,
+		stored,
+		relPath,
+		int(n),
+		createdBy,
+	)
+	if err != nil {
+		ctx.ViewData("error", "Error saving uploaded image!")
+		ctx.Redirect(fmt.Sprintf("/sms_projects/show/%d", projectID))
+		return
+	}
+
+	ctx.Redirect(fmt.Sprintf("/sms_projects/show/%d", projectID))
 }
 
 func RemoveSMSProject(ctx iris.Context) {
