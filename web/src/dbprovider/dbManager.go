@@ -357,6 +357,8 @@ type Manager interface {
 	GetSMSProjectDocAssetsForEntries(projectID int, entryIDs []int) map[int][]classes.Sms_ProjectDocAsset
 	AddSMSProjectDocEntry(projectID int, title, body, entryType, createdBy, accessGroup, eventTime string) (int, error)
 	AddSMSProjectDocAssetFile(projectID int, entryID int, mime, originalFilename, storedFilename, relPath string, fileSize int, createdBy string) error
+	// Project Update
+	GetDevicesAndSoftwareForProjectBOM(projectBOMID int) ([]classes.DeviceUpdateView, error)
 }
 
 var reApp = regexp.MustCompile(`%AppVersion:([^%]+)%`)
@@ -9793,4 +9795,60 @@ func (mgr *manager) AddSMSProjectDocAssetFile(projectID int, entryID int, mime, 
 		createdBy,
 	)
 	return err
+}
+
+func (mgr *manager) GetDevicesAndSoftwareForProjectBOM(projectBOMID int) ([]classes.DeviceUpdateView, error) {
+	// devices
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_devicesAndSoftwareForProjectBOM_devices)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(projectBOMID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	out := make([]classes.DeviceUpdateView, 0, 32)
+	idx := make(map[string]int)
+
+	for rows.Next() {
+		var name, ver string
+		var cnt int
+		if err := rows.Scan(&name, &ver, &cnt); err != nil {
+			return nil, err
+		}
+		key := name + "|" + ver
+		idx[key] = len(out)
+
+		out = append(out, classes.DeviceUpdateView{
+			DeviceName:    name,
+			DeviceVersion: ver,
+			DeviceCount:   cnt,
+			SoftwareList:  []classes.SoftwareUpdateView{},
+		})
+	}
+
+	// software
+	stmt2, err := mgr.db.Prepare(dbUtils.SELECT_sms_devicesAndSoftwareForProjectBOM_software)
+	if err != nil { return out, err }
+	defer stmt2.Close()
+
+	rows2, err := stmt2.Query(projectBOMID)
+	if err != nil { return out, err }
+	defer rows2.Close()
+
+	for rows2.Next() {
+		var devName, devVer, swName, swVer string
+		if err := rows2.Scan(&devName, &devVer, &swName, &swVer); err != nil {
+			return out, err
+		}
+		key := devName + "|" + devVer
+		if i, ok := idx[key]; ok {
+			out[i].SoftwareList = append(out[i].SoftwareList, classes.SoftwareUpdateView{
+				SoftwareName:    swName,
+				SoftwareVersion: swVer,
+			})
+		}
+	}
+
+	return out, nil
 }

@@ -1913,3 +1913,35 @@ SELECT COUNT(*)
 FROM sms_projectDocEntry
 WHERE entry_id = ? AND project_id = ?;
 `
+
+// Project Update
+var SELECT_sms_devicesAndSoftwareForProjectBOM_devices = `
+SELECT
+  dt.type AS device_name,
+  d.version AS device_version,
+  COUNT(*) AS device_count
+FROM sms_deviceInstancePartOfProjectBOM dipb
+JOIN sms_deviceInstance di ON dipb.deviceInstance_id = di.deviceInstance_id
+JOIN sms_device d ON di.device_id = d.device_id
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+WHERE dipb.projectBOM_id = ?
+GROUP BY dt.type, d.version
+ORDER BY dt.type, d.version;
+`
+
+var SELECT_sms_devicesAndSoftwareForProjectBOM_software = `
+SELECT
+  dt.type AS device_name,
+  d.version AS device_version,
+  st.typeName AS software_name,
+  sft.version AS software_version
+FROM sms_deviceInstancePartOfProjectBOM dipb
+JOIN sms_deviceInstance di ON dipb.deviceInstance_id = di.deviceInstance_id
+JOIN sms_device d ON di.device_id = d.device_id
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+JOIN sms_softwarePartOfDevice spd ON d.device_id = spd.device_id
+JOIN sms_software sft ON spd.software_id = sft.software_id
+JOIN sms_softwaretype st ON sft.softwaretype_id = st.softwaretype_id
+WHERE dipb.projectBOM_id = ?
+ORDER BY dt.type, d.version, st.typeName;
+`
