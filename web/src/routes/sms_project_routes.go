@@ -237,6 +237,11 @@ func AddSMSProjectTimelineDoc(ctx iris.Context) {
 	accessGroup := ctx.PostValue("access_group") // optional
 	eventTime := ctx.PostValue("event_time")     // optional: "YYYY-MM-DD HH:MM:SS"
 
+	eventTime = strings.ReplaceAll(eventTime, "T", " ")
+	if len(eventTime) == 16 { // "YYYY-MM-DD HH:MM"
+		eventTime += ":00"
+	}
+
 	_, err = dbprovider.GetDBManager().AddSMSProjectDocEntry(
 		projectID,
 		title,
