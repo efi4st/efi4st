@@ -359,6 +359,14 @@ type Manager interface {
 	AddSMSProjectDocAssetFile(projectID int, entryID int, mime, originalFilename, storedFilename, relPath string, fileSize int, createdBy string) error
 	// Project Update
 	GetDevicesAndSoftwareForProjectBOM(projectBOMID int) ([]classes.DeviceUpdateView, error)
+	// Live Report
+	GetProjectIDByUpdateCenterID(updateCenterID int) (int, error)
+	AddLiveReport(projectID int, updateCenterID *int, projectBOMID *int, systemID *int, source string, reportName *string, createdAt time.Time, receivedBy *string, schemaVersion string, reportFormat string, payloadJSON string, payloadSha256 *string, payloadSize *int, note *string, ) (int, error)
+	GetLatestLiveReportForProject(projectID int) (*classes.Sms_LiveReportRow, error)
+	GetLatestLiveReportIDForProject(projectID int) (int, error)
+	GetLiveReportItems(reportID int) ([]classes.Sms_LiveReportItem, error)
+	getExpectedSoftwareMap(deviceID int) (map[string]string, error)
+	ValidateAndStoreLiveReportItems(projectID int, reportID int, lr classes.LiveReportV1) error
 }
 
 var reApp = regexp.MustCompile(`%AppVersion:([^%]+)%`)
@@ -9851,4 +9859,332 @@ func (mgr *manager) GetDevicesAndSoftwareForProjectBOM(projectBOMID int) ([]clas
 	}
 
 	return out, nil
+}
+
+
+// Live Report
+func (mgr *manager) GetProjectIDByUpdateCenterID(updateCenterID int) (int, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_projectIDByUpdateCenterID)
+	if err != nil { return 0, err }
+	defer stmt.Close()
+
+	var pid int
+	if err := stmt.QueryRow(updateCenterID).Scan(&pid); err != nil {
+		return 0, err
+	}
+	return pid, nil
+}
+
+func (mgr *manager) AddLiveReport(
+	projectID int,
+	updateCenterID *int,
+	projectBOMID *int,
+	systemID *int,
+	source string,
+	reportName *string,
+	createdAt time.Time,
+	receivedBy *string,
+	schemaVersion string,
+	reportFormat string,
+	payloadJSON string,
+	payloadSha256 *string,
+	payloadSize *int,
+	note *string,
+) (int, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.INSERT_sms_liveReport)
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+
+	// Convert optional pointers to driver-friendly values (nil or concrete type)
+	var ucVal interface{} = nil
+	if updateCenterID != nil && *updateCenterID > 0 {
+		ucVal = *updateCenterID
+	}
+
+	var pbomVal interface{} = nil
+	if projectBOMID != nil && *projectBOMID > 0 {
+		pbomVal = *projectBOMID
+	}
+
+	var sysVal interface{} = nil
+	if systemID != nil && *systemID > 0 {
+		sysVal = *systemID
+	}
+
+	var reportNameVal interface{} = nil
+	if reportName != nil && *reportName != "" {
+		reportNameVal = *reportName
+	}
+
+	var receivedByVal interface{} = nil
+	if receivedBy != nil && *receivedBy != "" {
+		receivedByVal = *receivedBy
+	}
+
+	var shaVal interface{} = nil
+	if payloadSha256 != nil && *payloadSha256 != "" {
+		shaVal = *payloadSha256
+	}
+
+	var sizeVal interface{} = nil
+	if payloadSize != nil && *payloadSize > 0 {
+		sizeVal = *payloadSize
+	}
+
+	var noteVal interface{} = nil
+	if note != nil && *note != "" {
+		noteVal = *note
+	}
+
+	res, err := stmt.Exec(
+		projectID,
+		ucVal,
+		pbomVal,
+		sysVal,
+		source,
+		reportNameVal,
+		createdAt,
+		receivedByVal,
+		schemaVersion,
+		reportFormat,
+		payloadJSON,
+		shaVal,
+		sizeVal,
+		noteVal,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
+}
+
+func (mgr *manager) GetLatestLiveReportForProject(projectID int) (*classes.Sms_LiveReportRow, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_liveReportLatestForProject)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	var (
+		row classes.Sms_LiveReportRow
+		dbCreatedAt time.Time
+		dbReceivedAt time.Time
+	)
+	err = stmt.QueryRow(projectID).Scan(
+		&row.ReportID,
+		&dbCreatedAt,
+		&dbReceivedAt,
+		&row.SchemaVersion,
+		&row.ReportFormat,
+		&row.PayloadJSON,
+	)
+	if err != nil {
+		return nil, err
+	}
+	row.CreatedAt = dbCreatedAt.Format("2006-01-02 15:04:05")
+	row.ReceivedAt = dbReceivedAt.Format("2006-01-02 15:04:05")
+	return &row, nil
+}
+
+// Live Report Item
+func (mgr *manager) GetLatestLiveReportIDForProject(projectID int) (int, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_liveReportLatestIDForProject)
+	if err != nil { return 0, err }
+	defer stmt.Close()
+
+	var rid int
+	if err := stmt.QueryRow(projectID).Scan(&rid); err != nil {
+		return 0, err
+	}
+	return rid, nil
+}
+
+func (mgr *manager) GetLiveReportItems(reportID int) ([]classes.Sms_LiveReportItem, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_liveReportItemsByReportID)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(reportID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	var out []classes.Sms_LiveReportItem
+	for rows.Next() {
+		var it classes.Sms_LiveReportItem
+		var di sql.NullInt64
+		var md sql.NullInt64
+		var ms sql.NullString
+		var createdAt time.Time
+
+		if err := rows.Scan(
+			&it.ItemID, &it.ReportID, &it.ProjectID, &di, &it.Serialnumber,
+			&it.LiveDeviceType, &it.LiveDeviceVersion, &it.MatchStatus, &md, &ms, &createdAt,
+		); err != nil {
+			return nil, err
+		}
+		if di.Valid { v := int(di.Int64); it.DeviceInstanceID = &v }
+		if md.Valid { v := int(md.Int64); it.MatchedDeviceID = &v }
+		if ms.Valid { s := ms.String; it.MismatchSummary = &s }
+		it.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
+		out = append(out, it)
+	}
+	return out, rows.Err()
+}
+
+
+func (mgr *manager) getExpectedSoftwareMap(deviceID int) (map[string]string, error) {
+	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_expectedSoftwareByDeviceID)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	out := map[string]string{}
+	for rows.Next() {
+		var name, ver string
+		if err := rows.Scan(&name, &ver); err != nil { return nil, err }
+		out[name] = ver
+	}
+	return out, rows.Err()
+}
+
+func (mgr *manager) ValidateAndStoreLiveReportItems(projectID int, reportID int, lr classes.LiveReportV1) error {
+	// erst alte Items löschen (falls re-validate)
+	{
+		stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_liveReportItemsByReportID)
+		if err != nil { return err }
+		_, _ = stmt.Exec(reportID)
+		stmt.Close()
+	}
+
+	// prepared statements
+	stmtDI, err := mgr.db.Prepare(dbUtils.SELECT_sms_deviceInstanceByProjectAndSerial)
+	if err != nil { return err }
+	defer stmtDI.Close()
+
+	stmtDev, err := mgr.db.Prepare(dbUtils.SELECT_sms_deviceIDByTypeAndVersion)
+	if err != nil { return err }
+	defer stmtDev.Close()
+
+	stmtIns, err := mgr.db.Prepare(dbUtils.INSERT_sms_liveReportItem)
+	if err != nil { return err }
+	defer stmtIns.Close()
+
+	for _, d := range lr.Devices {
+		serial := d.Serialnumber
+		liveType := d.DeviceType
+		liveVer := d.DeviceVersion
+
+		// 1) deviceInstance lookup
+		var diID sql.NullInt64
+		var currentDeviceID sql.NullInt64
+		err := stmtDI.QueryRow(projectID, serial).Scan(&diID, &currentDeviceID)
+
+		deviceInstanceFound := (err == nil && diID.Valid)
+
+		// 2) device version exists?
+		var matchedDeviceID sql.NullInt64
+		err2 := stmtDev.QueryRow(liveType, liveVer).Scan(&matchedDeviceID)
+
+		deviceVersionFound := (err2 == nil && matchedDeviceID.Valid)
+
+		status := ""
+		var mismatch *string = nil
+
+		// Default pointers for insert
+		var diVal interface{} = nil
+		if deviceInstanceFound {
+			diVal = int(diID.Int64)
+		}
+		var mdVal interface{} = nil
+		if deviceVersionFound {
+			mdVal = int(matchedDeviceID.Int64)
+		}
+
+		if !deviceInstanceFound {
+			status = "unknown_instance"
+		} else if !deviceVersionFound {
+			status = "unknown_device_version"
+		} else {
+			// mindestens: device matches
+			status = "match_device_only"
+
+			// 3) Strict software check (optional aber empfohlen)
+			exp, err := mgr.getExpectedSoftwareMap(int(matchedDeviceID.Int64))
+			if err == nil {
+				// build live map
+				lm := map[string]string{}
+				for _, sw := range d.Software {
+					if sw.Name != "" && sw.Version != "" {
+						lm[sw.Name] = sw.Version
+					}
+				}
+
+				// compare
+				// strict: same keys and same versions
+				strictOk := true
+				partial := false
+
+				// expected must be in live and equal
+				for k, v := range exp {
+					lv, ok := lm[k]
+					if !ok {
+						strictOk = false
+						partial = true
+						break
+					}
+					if lv != v {
+						strictOk = false
+						partial = true
+						break
+					}
+				}
+				// live extras -> partial (not strict)
+				if strictOk {
+					for k := range lm {
+						if _, ok := exp[k]; !ok {
+							strictOk = false
+							partial = true
+							break
+						}
+					}
+				}
+
+				if strictOk {
+					status = "match_strict"
+				} else if partial {
+					status = "match_partial"
+					msg := "Software differs from expected"
+					mismatch = &msg
+				} else {
+					status = "no_match"
+				}
+			}
+		}
+
+		// insert item
+		var mismatchVal interface{} = nil
+		if mismatch != nil { mismatchVal = *mismatch }
+
+		if _, err := stmtIns.Exec(
+			reportID, projectID,
+			diVal, serial,
+			liveType, liveVer,
+			status,
+			mdVal,
+			mismatchVal,
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

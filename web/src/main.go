@@ -685,6 +685,11 @@ func irisMain()() {
 	// optional: static file serving (wenn du lokal speicherst)
 	app.HandleDir("/uploads", iris.Dir("./uploads"), iris.DirOptions{ShowList: false})
 
+	app.Post("/sms_projectUpdates/{id:int}/live/upload", routes.SMSProjectUpdateUploadLiveReport)
+
+	app.Post("/sms_projectUpdates/{project_id:int}/apply-live", routes.SMSProjectUpdateApplyLivePlaceholder)
+
+
 
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)

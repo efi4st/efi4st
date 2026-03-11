@@ -1945,3 +1945,84 @@ JOIN sms_softwaretype st ON sft.softwaretype_id = st.softwaretype_id
 WHERE dipb.projectBOM_id = ?
 ORDER BY dt.type, d.version, st.typeName;
 `
+
+// Update Center Live Report
+// mapping update_center -> project_id
+var SELECT_sms_projectIDByUpdateCenterID = `
+SELECT project_id
+FROM sms_update_center
+WHERE update_center_id = ?;
+`
+
+// insert live report
+var INSERT_sms_liveReport = `
+INSERT INTO sms_liveReport
+(project_id, update_center_id, projectBOM_id, system_id, source, report_name, created_at, received_by,
+ schema_version, report_format, payload_json, payload_sha256, payload_size, note)
+VALUES
+(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+`
+
+// latest report for project
+var SELECT_sms_liveReportLatestForProject = `
+SELECT report_id, created_at, received_at, schema_version, report_format, payload_json
+FROM sms_liveReport
+WHERE project_id = ?
+ORDER BY received_at DESC
+LIMIT 1;
+`
+
+// LiveReportItem
+var DELETE_sms_liveReportItemsByReportID = `
+DELETE FROM sms_liveReport_item WHERE report_id = ?;
+`
+
+var SELECT_sms_deviceInstanceByProjectAndSerial = `
+SELECT deviceInstance_id, device_id
+FROM sms_deviceInstance
+WHERE project_id = ? AND serialnumber = ?
+LIMIT 1;
+`
+
+var SELECT_sms_deviceIDByTypeAndVersion = `
+SELECT d.device_id
+FROM sms_device d
+JOIN sms_devicetype dt ON d.devicetype_id = dt.devicetype_id
+WHERE dt.type = ? AND d.version = ?
+LIMIT 1;
+`
+
+// Erwartete Softwareliste für eine Device-Version (device_id)
+var SELECT_sms_expectedSoftwareByDeviceID = `
+SELECT st.typeName, s.version
+FROM sms_softwarePartOfDevice spd
+JOIN sms_software s ON spd.software_id = s.software_id
+JOIN sms_softwaretype st ON s.softwaretype_id = st.softwaretype_id
+WHERE spd.device_id = ?;
+`
+
+var INSERT_sms_liveReportItem = `
+INSERT INTO sms_liveReport_item
+(report_id, project_id, deviceInstance_id, serialnumber,
+ live_device_type, live_device_version, match_status,
+ matched_device_id, mismatch_summary)
+VALUES
+(?, ?, ?, ?, ?, ?, ?, ?, ?);
+`
+
+var SELECT_sms_liveReportItemsByReportID = `
+SELECT item_id, report_id, project_id, deviceInstance_id, serialnumber,
+       live_device_type, live_device_version, match_status, matched_device_id, mismatch_summary, created_at
+FROM sms_liveReport_item
+WHERE report_id = ?
+ORDER BY item_id ASC;
+`
+
+// Latest report_id for project (damit du Items laden kannst)
+var SELECT_sms_liveReportLatestIDForProject = `
+SELECT report_id
+FROM sms_liveReport
+WHERE project_id = ?
+ORDER BY received_at DESC
+LIMIT 1;
+`

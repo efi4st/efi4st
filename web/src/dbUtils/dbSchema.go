@@ -1222,3 +1222,91 @@ LEFT JOIN sms_systemtype stf    ON sysf.systemtype_id = stf.systemtype_id
 LEFT JOIN sms_system syst       ON tl.to_system_id = syst.system_id
 LEFT JOIN sms_systemtype stt    ON syst.systemtype_id = stt.systemtype_id;
 `
+
+var sms_liveReport_schema = `
+CREATE TABLE IF NOT EXISTS sms_liveReport (
+report_id INT AUTO_INCREMENT PRIMARY KEY,
+
+project_id INT(11) NOT NULL,
+update_center_id INT(11) DEFAULT NULL,
+projectBOM_id INT(11) DEFAULT NULL,
+system_id INT(11) DEFAULT NULL,
+
+source ENUM('upload','update_center','api') NOT NULL DEFAULT 'upload',
+report_name VARCHAR(255) DEFAULT NULL,
+
+created_at DATETIME NOT NULL,
+received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+received_by VARCHAR(150) DEFAULT NULL,
+
+schema_version VARCHAR(50) NOT NULL DEFAULT '1',
+report_format VARCHAR(50) NOT NULL DEFAULT 'device_software_v1',
+
+payload_json JSON NOT NULL,
+payload_sha256 CHAR(64) DEFAULT NULL,
+payload_size INT DEFAULT NULL,
+
+note VARCHAR(255) DEFAULT NULL,
+
+KEY idx_lr_project (project_id, received_at),
+KEY idx_lr_uc (update_center_id, received_at),
+KEY idx_lr_system (system_id, received_at),
+
+CONSTRAINT fk_lr_project FOREIGN KEY (project_id)
+REFERENCES sms_project(project_id) ON DELETE CASCADE ON UPDATE CASCADE,
+
+CONSTRAINT fk_lr_uc FOREIGN KEY (update_center_id)
+REFERENCES sms_update_center(update_center_id) ON DELETE SET NULL ON UPDATE CASCADE,
+
+CONSTRAINT fk_lr_pbom FOREIGN KEY (projectBOM_id)
+REFERENCES sms_projectBOM(projectBOM_id) ON DELETE SET NULL ON UPDATE CASCADE,
+
+CONSTRAINT fk_lr_system FOREIGN KEY (system_id)
+REFERENCES sms_system(system_id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_liveReport_item_schema = `
+CREATE TABLE IF NOT EXISTS sms_liveReport_item (
+item_id INT AUTO_INCREMENT PRIMARY KEY,
+
+report_id INT NOT NULL,
+project_id INT NOT NULL,
+
+deviceInstance_id INT DEFAULT NULL,
+serialnumber VARCHAR(150) NOT NULL,
+
+live_device_type VARCHAR(150) NOT NULL,
+live_device_version VARCHAR(80) NOT NULL,
+
+match_status ENUM(
+'unknown_instance',
+'unknown_device_version',
+'match_device_only',
+'match_strict',
+'match_partial',
+'no_match'
+) NOT NULL,
+
+matched_device_id INT DEFAULT NULL,
+mismatch_summary VARCHAR(255) DEFAULT NULL,
+
+created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+KEY idx_lri_report (report_id),
+KEY idx_lri_project (project_id),
+KEY idx_lri_serial (project_id, serialnumber),
+
+CONSTRAINT fk_lri_report FOREIGN KEY (report_id)
+REFERENCES sms_liveReport(report_id) ON DELETE CASCADE ON UPDATE CASCADE,
+
+CONSTRAINT fk_lri_project FOREIGN KEY (project_id)
+REFERENCES sms_project(project_id) ON DELETE CASCADE ON UPDATE CASCADE,
+
+CONSTRAINT fk_lri_di FOREIGN KEY (deviceInstance_id)
+REFERENCES sms_deviceInstance(deviceInstance_id) ON DELETE SET NULL ON UPDATE CASCADE,
+
+CONSTRAINT fk_lri_device FOREIGN KEY (matched_device_id)
+REFERENCES sms_device(device_id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
