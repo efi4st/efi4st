@@ -9805,57 +9805,188 @@ func (mgr *manager) AddSMSProjectDocAssetFile(projectID int, entryID int, mime, 
 	return err
 }
 
-func (mgr *manager) GetDevicesAndSoftwareForProjectBOM(projectBOMID int) ([]classes.DeviceUpdateView, error) {
-	// devices
-	stmt, err := mgr.db.Prepare(dbUtils.SELECT_sms_devicesAndSoftwareForProjectBOM_devices)
-	if err != nil { return nil, err }
+func (mgr *manager) GetDevicesAndSoftwareForProjectBOM(
+	projectBOMID int,
+) ([]classes.DeviceUpdateView, error) {
+
+	// 1. Devices laden und gruppieren
+	stmt, err := mgr.db.Prepare(
+		dbUtils.SELECT_sms_devicesAndSoftwareForProjectBOM_devices,
+	)
+	if err != nil {
+		return nil, err
+	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(projectBOMID)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	out := make([]classes.DeviceUpdateView, 0, 32)
 	idx := make(map[string]int)
 
 	for rows.Next() {
-		var name, ver string
-		var cnt int
+		var (
+			name string
+			ver  string
+			cnt  int
+		)
+
 		if err := rows.Scan(&name, &ver, &cnt); err != nil {
 			return nil, err
 		}
+
 		key := name + "|" + ver
 		idx[key] = len(out)
+
+		collapseID := fmt.Sprintf(
+			"instances-%d-%d",
+			projectBOMID,
+			len(out),
+		)
 
 		out = append(out, classes.DeviceUpdateView{
 			DeviceName:    name,
 			DeviceVersion: ver,
 			DeviceCount:   cnt,
 			SoftwareList:  []classes.SoftwareUpdateView{},
+			Instances:     []classes.DeviceInstanceUpdateView{},
+			CollapseID:    collapseID,
 		})
 	}
 
-	// software
-	stmt2, err := mgr.db.Prepare(dbUtils.SELECT_sms_devicesAndSoftwareForProjectBOM_software)
-	if err != nil { return out, err }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// 2. Software laden und den gruppierten Devices zuordnen
+	stmt2, err := mgr.db.Prepare(
+		dbUtils.SELECT_sms_devicesAndSoftwareForProjectBOM_software,
+	)
+	if err != nil {
+		return out, err
+	}
 	defer stmt2.Close()
 
 	rows2, err := stmt2.Query(projectBOMID)
-	if err != nil { return out, err }
+	if err != nil {
+		return out, err
+	}
 	defer rows2.Close()
 
 	for rows2.Next() {
-		var devName, devVer, swName, swVer string
-		if err := rows2.Scan(&devName, &devVer, &swName, &swVer); err != nil {
+		var (
+			devName string
+			devVer  string
+			swName  string
+			swVer   string
+		)
+
+		if err := rows2.Scan(
+			&devName,
+			&devVer,
+			&swName,
+			&swVer,
+		); err != nil {
 			return out, err
 		}
+
 		key := devName + "|" + devVer
+
 		if i, ok := idx[key]; ok {
-			out[i].SoftwareList = append(out[i].SoftwareList, classes.SoftwareUpdateView{
-				SoftwareName:    swName,
-				SoftwareVersion: swVer,
-			})
+			out[i].SoftwareList = append(
+				out[i].SoftwareList,
+				classes.SoftwareUpdateView{
+					SoftwareName:    swName,
+					SoftwareVersion: swVer,
+				},
+			)
 		}
+	}
+
+	if err := rows2.Err(); err != nil {
+		return out, err
+	}
+
+	// 3. Konkrete Geräteinstanzen und Seriennummern laden
+	stmt3, err := mgr.db.Prepare(
+		dbUtils.SELECT_sms_devicesAndSoftwareForProjectBOM_instances,
+	)
+	if err != nil {
+		return out, err
+	}
+	defer stmt3.Close()
+
+	rows3, err := stmt3.Query(projectBOMID)
+	if err != nil {
+		return out, err
+	}
+	defer rows3.Close()
+
+	for rows3.Next() {
+		var (
+			deviceName       string
+			deviceVersion    string
+			deviceInstanceID int
+			serialnumber     string
+		)
+
+		if err := rows3.Scan(
+			&deviceName,
+			&deviceVersion,
+			&deviceInstanceID,
+			&serialnumber,
+		); err != nil {
+			return out, err
+		}
+
+		key := deviceName + "|" + deviceVersion
+
+		if i, ok := idx[key]; ok {
+			out[i].Instances = append(
+				out[i].Instances,
+				classes.DeviceInstanceUpdateView{
+					DeviceInstanceID: deviceInstanceID,
+					Serialnumber:      serialnumber,
+				},
+			)
+		}
+	}
+
+	for i := range out {
+
+		serials := make([]string, 0, len(out[i].Instances))
+
+		for _, inst := range out[i].Instances {
+			serials = append(serials, inst.Serialnumber)
+		}
+
+		out[i].SerialnumberText = strings.Join(serials, ", ")
+
+		warnings := []string{}
+
+		for _, inst := range out[i].Instances {
+
+			if inst.StatusText == "" {
+				continue
+			}
+
+			warnings = append(
+				warnings,
+				inst.Serialnumber+" ("+inst.StatusText+")",
+			)
+		}
+
+		out[i].InstanceWarningText =
+			strings.Join(warnings, ", ")
+	}
+
+
+
+	if err := rows3.Err(); err != nil {
+		return out, err
 	}
 
 	return out, nil

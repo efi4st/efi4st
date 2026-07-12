@@ -1946,6 +1946,40 @@ WHERE dipb.projectBOM_id = ?
 ORDER BY dt.type, d.version, st.typeName;
 `
 
+var SELECT_sms_devicesAndSoftwareForProjectBOM_serialnumbers = `
+SELECT
+  dt.type AS device_name,
+  d.version AS device_version,
+  di.deviceInstance_id,
+  di.serialnumber
+FROM sms_deviceInstancePartOfProjectBOM dipb
+JOIN sms_deviceInstance di
+  ON dipb.deviceInstance_id = di.deviceInstance_id
+JOIN sms_device d
+  ON di.device_id = d.device_id
+JOIN sms_devicetype dt
+  ON d.devicetype_id = dt.devicetype_id
+WHERE dipb.projectBOM_id = ?
+ORDER BY dt.type, d.version, di.serialnumber;
+`
+
+var SELECT_sms_devicesAndSoftwareForProjectBOM_instances = `
+SELECT
+  dt.type AS device_name,
+  d.version AS device_version,
+  di.deviceInstance_id,
+  di.serialnumber
+FROM sms_deviceInstancePartOfProjectBOM dipb
+JOIN sms_deviceInstance di
+  ON dipb.deviceInstance_id = di.deviceInstance_id
+JOIN sms_device d
+  ON di.device_id = d.device_id
+JOIN sms_devicetype dt
+  ON d.devicetype_id = dt.devicetype_id
+WHERE dipb.projectBOM_id = ?
+ORDER BY dt.type, d.version, di.serialnumber;
+`
+
 // Update Center Live Report
 // mapping update_center -> project_id
 var SELECT_sms_projectIDByUpdateCenterID = `

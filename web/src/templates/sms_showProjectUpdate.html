@@ -111,6 +111,18 @@
           <span class="small">({{ entry.DeviceCount }}x)</span>
           {% endif %}
 
+          {% if entry.SerialnumberText %}
+          <div class="small text-muted fst-italic">
+            ({{ entry.DeviceCount }}x SN: {{ entry.SerialnumberText }})
+          </div>
+          {% endif %}
+
+          {% if entry.InstanceWarningText %}
+          <div class="small text-warning">
+            ⚠ {{ entry.InstanceWarningText }}
+          </div>
+          {% endif %}
+
           {% if entry.MostCommonSystemVersion %}
           {% if entry.IsInvalidSystemVersion %}
           <div class="text-danger small fst-italic">

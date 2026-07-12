@@ -45,6 +45,29 @@ type Sms_LiveReportRow struct {
 	PayloadJSON    string
 }
 
+type LiveSoftwareState struct {
+	Name    string
+	Version string
+}
+
+type LiveDeviceState struct {
+	Serialnumber  string
+	DeviceType    string
+	DeviceVersion string
+	Software      []LiveSoftwareState
+}
+
+type InstanceSoftwareUpdateView struct {
+	SoftwareName string
+
+	DBVersion   string
+	LiveVersion string
+
+	FoundInLive bool
+	DBLiveMatch bool
+	StatusText  string
+}
+
 // Aggregiert pro DeviceType, wie deine Update-Tabelle es darstellt.
 type LiveProjectState struct {
 	CreatedAt  string
@@ -55,6 +78,10 @@ type LiveProjectState struct {
 
 	// device_type -> software_name -> most common version
 	SoftwareVersionByType map[string]map[string]string
+
+	// Neue instanzbezogene Sicht:
+	// serialnumber -> konkreter Live-Zustand
+	DeviceBySerialnumber map[string]LiveDeviceState
 }
 
 

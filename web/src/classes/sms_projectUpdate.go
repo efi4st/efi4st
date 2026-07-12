@@ -34,6 +34,10 @@ type DeviceUpdateView struct {
 	DBOutdated bool
 	UpdateAvailable bool
 	UpdateTargetVersion string // optional, wenn du es anzeigen willst (können wir nutzen)
+	Instances []DeviceInstanceUpdateView
+	CollapseID string
+	SerialnumberText string
+	InstanceWarningText string
 }
 
 
@@ -48,3 +52,16 @@ type SoftwareUpdateView struct {
 	ShortenedSystemVersions string
 }
 
+type DeviceInstanceUpdateView struct {
+	DeviceInstanceID int
+	Serialnumber      string
+
+	DBDeviceVersion   string
+	LiveDeviceVersion string
+
+	FoundInLive bool
+	DBLiveMatch bool
+	StatusText string
+
+	Software []InstanceSoftwareUpdateView
+}
