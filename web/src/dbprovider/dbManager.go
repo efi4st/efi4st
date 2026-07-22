@@ -10,6 +10,7 @@ package dbprovider
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Masterminds/semver/v3"
 	"github.com/efi4st/efi4st/classes"
@@ -10187,134 +10188,257 @@ func (mgr *manager) getExpectedSoftwareMap(deviceID int) (map[string]string, err
 	return out, rows.Err()
 }
 
-func (mgr *manager) ValidateAndStoreLiveReportItems(projectID int, reportID int, lr classes.LiveReportV1) error {
-	// erst alte Items löschen (falls re-validate)
-	{
-		stmt, err := mgr.db.Prepare(dbUtils.DELETE_sms_liveReportItemsByReportID)
-		if err != nil { return err }
-		_, _ = stmt.Exec(reportID)
-		stmt.Close()
+func getExpectedSoftwareMapTx(
+	tx *sql.Tx,
+	deviceID int,
+) (map[string]string, error) {
+	stmt, err := tx.Prepare(dbUtils.SELECT_sms_expectedSoftwareByDeviceID)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(deviceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make(map[string]string)
+
+	for rows.Next() {
+		var name string
+		var version string
+
+		if err := rows.Scan(&name, &version); err != nil {
+			return nil, err
+		}
+
+		out[name] = version
 	}
 
-	// prepared statements
-	stmtDI, err := mgr.db.Prepare(dbUtils.SELECT_sms_deviceInstanceByProjectAndSerial)
-	if err != nil { return err }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (mgr *manager) ValidateAndStoreLiveReportItems(
+	projectID int,
+	reportID int,
+	lr classes.LiveReportV1,
+) error {
+	tx, err := mgr.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin live report validation transaction: %w", err)
+	}
+
+	// Rollback ist nach erfolgreichem Commit wirkungslos.
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	// Alte Validierungsergebnisse entfernen.
+	if _, err := tx.Exec(
+		dbUtils.DELETE_sms_liveReportItemsByReportID,
+		reportID,
+	); err != nil {
+		return fmt.Errorf(
+			"delete old live report items for report %d: %w",
+			reportID,
+			err,
+		)
+	}
+
+	stmtDI, err := tx.Prepare(
+		dbUtils.SELECT_sms_deviceInstanceByProjectAndSerial,
+	)
+	if err != nil {
+		return fmt.Errorf("prepare device instance lookup: %w", err)
+	}
 	defer stmtDI.Close()
 
-	stmtDev, err := mgr.db.Prepare(dbUtils.SELECT_sms_deviceIDByTypeAndVersion)
-	if err != nil { return err }
+	stmtDev, err := tx.Prepare(
+		dbUtils.SELECT_sms_deviceIDByTypeAndVersion,
+	)
+	if err != nil {
+		return fmt.Errorf("prepare device version lookup: %w", err)
+	}
 	defer stmtDev.Close()
 
-	stmtIns, err := mgr.db.Prepare(dbUtils.INSERT_sms_liveReportItem)
-	if err != nil { return err }
+	stmtIns, err := tx.Prepare(
+		dbUtils.INSERT_sms_liveReportItem,
+	)
+	if err != nil {
+		return fmt.Errorf("prepare live report item insert: %w", err)
+	}
 	defer stmtIns.Close()
 
-	for _, d := range lr.Devices {
-		serial := d.Serialnumber
-		liveType := d.DeviceType
-		liveVer := d.DeviceVersion
+	for _, device := range lr.Devices {
+		serialnumber := device.Serialnumber
+		liveDeviceType := device.DeviceType
+		liveDeviceVersion := device.DeviceVersion
 
-		// 1) deviceInstance lookup
-		var diID sql.NullInt64
-		var currentDeviceID sql.NullInt64
-		err := stmtDI.QueryRow(projectID, serial).Scan(&diID, &currentDeviceID)
+		/*
+			1. Geräteinstanz im Projekt suchen.
+		*/
+		var deviceInstanceID int
+		var currentDeviceID int
 
-		deviceInstanceFound := (err == nil && diID.Valid)
+		deviceInstanceFound := false
 
-		// 2) device version exists?
-		var matchedDeviceID sql.NullInt64
-		err2 := stmtDev.QueryRow(liveType, liveVer).Scan(&matchedDeviceID)
+		err := stmtDI.QueryRow(
+			projectID,
+			serialnumber,
+		).Scan(
+			&deviceInstanceID,
+			&currentDeviceID,
+		)
 
-		deviceVersionFound := (err2 == nil && matchedDeviceID.Valid)
+		switch {
+		case err == nil:
+			deviceInstanceFound = true
+
+		case errors.Is(err, sql.ErrNoRows):
+			deviceInstanceFound = false
+
+		default:
+			return fmt.Errorf(
+				"lookup device instance project=%d serial=%q: %w",
+				projectID,
+				serialnumber,
+				err,
+			)
+		}
+
+		/*
+			2. Prüfen, ob Gerätetyp und Live-Version als abstrakte
+			   Geräteversion in der Datenbank existieren.
+		*/
+		var matchedDeviceID int
+		deviceVersionFound := false
+
+		err = stmtDev.QueryRow(
+			liveDeviceType,
+			liveDeviceVersion,
+		).Scan(&matchedDeviceID)
+
+		switch {
+		case err == nil:
+			deviceVersionFound = true
+
+		case errors.Is(err, sql.ErrNoRows):
+			deviceVersionFound = false
+
+		default:
+			return fmt.Errorf(
+				"lookup device version type=%q version=%q: %w",
+				liveDeviceType,
+				liveDeviceVersion,
+				err,
+			)
+		}
 
 		status := ""
-		var mismatch *string = nil
+		var mismatchSummary interface{} = nil
 
-		// Default pointers for insert
-		var diVal interface{} = nil
+		var deviceInstanceValue interface{} = nil
 		if deviceInstanceFound {
-			diVal = int(diID.Int64)
-		}
-		var mdVal interface{} = nil
-		if deviceVersionFound {
-			mdVal = int(matchedDeviceID.Int64)
+			deviceInstanceValue = deviceInstanceID
 		}
 
-		if !deviceInstanceFound {
+		var matchedDeviceValue interface{} = nil
+		if deviceVersionFound {
+			matchedDeviceValue = matchedDeviceID
+		}
+
+		switch {
+		case !deviceInstanceFound:
 			status = "unknown_instance"
-		} else if !deviceVersionFound {
+
+		case !deviceVersionFound:
 			status = "unknown_device_version"
-		} else {
-			// mindestens: device matches
+
+		default:
 			status = "match_device_only"
 
-			// 3) Strict software check (optional aber empfohlen)
-			exp, err := mgr.getExpectedSoftwareMap(int(matchedDeviceID.Int64))
-			if err == nil {
-				// build live map
-				lm := map[string]string{}
-				for _, sw := range d.Software {
-					if sw.Name != "" && sw.Version != "" {
-						lm[sw.Name] = sw.Version
-					}
+			expectedSoftware, err :=
+				getExpectedSoftwareMapTx(tx, matchedDeviceID)
+			if err != nil {
+				return fmt.Errorf(
+					"load expected software for device %d: %w",
+					matchedDeviceID,
+					err,
+				)
+			}
+
+			liveSoftware := make(map[string]string)
+
+			for _, software := range device.Software {
+				if software.Name == "" || software.Version == "" {
+					continue
 				}
 
-				// compare
-				// strict: same keys and same versions
-				strictOk := true
-				partial := false
+				liveSoftware[software.Name] = software.Version
+			}
 
-				// expected must be in live and equal
-				for k, v := range exp {
-					lv, ok := lm[k]
-					if !ok {
-						strictOk = false
-						partial = true
+			strictMatch := true
+
+			// Erwartete Software muss vollständig vorhanden sein.
+			for name, expectedVersion := range expectedSoftware {
+				liveVersion, found := liveSoftware[name]
+
+				if !found || liveVersion != expectedVersion {
+					strictMatch = false
+					break
+				}
+			}
+
+			// Zusätzliche Live-Software verhindert ebenfalls strict match.
+			if strictMatch {
+				for name := range liveSoftware {
+					if _, expected := expectedSoftware[name]; !expected {
+						strictMatch = false
 						break
 					}
-					if lv != v {
-						strictOk = false
-						partial = true
-						break
-					}
 				}
-				// live extras -> partial (not strict)
-				if strictOk {
-					for k := range lm {
-						if _, ok := exp[k]; !ok {
-							strictOk = false
-							partial = true
-							break
-						}
-					}
-				}
+			}
 
-				if strictOk {
-					status = "match_strict"
-				} else if partial {
-					status = "match_partial"
-					msg := "Software differs from expected"
-					mismatch = &msg
-				} else {
-					status = "no_match"
-				}
+			if strictMatch {
+				status = "match_strict"
+			} else {
+				status = "match_partial"
+				mismatchSummary = "Software differs from expected"
 			}
 		}
 
-		// insert item
-		var mismatchVal interface{} = nil
-		if mismatch != nil { mismatchVal = *mismatch }
-
 		if _, err := stmtIns.Exec(
-			reportID, projectID,
-			diVal, serial,
-			liveType, liveVer,
+			reportID,
+			projectID,
+			deviceInstanceValue,
+			serialnumber,
+			liveDeviceType,
+			liveDeviceVersion,
 			status,
-			mdVal,
-			mismatchVal,
+			matchedDeviceValue,
+			mismatchSummary,
 		); err != nil {
-			return err
+			return fmt.Errorf(
+				"insert live report item report=%d serial=%q: %w",
+				reportID,
+				serialnumber,
+				err,
+			)
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf(
+			"commit live report validation for report %d: %w",
+			reportID,
+			err,
+		)
 	}
 
 	return nil

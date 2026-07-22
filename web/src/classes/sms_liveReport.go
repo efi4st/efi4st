@@ -57,6 +57,13 @@ type LiveDeviceState struct {
 	Software      []LiveSoftwareState
 }
 
+type LiveOnlyDeviceView struct {
+	Serialnumber  string
+	DeviceType    string
+	DeviceVersion string
+	Software      []LiveSoftwareState
+}
+
 type InstanceSoftwareUpdateView struct {
 	SoftwareName string
 
@@ -66,6 +73,11 @@ type InstanceSoftwareUpdateView struct {
 	FoundInLive bool
 	DBLiveMatch bool
 	StatusText  string
+
+	ShortenedSystemVersions string
+	DBOutdated              bool
+	UpdateAvailable         bool
+	UpdateTargetVersion     string
 }
 
 // Aggregiert pro DeviceType, wie deine Update-Tabelle es darstellt.
@@ -73,14 +85,6 @@ type LiveProjectState struct {
 	CreatedAt  string
 	ReceivedAt string
 
-	// device_type -> most common device_version
-	DeviceVersionByType map[string]string
-
-	// device_type -> software_name -> most common version
-	SoftwareVersionByType map[string]map[string]string
-
-	// Neue instanzbezogene Sicht:
-	// serialnumber -> konkreter Live-Zustand
 	DeviceBySerialnumber map[string]LiveDeviceState
 }
 

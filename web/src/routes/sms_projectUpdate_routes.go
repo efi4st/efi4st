@@ -19,6 +19,7 @@ import (
 	"github.com/kataras/iris/v12"
 	"io"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -84,24 +85,9 @@ type SoftwareInfo struct {
 	UpdateVersion    string // ❗️NEU: Ziel-Version aus dem Update-Paket
 }
 
-type DeviceInstanceDisplayGroupKey struct {
-	ProjectBOMID int
-	DeviceName   string
-	DBVersion    string
-	LiveVersion  string
-	FoundInLive  bool
-}
 
-type DeviceInstanceDisplayGroup struct {
-	ProjectBOMID     int
-	DeviceName       string
-	DBVersion        string
-	LiveVersion      string
-	FoundInLive      bool
-	DeviceCount      int
-	Serialnumbers    []string
-	SerialnumberText string
-}
+
+
 
 func SMSprojectUpdate(ctx iris.Context) {
 	projectID, err := ctx.Params().GetInt("id")
@@ -263,15 +249,6 @@ func SMSprojectUpdate(ctx iris.Context) {
 		for di := range blocks[bi].DevicesWithSW {
 			dev := &blocks[bi].DevicesWithSW[di]
 
-			// Aggregierte Live-Version für die bisherige GUI.
-			dev.LiveDeviceVersion = ""
-
-			if liveState != nil {
-				if v, ok := liveState.DeviceVersionByType[dev.DeviceName]; ok {
-					dev.LiveDeviceVersion = v
-				}
-			}
-
 			// Vergleich pro konkreter Instanz.
 			for ii := range dev.Instances {
 				inst := &dev.Instances[ii]
@@ -322,6 +299,8 @@ func SMSprojectUpdate(ctx iris.Context) {
 					comparison := classes.InstanceSoftwareUpdateView{
 						SoftwareName: dbSoftware.SoftwareName,
 						DBVersion:    dbSoftware.SoftwareVersion,
+
+						ShortenedSystemVersions: dbSoftware.ShortenedSystemVersions,
 					}
 
 					liveVersion, softwareFound :=
@@ -337,9 +316,68 @@ func SMSprojectUpdate(ctx iris.Context) {
 						comparison.DBLiveMatch =
 							comparison.DBVersion == comparison.LiveVersion
 
+						delete(liveSoftwareByName, dbSoftware.SoftwareName)
+
 						if !comparison.DBLiveMatch {
 							comparison.StatusText =
 								"Live: " + comparison.LiveVersion
+						}
+					}
+
+					// Gelbe Markierung: DB unterscheidet sich vom Live-Stand.
+					comparison.DBOutdated =
+						comparison.FoundInLive &&
+							comparison.DBVersion != "" &&
+							comparison.LiveVersion != "" &&
+							comparison.DBVersion != comparison.LiveVersion
+
+					// Zielversion der ausgewählten Aktualisierung.
+					if bySoftware, ok := updateSw[dev.DeviceName]; ok {
+						if targetVersion, found :=
+							bySoftware[comparison.SoftwareName]; found {
+
+							comparison.UpdateTargetVersion = targetVersion
+
+							if comparison.FoundInLive {
+								comparison.UpdateAvailable =
+									targetVersion != comparison.LiveVersion
+							} else {
+								comparison.UpdateAvailable =
+									targetVersion != comparison.DBVersion
+							}
+						}
+					}
+
+					inst.Software = append(
+						inst.Software,
+						comparison,
+					)
+				}
+
+				// Zusätzliche Software, die nur im Live-Report vorhanden ist.
+				for softwareName, liveVersion := range liveSoftwareByName {
+
+					comparison := classes.InstanceSoftwareUpdateView{
+						SoftwareName: softwareName,
+
+						DBVersion: "",
+
+						LiveVersion: liveVersion,
+
+						FoundInLive: true,
+						DBLiveMatch: false,
+
+						StatusText: "only in Live Report",
+
+						DBOutdated: false,
+					}
+
+					if bySoftware, ok := updateSw[dev.DeviceName]; ok {
+						if targetVersion, found := bySoftware[softwareName]; found {
+
+							comparison.UpdateTargetVersion = targetVersion
+							comparison.UpdateAvailable =
+								targetVersion != liveVersion
 						}
 					}
 
@@ -366,157 +404,88 @@ func SMSprojectUpdate(ctx iris.Context) {
 
 			dev.InstanceWarningText = strings.Join(warnings, ", ")
 
-			// Temporäre Kontrolle.
-			for _, inst := range dev.Instances {
-				log.Printf(
-					"[INSTANCE-COMPARE] serial=%s db=%s live=%s found=%t match=%t",
-					inst.Serialnumber,
-					inst.DBDeviceVersion,
-					inst.LiveDeviceVersion,
-					inst.FoundInLive,
-					inst.DBLiveMatch,
-				)
-			}
-
-			for _, inst := range dev.Instances {
-				for _, sw := range inst.Software {
-					log.Printf(
-						"[INSTANCE-SOFTWARE] serial=%s software=%s db=%s live=%s found=%t match=%t",
-						inst.Serialnumber,
-						sw.SoftwareName,
-						sw.DBVersion,
-						sw.LiveVersion,
-						sw.FoundInLive,
-						sw.DBLiveMatch,
-					)
-				}
-			}
-
-			// Aggregierte Software-Live-Versionen für die bestehende GUI.
-			for si := range dev.SoftwareList {
-				sw := &dev.SoftwareList[si]
-				sw.LiveSoftwareVersion = ""
-
-				if liveState == nil {
-					continue
-				}
-
-				if bySoftware, ok :=
-					liveState.SoftwareVersionByType[dev.DeviceName]; ok {
-
-					if version, found :=
-						bySoftware[sw.SoftwareName]; found {
-						sw.LiveSoftwareVersion = version
-					}
-				}
-			}
 		}
 	}
 
-	// Neue Anzeigegruppierung zunächst nur parallel berechnen und loggen.
-	// Die bestehende GUI verwendet weiterhin unverändert "blocks".
-	instanceGroups := make([]DeviceInstanceDisplayGroup, 0)
-	groupIndex := make(map[DeviceInstanceDisplayGroupKey]int)
+	for bi := range blocks {
+		block := &blocks[bi]
 
-	for _, block := range blocks {
+		block.InstanceGroups = make([]classes.DeviceInstanceDisplayGroup, 0)
+		groupIndex := make(map[classes.DeviceInstanceDisplayGroupKey]int)
+
 		for _, dev := range block.DevicesWithSW {
 			for _, inst := range dev.Instances {
-				key := DeviceInstanceDisplayGroupKey{
+				softwareKey := buildInstanceSoftwareKey(inst.Software)
+
+				key := classes.DeviceInstanceDisplayGroupKey{
 					ProjectBOMID: block.ProjectBOMID,
 					DeviceName:   dev.DeviceName,
 					DBVersion:    inst.DBDeviceVersion,
 					LiveVersion:  inst.LiveDeviceVersion,
 					FoundInLive:  inst.FoundInLive,
+					SoftwareKey:  softwareKey,
 				}
 
 				if index, found := groupIndex[key]; found {
-					instanceGroups[index].DeviceCount++
-					instanceGroups[index].Serialnumbers = append(
-						instanceGroups[index].Serialnumbers,
+					block.InstanceGroups[index].DeviceCount++
+					block.InstanceGroups[index].Serialnumbers = append(
+						block.InstanceGroups[index].Serialnumbers,
 						inst.Serialnumber,
 					)
 					continue
 				}
 
-				groupIndex[key] = len(instanceGroups)
+				groupIndex[key] = len(block.InstanceGroups)
 
-				instanceGroups = append(
-					instanceGroups,
-					DeviceInstanceDisplayGroup{
+				targetVersion := ""
+				updateAvailable := false
+
+				if version, found := updateDev[dev.DeviceName]; found {
+					targetVersion = version
+
+					if inst.FoundInLive {
+						updateAvailable = version != inst.LiveDeviceVersion
+					} else {
+						updateAvailable = version != inst.DBDeviceVersion
+					}
+				}
+
+				block.InstanceGroups = append(
+					block.InstanceGroups,
+					classes.DeviceInstanceDisplayGroup{
 						ProjectBOMID:  block.ProjectBOMID,
 						DeviceName:    dev.DeviceName,
 						DBVersion:     inst.DBDeviceVersion,
 						LiveVersion:   inst.LiveDeviceVersion,
 						FoundInLive:   inst.FoundInLive,
+						SoftwareKey:   softwareKey,
 						DeviceCount:   1,
+						UpdateTargetVersion: targetVersion,
+						UpdateAvailable:     updateAvailable,
 						Serialnumbers: []string{inst.Serialnumber},
+
+						MostCommonSystemVersion: dev.MostCommonSystemVersion,
+						ShortenedSystemVersions: dev.ShortenedSystemVersions,
+						IsInvalidSystemVersion:  dev.IsInvalidSystemVersion,
+
+						DBOutdated: inst.FoundInLive &&
+							inst.DBDeviceVersion != "" &&
+							inst.LiveDeviceVersion != "" &&
+							inst.DBDeviceVersion != inst.LiveDeviceVersion,
+
+						Software: append(
+							[]classes.InstanceSoftwareUpdateView{},
+							inst.Software...,
+						),
 					},
 				)
 			}
 		}
-	}
 
-	for i := range instanceGroups {
-		instanceGroups[i].SerialnumberText =
-			strings.Join(instanceGroups[i].Serialnumbers, ", ")
+		for i := range block.InstanceGroups {
+			block.InstanceGroups[i].SerialnumberText =
+				strings.Join(block.InstanceGroups[i].Serialnumbers, ", ")
 
-		log.Printf(
-			"[INSTANCE-GROUP] pbom=%d device=%s db=%s live=%s found=%t count=%d serials=%s",
-			instanceGroups[i].ProjectBOMID,
-			instanceGroups[i].DeviceName,
-			instanceGroups[i].DBVersion,
-			instanceGroups[i].LiveVersion,
-			instanceGroups[i].FoundInLive,
-			instanceGroups[i].DeviceCount,
-			instanceGroups[i].SerialnumberText,
-		)
-	}
-
-
-
-	for bi := range blocks {
-		for di := range blocks[bi].DevicesWithSW {
-			dev := &blocks[bi].DevicesWithSW[di]
-
-			// DB outdated if live exists and differs
-			if dev.LiveDeviceVersion != "" && dev.DeviceVersion != "" && dev.LiveDeviceVersion != dev.DeviceVersion {
-				dev.DBOutdated = true
-			} else {
-				dev.DBOutdated = false
-			}
-
-			// Update available if update target exists and differs from live (preferred) else differs from db
-			if uv, ok := updateDev[dev.DeviceName]; ok && uv != "" {
-				dev.UpdateTargetVersion = uv
-				if dev.LiveDeviceVersion != "" {
-					dev.UpdateAvailable = (uv != dev.LiveDeviceVersion)
-				} else {
-					dev.UpdateAvailable = (uv != dev.DeviceVersion)
-				}
-			} else {
-				dev.UpdateAvailable = false
-			}
-
-			for si := range dev.SoftwareList {
-				sw := &dev.SoftwareList[si]
-
-				if sw.LiveSoftwareVersion != "" && sw.SoftwareVersion != "" && sw.LiveSoftwareVersion != sw.SoftwareVersion {
-					sw.DBOutdated = true
-				} else {
-					sw.DBOutdated = false
-				}
-
-				if m, ok := updateSw[dev.DeviceName]; ok {
-					if uv, ok2 := m[sw.SoftwareName]; ok2 && uv != "" {
-						sw.UpdateTargetVersion = uv
-						if sw.LiveSoftwareVersion != "" {
-							sw.UpdateAvailable = (uv != sw.LiveSoftwareVersion)
-						} else {
-							sw.UpdateAvailable = (uv != sw.SoftwareVersion)
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -528,6 +497,57 @@ func SMSprojectUpdate(ctx iris.Context) {
 		liveLine2 = "received " + liveState.ReceivedAt
 	}
 
+	// Geräte ermitteln, die im Live-Report vorhanden sind,
+	// aber zu keiner Geräteinstanz dieses Projekts gehören.
+	liveOnlyDevices := make([]classes.LiveOnlyDeviceView, 0)
+
+	if liveState != nil {
+		knownProjectSerialnumbers := make(map[string]struct{})
+
+		// Alle Seriennummern sammeln, die laut DB zu diesem Projekt gehören.
+		for _, block := range blocks {
+			for _, dev := range block.DevicesWithSW {
+				for _, inst := range dev.Instances {
+					if inst.Serialnumber == "" {
+						continue
+					}
+
+					knownProjectSerialnumbers[inst.Serialnumber] = struct{}{}
+				}
+			}
+		}
+
+		// Alle Live-Geräte suchen, deren Seriennummer nicht im Projekt existiert.
+		for serialnumber, liveDevice := range liveState.DeviceBySerialnumber {
+			if _, exists := knownProjectSerialnumbers[serialnumber]; exists {
+				continue
+			}
+
+			liveOnlyDevices = append(
+				liveOnlyDevices,
+				classes.LiveOnlyDeviceView{
+					Serialnumber:  serialnumber,
+					DeviceType:    liveDevice.DeviceType,
+					DeviceVersion: liveDevice.DeviceVersion,
+					Software: append(
+						[]classes.LiveSoftwareState{},
+						liveDevice.Software...,
+					),
+				},
+			)
+		}
+
+		// Stabile Reihenfolge für die Anzeige.
+		sort.Slice(
+			liveOnlyDevices,
+			func(i, j int) bool {
+				return liveOnlyDevices[i].Serialnumber <
+					liveOnlyDevices[j].Serialnumber
+			},
+		)
+	}
+
+	ctx.ViewData("liveOnlyDevices", liveOnlyDevices)
 
 
 	ctx.ViewData("liveLine1", liveLine1)
@@ -550,6 +570,29 @@ func contains(versions []string, version string) bool {
 		}
 	}
 	return false
+}
+
+func buildInstanceSoftwareKey(
+	software []classes.InstanceSoftwareUpdateView,
+) string {
+	if len(software) == 0 {
+		return ""
+	}
+
+	parts := make([]string, 0, len(software))
+
+	for _, sw := range software {
+		part := sw.SoftwareName +
+			"|db=" + sw.DBVersion +
+			"|live=" + sw.LiveVersion +
+			"|found=" + strconv.FormatBool(sw.FoundInLive)
+
+		parts = append(parts, part)
+	}
+
+	sort.Strings(parts)
+
+	return strings.Join(parts, "||")
 }
 
 func SMSProjectUpdateUploadLiveReport(ctx iris.Context) {

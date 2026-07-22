@@ -7,6 +7,37 @@
 
 package classes
 
+type DeviceInstanceDisplayGroup struct {
+	ProjectBOMID     int
+	DeviceName       string
+	DBVersion        string
+	LiveVersion      string
+	FoundInLive      bool
+	SoftwareKey      string
+	DeviceCount      int
+	Serialnumbers    []string
+	SerialnumberText string
+
+	MostCommonSystemVersion string
+	ShortenedSystemVersions string
+	IsInvalidSystemVersion  bool
+
+	DBOutdated          bool
+	UpdateAvailable     bool
+	UpdateTargetVersion string
+
+	Software []InstanceSoftwareUpdateView
+}
+
+type DeviceInstanceDisplayGroupKey struct {
+	ProjectBOMID int
+	DeviceName   string
+	DBVersion    string
+	LiveVersion  string
+	FoundInLive  bool
+	SoftwareKey string
+}
+
 type SystemUpdateBlock struct {
 	ProjectBOMID   int
 	SystemID       int
@@ -16,6 +47,7 @@ type SystemUpdateBlock struct {
 	IsClean bool
 
 	DevicesWithSW    []DeviceUpdateView
+	InstanceGroups   []DeviceInstanceDisplayGroup
 	AvailableUpdates []Sms_UpdateDetails
 }
 
@@ -30,7 +62,6 @@ type DeviceUpdateView struct {
 	MostCommonSystemVersion string
 	ShortenedSystemVersions string
 	SoftwareList            []SoftwareUpdateView
-	LiveDeviceVersion string
 	DBOutdated bool
 	UpdateAvailable bool
 	UpdateTargetVersion string // optional, wenn du es anzeigen willst (können wir nutzen)
@@ -45,7 +76,6 @@ type SoftwareUpdateView struct {
 	SoftwareName    string
 	SoftwareVersion string
 	UpdateVersion   string
-	LiveSoftwareVersion string
 	DBOutdated bool
 	UpdateAvailable bool
 	UpdateTargetVersion string

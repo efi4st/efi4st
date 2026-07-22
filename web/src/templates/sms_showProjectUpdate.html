@@ -103,48 +103,47 @@
       </thead>
       <tbody>
 
-      {% for entry in sys.DevicesWithSW %}
+      {% for group in sys.InstanceGroups %}
+
       <tr class="bg-lightgrey">
         <td class="text-start w-65">
-          <strong>{{ entry.DeviceName }}</strong>
-          {% if entry.DeviceCount > 1 %}
-          <span class="small">({{ entry.DeviceCount }}x)</span>
-          {% endif %}
+          <strong>{{ group.DeviceName }}</strong>
 
-          {% if entry.SerialnumberText %}
+          {% if group.SerialnumberText %}
           <div class="small text-muted fst-italic">
-            ({{ entry.DeviceCount }}x SN: {{ entry.SerialnumberText }})
+            ({{ group.DeviceCount }}x SN: {{ group.SerialnumberText }})
           </div>
           {% endif %}
 
-          {% if entry.InstanceWarningText %}
-          <div class="small text-warning">
-            ⚠ {{ entry.InstanceWarningText }}
-          </div>
-          {% endif %}
-
-          {% if entry.MostCommonSystemVersion %}
-          {% if entry.IsInvalidSystemVersion %}
+          {% if group.MostCommonSystemVersion %}
+          {% if group.IsInvalidSystemVersion %}
           <div class="text-danger small fst-italic">
-            (belongs to System {{ entry.MostCommonSystemVersion }})
+            (belongs to System {{ group.MostCommonSystemVersion }})
           </div>
           {% else %}
           <div class="text-muted small fst-italic">
-            (belongs to System {{ entry.MostCommonSystemVersion }})
+            (belongs to System {{ group.MostCommonSystemVersion }})
           </div>
           {% endif %}
           {% endif %}
         </td>
 
-        <td class="{% if entry.DBOutdated %}table-warning{% endif %}">
+        <td class="{% if group.DBOutdated %}table-warning{% endif %}">
           <div class="d-flex justify-content-between align-items-center gap-2">
-            <span>{{ entry.DeviceVersion }}</span>
+            <span>{{ group.DBVersion }}</span>
 
-            {% if entry.DBOutdated %}
+            {% if group.DBOutdated %}
             <form action="/sms_projectUpdates/{{ projectInfo.Project_id }}/apply-live"
-                  method="POST" class="m-0">
-              <input type="hidden" name="device_type" value="{{ entry.DeviceName }}">
-              <input type="hidden" name="live_device_version" value="{{ entry.LiveDeviceVersion }}">
+                  method="POST"
+                  class="m-0">
+              <input type="hidden"
+                     name="device_type"
+                     value="{{ group.DeviceName }}">
+
+              <input type="hidden"
+                     name="live_device_version"
+                     value="{{ group.LiveVersion }}">
+
               <button type="submit"
                       class="btn btn-sm btn-outline-dark"
                       title="Set DB to Live version">
@@ -154,34 +153,62 @@
             {% endif %}
           </div>
 
-          {% if entry.ShortenedSystemVersions %}
+          {% if group.ShortenedSystemVersions %}
           <div class="text-end small fst-italic text-muted">
-            Systems: {{ entry.ShortenedSystemVersions }}
+            Systems: {{ group.ShortenedSystemVersions }}
           </div>
           {% endif %}
         </td>
+
         <td>
-          {% if entry.LiveDeviceVersion %}
-          {{ entry.LiveDeviceVersion }}
+          {% if group.FoundInLive %}
+          {% if group.LiveVersion %}
+          {{ group.LiveVersion }}
           {% else %}
           <span class="text-muted">-</span>
           {% endif %}
+
+          {% if group.DBOutdated %}
+          <div class="small text-warning">
+            ⚠ DB differs from Live
+          </div>
+          {% endif %}
+          {% else %}
+          <span class="text-muted">-</span>
+
+          <div class="small text-warning">
+            ⚠ Not found in Live Report
+          </div>
+          {% endif %}
         </td>
 
-        <td class="{% if entry.UpdateAvailable %}table-success{% else %}bg-secondary text-white{% endif %}">
+        <td class="{% if group.UpdateAvailable %}table-success{% else %}bg-secondary text-white{% endif %}">
           {% if selectedUpdate and selectedSystemID == sys.SystemID %}
-          {% if entry.UpdateTargetVersion %}{{ entry.UpdateTargetVersion }}{% else %}-{% endif %}
+          {% if group.UpdateTargetVersion %}
+          {{ group.UpdateTargetVersion }}
+          {% else %}
+          -
+          {% endif %}
           {% else %}
           -
           {% endif %}
         </td>
       </tr>
 
-      {% for software in entry.SoftwareList %}
+      {% for software in group.Software %}
       <tr class="bg-lightergrey">
-        <td class="text-start w-65 ps-4">↳ {{ software.SoftwareName }}</td>
+        <td class="text-start w-65 ps-4">
+          ↳ {{ software.SoftwareName }}
+        </td>
+
         <td class="{% if software.DBOutdated %}table-warning{% endif %}">
-          <div>{{ software.SoftwareVersion }}</div>
+          <div>
+            {% if software.DBVersion %}
+            {{ software.DBVersion }}
+            {% else %}
+            <span class="text-muted">-</span>
+            {% endif %}
+          </div>
 
           {% if software.ShortenedSystemVersions %}
           <div class="text-end small fst-italic text-muted">
@@ -189,16 +216,46 @@
           </div>
           {% endif %}
         </td>
+
         <td>
-          {% if software.LiveSoftwareVersion %}
-          {{ software.LiveSoftwareVersion }}
+          {% if software.FoundInLive %}
+          {% if software.LiveVersion %}
+          {{ software.LiveVersion }}
           {% else %}
           <span class="text-muted">-</span>
           {% endif %}
+
+          {% if software.StatusText == "only in Live Report" %}
+          <div class="small text-warning">
+            ⚠ Only in Live Report
+          </div>
+          {% elif software.DBOutdated %}
+          <div class="small text-warning">
+            ⚠ DB differs from Live
+          </div>
+          {% endif %}
+          {% else %}
+          <span class="text-muted">-</span>
+
+          {% if software.StatusText %}
+          <div class="small text-warning">
+            ⚠ {{ software.StatusText }}
+          </div>
+          {% else %}
+          <div class="small text-warning">
+            ⚠ Not found in Live Report
+          </div>
+          {% endif %}
+          {% endif %}
         </td>
+
         <td class="{% if software.UpdateAvailable %}table-success{% else %}bg-secondary text-white{% endif %}">
           {% if selectedUpdate and selectedSystemID == sys.SystemID %}
-          {% if software.UpdateTargetVersion %}{{ software.UpdateTargetVersion }}{% else %}-{% endif %}
+          {% if software.UpdateTargetVersion %}
+          {{ software.UpdateTargetVersion }}
+          {% else %}
+          -
+          {% endif %}
           {% else %}
           -
           {% endif %}
@@ -210,8 +267,94 @@
 
       </tbody>
     </table>
-
     {% endfor %}
   </div>
+
+  {% if liveOnlyDevices and liveOnlyDevices|length > 0 %}
+  <div class="mt-4">
+    <div class="alert alert-warning">
+      <strong>Additional devices found in Live Report</strong>
+
+      <div class="small mt-1">
+        These devices are not assigned to a device instance in this project.
+      </div>
+    </div>
+
+    <table class="table table-bordered">
+      <thead class="table-dark">
+      <tr>
+        <th class="text-start">Device/Software</th>
+        <th>Database</th>
+        <th>
+          Live-System
+          {% if liveLine1 %}
+          <div class="text-muted small">{{ liveLine1 }}</div>
+          <div class="text-muted small">{{ liveLine2 }}</div>
+          {% endif %}
+        </th>
+        <th>Update-Package</th>
+      </tr>
+      </thead>
+
+      <tbody>
+      {% for device in liveOnlyDevices %}
+      <tr class="table-warning">
+        <td class="text-start">
+          <strong>{{ device.DeviceType }}</strong>
+
+          <div class="small text-muted fst-italic">
+            SN: {{ device.Serialnumber }}
+          </div>
+
+          <div class="small text-warning-emphasis">
+            Only in Live Report
+          </div>
+        </td>
+
+        <td>
+          <span class="text-muted">-</span>
+        </td>
+
+        <td>
+          {% if device.DeviceVersion %}
+          {{ device.DeviceVersion }}
+          {% else %}
+          <span class="text-muted">-</span>
+          {% endif %}
+        </td>
+
+        <td class="bg-secondary text-white">
+          -
+        </td>
+      </tr>
+
+      {% for software in device.Software %}
+      <tr class="bg-lightergrey">
+        <td class="text-start ps-4">
+          ↳ {{ software.Name }}
+        </td>
+
+        <td>
+          <span class="text-muted">-</span>
+        </td>
+
+        <td>
+          {% if software.Version %}
+          {{ software.Version }}
+          {% else %}
+          <span class="text-muted">-</span>
+          {% endif %}
+        </td>
+
+        <td class="bg-secondary text-white">
+          -
+        </td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
