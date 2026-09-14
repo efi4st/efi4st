@@ -253,6 +253,22 @@ func SMSprojectUpdate(ctx iris.Context) {
 			for ii := range dev.Instances {
 				inst := &dev.Instances[ii]
 
+				overrides, err :=
+					dbprovider.GetDBManager().
+						GetDeviceInstanceSoftwareOverrides(inst.DeviceInstanceID)
+
+				if err != nil {
+					ctx.StopWithError(iris.StatusInternalServerError, err)
+					return
+				}
+
+				overrideBySoftwaretypeID :=
+					make(map[int]classes.Sms_DeviceInstanceSoftwareOverride)
+
+				for _, override := range overrides {
+					overrideBySoftwaretypeID[override.SoftwaretypeID] = override
+				}
+
 				inst.DBDeviceVersion = dev.DeviceVersion
 				inst.LiveDeviceVersion = ""
 				inst.FoundInLive = false
@@ -294,11 +310,35 @@ func SMSprojectUpdate(ctx iris.Context) {
 						liveSoftware.Version
 				}
 
+				handledSoftwaretypeIDs := make(map[int]bool)
+
 				// Erwartete DB-Software mit Live vergleichen.
 				for _, dbSoftware := range dev.SoftwareList {
+
+					handledSoftwaretypeIDs[dbSoftware.SoftwaretypeID] = true
+
+					modelVersion := dbSoftware.SoftwareVersion
+					overrideVersion := ""
+					effectiveVersion := modelVersion
+
+					if override, ok :=
+						overrideBySoftwaretypeID[dbSoftware.SoftwaretypeID]; ok {
+
+						overrideVersion = override.SoftwareVersion
+						effectiveVersion = override.SoftwareVersion
+					}
+
 					comparison := classes.InstanceSoftwareUpdateView{
+						DeviceInstanceID: inst.DeviceInstanceID,
+						SoftwaretypeID:   dbSoftware.SoftwaretypeID,
+
 						SoftwareName: dbSoftware.SoftwareName,
-						DBVersion:    dbSoftware.SoftwareVersion,
+
+						ModelVersion:     modelVersion,
+						OverrideVersion:  overrideVersion,
+						EffectiveVersion: effectiveVersion,
+
+						DBVersion: effectiveVersion,
 
 						ShortenedSystemVersions: dbSoftware.ShortenedSystemVersions,
 					}
@@ -313,6 +353,24 @@ func SMSprojectUpdate(ctx iris.Context) {
 					} else {
 						comparison.FoundInLive = true
 						comparison.LiveVersion = liveVersion
+
+						liveSoftware, err :=
+							dbprovider.GetDBManager().
+								GetSoftwareByTypeNameAndVersion(
+									comparison.SoftwareName,
+									comparison.LiveVersion,
+								)
+
+						if err != nil {
+							ctx.StopWithError(iris.StatusInternalServerError, err)
+							return
+						}
+
+						if liveSoftware != nil {
+							comparison.LiveSoftwareKnown = true
+							comparison.LiveSoftwareID = liveSoftware.Software_id()
+						}
+
 						comparison.DBLiveMatch =
 							comparison.DBVersion == comparison.LiveVersion
 
@@ -354,11 +412,105 @@ func SMSprojectUpdate(ctx iris.Context) {
 					)
 				}
 
+				// Zusätzliche Overrides, deren Softwaretyp nicht im offiziellen Modell vorkommt.
+				for softwaretypeID, override := range overrideBySoftwaretypeID {
+
+					if handledSoftwaretypeIDs[softwaretypeID] {
+						continue
+					}
+
+					comparison := classes.InstanceSoftwareUpdateView{
+						DeviceInstanceID: inst.DeviceInstanceID,
+						SoftwaretypeID:   softwaretypeID,
+
+						SoftwareName: override.SoftwareName,
+
+						ModelVersion:     "",
+						OverrideVersion:  override.SoftwareVersion,
+						EffectiveVersion: override.SoftwareVersion,
+
+						DBVersion: override.SoftwareVersion,
+					}
+
+					liveVersion, softwareFound :=
+						liveSoftwareByName[override.SoftwareName]
+
+					if !softwareFound {
+						comparison.FoundInLive = false
+						comparison.DBLiveMatch = false
+						comparison.StatusText = "override not found in Live Report"
+					} else {
+						comparison.FoundInLive = true
+						comparison.LiveVersion = liveVersion
+
+						liveSoftware, err :=
+							dbprovider.GetDBManager().
+								GetSoftwareByTypeNameAndVersion(
+									comparison.SoftwareName,
+									comparison.LiveVersion,
+								)
+
+						if err != nil {
+							ctx.StopWithError(iris.StatusInternalServerError, err)
+							return
+						}
+
+						if liveSoftware != nil {
+							comparison.LiveSoftwareKnown = true
+							comparison.LiveSoftwareID = liveSoftware.Software_id()
+						}
+
+						comparison.DBLiveMatch =
+							comparison.DBVersion == comparison.LiveVersion
+
+						delete(liveSoftwareByName, override.SoftwareName)
+
+						if !comparison.DBLiveMatch {
+							comparison.StatusText =
+								"Live: " + comparison.LiveVersion
+						}
+					}
+
+					comparison.DBOutdated =
+						comparison.FoundInLive &&
+							comparison.DBVersion != "" &&
+							comparison.LiveVersion != "" &&
+							comparison.DBVersion != comparison.LiveVersion
+
+					if bySoftware, ok := updateSw[dev.DeviceName]; ok {
+						if targetVersion, found :=
+							bySoftware[comparison.SoftwareName]; found {
+
+							comparison.UpdateTargetVersion = targetVersion
+
+							if comparison.FoundInLive {
+								comparison.UpdateAvailable =
+									targetVersion != comparison.LiveVersion
+							} else {
+								comparison.UpdateAvailable =
+									targetVersion != comparison.DBVersion
+							}
+						}
+					}
+
+					inst.Software = append(
+						inst.Software,
+						comparison,
+					)
+				}
+
 				// Zusätzliche Software, die nur im Live-Report vorhanden ist.
 				for softwareName, liveVersion := range liveSoftwareByName {
 
 					comparison := classes.InstanceSoftwareUpdateView{
+						DeviceInstanceID: inst.DeviceInstanceID,
 						SoftwareName: softwareName,
+
+						// Diese Software ist weder Teil des offiziellen Modells
+						// noch aktuell als Override der Instanz bekannt.
+						ModelVersion:     "",
+						OverrideVersion:  "",
+						EffectiveVersion: "",
 
 						DBVersion: "",
 
@@ -372,6 +524,25 @@ func SMSprojectUpdate(ctx iris.Context) {
 						DBOutdated: false,
 					}
 
+					liveSoftware, err :=
+						dbprovider.GetDBManager().
+							GetSoftwareByTypeNameAndVersion(
+								comparison.SoftwareName,
+								comparison.LiveVersion,
+							)
+
+					if err != nil {
+						ctx.StopWithError(iris.StatusInternalServerError, err)
+						return
+					}
+
+					if liveSoftware != nil {
+						comparison.LiveSoftwareKnown = true
+						comparison.LiveSoftwareID = liveSoftware.Software_id()
+						comparison.SoftwaretypeID = liveSoftware.Softwaretype_id()
+					}
+
+					// Prüfen, ob für diese Software ein bekanntes Update-Ziel existiert.
 					if bySoftware, ok := updateSw[dev.DeviceName]; ok {
 						if targetVersion, found := bySoftware[softwareName]; found {
 

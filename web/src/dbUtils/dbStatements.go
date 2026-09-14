@@ -1933,6 +1933,7 @@ var SELECT_sms_devicesAndSoftwareForProjectBOM_software = `
 SELECT
   dt.type AS device_name,
   d.version AS device_version,
+  st.softwaretype_id AS softwaretype_id,
   st.typeName AS software_name,
   sft.version AS software_version
 FROM sms_deviceInstancePartOfProjectBOM dipb

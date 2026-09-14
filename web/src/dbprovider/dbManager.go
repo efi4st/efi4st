@@ -368,6 +368,11 @@ type Manager interface {
 	GetLiveReportItems(reportID int) ([]classes.Sms_LiveReportItem, error)
 	getExpectedSoftwareMap(deviceID int) (map[string]string, error)
 	ValidateAndStoreLiveReportItems(projectID int, reportID int, lr classes.LiveReportV1) error
+	GetDeviceInstanceSoftwareOverrides(deviceInstanceID int,) ([]classes.Sms_DeviceInstanceSoftwareOverride, error)
+	GetSoftwareVersionByID(softwareID int,) (string, error)
+	SetDeviceInstanceSoftwareOverride(deviceInstanceID int, softwaretypeID int, softwareID int, source string, recordedBy *string, liveReportID *int, updateExecutionID *int, note *string, ) error
+	RemoveDeviceInstanceSoftwareOverride(deviceInstanceID int, softwaretypeID int, action string, source string, recordedBy *string, liveReportID *int, updateExecutionID *int, note *string, ) error
+	GetSoftwareByTypeNameAndVersion(softwareName string, version string, ) (*classes.Sms_Software, error)
 }
 
 var reApp = regexp.MustCompile(`%AppVersion:([^%]+)%`)
@@ -9879,15 +9884,17 @@ func (mgr *manager) GetDevicesAndSoftwareForProjectBOM(
 
 	for rows2.Next() {
 		var (
-			devName string
-			devVer  string
-			swName  string
-			swVer   string
+			devName  string
+			devVer   string
+			swTypeID int
+			swName   string
+			swVer    string
 		)
 
 		if err := rows2.Scan(
 			&devName,
 			&devVer,
+			&swTypeID,
 			&swName,
 			&swVer,
 		); err != nil {
@@ -9900,6 +9907,7 @@ func (mgr *manager) GetDevicesAndSoftwareForProjectBOM(
 			out[i].SoftwareList = append(
 				out[i].SoftwareList,
 				classes.SoftwareUpdateView{
+					SoftwaretypeID:  swTypeID,
 					SoftwareName:    swName,
 					SoftwareVersion: swVer,
 				},
@@ -10442,4 +10450,386 @@ func (mgr *manager) ValidateAndStoreLiveReportItems(
 	}
 
 	return nil
+}
+
+
+func (mgr *manager) GetDeviceInstanceSoftwareOverrides(
+	deviceInstanceID int,
+) ([]classes.Sms_DeviceInstanceSoftwareOverride, error) {
+
+	var overrides []classes.Sms_DeviceInstanceSoftwareOverride
+
+	err := mgr.db.Select(
+		&overrides,
+		`
+SELECT
+    o.deviceInstance_id,
+    o.softwaretype_id,
+    o.software_id,
+    o.occurred_at,
+    o.recorded_at,
+    o.recorded_by,
+    o.source,
+    o.live_report_id,
+    o.update_execution_id,
+    o.note,
+
+    st.typeName AS software_name,
+    s.version AS software_version
+
+FROM sms_deviceInstanceSoftwareOverride o
+
+JOIN sms_software s
+    ON o.software_id = s.software_id
+
+JOIN sms_softwaretype st
+    ON o.softwaretype_id = st.softwaretype_id
+
+WHERE o.deviceInstance_id = ?
+
+ORDER BY o.softwaretype_id
+		`,
+		deviceInstanceID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return overrides, nil
+}
+
+func (mgr *manager) GetSoftwareVersionByID(
+	softwareID int,
+) (string, error) {
+
+	var version string
+
+	err := mgr.db.QueryRow(
+		`
+		SELECT version
+		FROM sms_software
+		WHERE software_id = ?
+		`,
+		softwareID,
+	).Scan(&version)
+
+	if err != nil {
+		return "", err
+	}
+
+	return version, nil
+}
+
+
+func (mgr *manager) SetDeviceInstanceSoftwareOverride(
+	deviceInstanceID int,
+	softwaretypeID int,
+	softwareID int,
+	source string,
+	recordedBy *string,
+	liveReportID *int,
+	updateExecutionID *int,
+	note *string,
+) error {
+
+	tx, err := mgr.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	rollback := func() {
+		_ = tx.Rollback()
+	}
+
+	// Bestehenden Override prüfen.
+	var oldSoftwareID int
+
+	err = tx.QueryRow(`
+		SELECT software_id
+		FROM sms_deviceInstanceSoftwareOverride
+		WHERE deviceInstance_id = ?
+		  AND softwaretype_id = ?
+	`,
+		deviceInstanceID,
+		softwaretypeID,
+	).Scan(&oldSoftwareID)
+
+	overrideExists := true
+
+	if err == sql.ErrNoRows {
+		overrideExists = false
+	} else if err != nil {
+		rollback()
+		return err
+	}
+
+	// Wenn exakt derselbe Override schon gesetzt ist,
+	// müssen wir nichts ändern.
+	if overrideExists && oldSoftwareID == softwareID {
+		return tx.Commit()
+	}
+
+	action := "set"
+
+	var oldSoftwareIDForHistory *int
+	if overrideExists {
+		action = "replace"
+		oldSoftwareIDForHistory = &oldSoftwareID
+	}
+
+	// History zuerst schreiben.
+	_, err = tx.Exec(`
+		INSERT INTO sms_deviceInstanceSoftwareOverrideHistory (
+			deviceInstance_id,
+			softwaretype_id,
+			old_software_id,
+			new_software_id,
+			action,
+			occurred_at,
+			recorded_by,
+			source,
+			live_report_id,
+			update_execution_id,
+			note
+		)
+		VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)
+	`,
+		deviceInstanceID,
+		softwaretypeID,
+		oldSoftwareIDForHistory,
+		softwareID,
+		action,
+		recordedBy,
+		source,
+		liveReportID,
+		updateExecutionID,
+		note,
+	)
+
+	if err != nil {
+		rollback()
+		return err
+	}
+
+	// Current-State schreiben.
+	if overrideExists {
+
+		_, err = tx.Exec(`
+			UPDATE sms_deviceInstanceSoftwareOverride
+			SET
+				software_id = ?,
+				occurred_at = NOW(),
+				recorded_at = CURRENT_TIMESTAMP,
+				recorded_by = ?,
+				source = ?,
+				live_report_id = ?,
+				update_execution_id = ?,
+				note = ?
+			WHERE deviceInstance_id = ?
+			  AND softwaretype_id = ?
+		`,
+			softwareID,
+			recordedBy,
+			source,
+			liveReportID,
+			updateExecutionID,
+			note,
+			deviceInstanceID,
+			softwaretypeID,
+		)
+
+	} else {
+
+		_, err = tx.Exec(`
+			INSERT INTO sms_deviceInstanceSoftwareOverride (
+				deviceInstance_id,
+				softwaretype_id,
+				software_id,
+				occurred_at,
+				recorded_by,
+				source,
+				live_report_id,
+				update_execution_id,
+				note
+			)
+			VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?)
+		`,
+			deviceInstanceID,
+			softwaretypeID,
+			softwareID,
+			recordedBy,
+			source,
+			liveReportID,
+			updateExecutionID,
+			note,
+		)
+	}
+
+	if err != nil {
+		rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+
+func (mgr *manager) RemoveDeviceInstanceSoftwareOverride(
+	deviceInstanceID int,
+	softwaretypeID int,
+	action string,
+	source string,
+	recordedBy *string,
+	liveReportID *int,
+	updateExecutionID *int,
+	note *string,
+) error {
+
+	tx, err := mgr.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	rollback := func() {
+		_ = tx.Rollback()
+	}
+
+	// Aktuellen Override laden.
+	var oldSoftwareID int
+
+	err = tx.QueryRow(`
+		SELECT software_id
+		FROM sms_deviceInstanceSoftwareOverride
+		WHERE deviceInstance_id = ?
+		  AND softwaretype_id = ?
+	`,
+		deviceInstanceID,
+		softwaretypeID,
+	).Scan(&oldSoftwareID)
+
+	if err == sql.ErrNoRows {
+		// Es gibt nichts zu entfernen.
+		return tx.Commit()
+	}
+
+	if err != nil {
+		rollback()
+		return err
+	}
+
+	// Nur gültige Aktionen zulassen.
+	if action != "remove" && action != "normalized" {
+		rollback()
+		return fmt.Errorf(
+			"invalid override removal action: %s",
+			action,
+		)
+	}
+
+	// History schreiben.
+	_, err = tx.Exec(`
+		INSERT INTO sms_deviceInstanceSoftwareOverrideHistory (
+			deviceInstance_id,
+			softwaretype_id,
+			old_software_id,
+			new_software_id,
+			action,
+			occurred_at,
+			recorded_by,
+			source,
+			live_report_id,
+			update_execution_id,
+			note
+		)
+		VALUES (?, ?, ?, NULL, ?, NOW(), ?, ?, ?, ?, ?)
+	`,
+		deviceInstanceID,
+		softwaretypeID,
+		oldSoftwareID,
+		action,
+		recordedBy,
+		source,
+		liveReportID,
+		updateExecutionID,
+		note,
+	)
+
+	if err != nil {
+		rollback()
+		return err
+	}
+
+	// Current-State entfernen.
+	_, err = tx.Exec(`
+		DELETE FROM sms_deviceInstanceSoftwareOverride
+		WHERE deviceInstance_id = ?
+		  AND softwaretype_id = ?
+	`,
+		deviceInstanceID,
+		softwaretypeID,
+	)
+
+	if err != nil {
+		rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (mgr *manager) GetSoftwareByTypeNameAndVersion(
+	softwareName string,
+	version string,
+) (*classes.Sms_Software, error) {
+
+	var (
+		softwareID     int
+		softwaretypeID int
+		foundVersion   string
+		typeName       string
+	)
+
+	err := mgr.db.QueryRow(`
+		SELECT
+			s.software_id,
+			s.softwaretype_id,
+			s.version,
+			st.typeName
+		FROM sms_software s
+		JOIN sms_softwaretype st
+			ON st.softwaretype_id = s.softwaretype_id
+		WHERE st.typeName = ?
+		  AND s.version = ?
+		LIMIT 1
+	`,
+		softwareName,
+		version,
+	).Scan(
+		&softwareID,
+		&softwaretypeID,
+		&foundVersion,
+		&typeName,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	software := classes.NewSms_SoftwareFromDB(
+		softwareID,
+		softwaretypeID,
+		foundVersion,
+		"",    // date
+		"",    // license
+		false, // thirdParty
+		"",    // releaseNote
+		typeName,
+	)
+
+	return software, nil
 }

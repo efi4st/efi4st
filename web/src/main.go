@@ -689,9 +689,8 @@ func irisMain()() {
 
 	app.Post("/sms_projectUpdates/{project_id:int}/apply-live", routes.SMSProjectUpdateApplyLivePlaceholder)
 
-
-
 	// Application started. Press CTRL+C to shut down.
 	app.Run(utils.Addr)
+
 }
 

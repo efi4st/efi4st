@@ -65,6 +65,9 @@ type LiveOnlyDeviceView struct {
 }
 
 type InstanceSoftwareUpdateView struct {
+
+	DeviceInstanceID int
+	SoftwaretypeID   int
 	SoftwareName string
 
 	DBVersion   string
@@ -78,6 +81,13 @@ type InstanceSoftwareUpdateView struct {
 	DBOutdated              bool
 	UpdateAvailable         bool
 	UpdateTargetVersion     string
+
+	ModelVersion     string
+	OverrideVersion  string
+	EffectiveVersion string
+
+	LiveSoftwareID    int
+	LiveSoftwareKnown bool
 }
 
 // Aggregiert pro DeviceType, wie deine Update-Tabelle es darstellt.

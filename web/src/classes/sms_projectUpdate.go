@@ -73,11 +73,12 @@ type DeviceUpdateView struct {
 
 
 type SoftwareUpdateView struct {
+	SoftwaretypeID int
 	SoftwareName    string
 	SoftwareVersion string
 	UpdateVersion   string
-	DBOutdated bool
-	UpdateAvailable bool
+	DBOutdated          bool
+	UpdateAvailable     bool
 	UpdateTargetVersion string
 	ShortenedSystemVersions string
 }

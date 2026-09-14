@@ -1310,3 +1310,144 @@ CONSTRAINT fk_lri_device FOREIGN KEY (matched_device_id)
 REFERENCES sms_device(device_id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 `
+
+var sms_deviceInstanceSoftwareOverride_schema = `
+CREATE TABLE IF NOT EXISTS sms_deviceInstanceSoftwareOverride (
+    deviceInstance_id INT(11) NOT NULL,
+    softwaretype_id INT(11) NOT NULL,
+    software_id INT(11) NOT NULL,
+
+    occurred_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    recorded_by VARCHAR(150) DEFAULT NULL,
+
+    source ENUM(
+        'manual',
+        'live_report',
+        'update_execution',
+        'service'
+    ) NOT NULL DEFAULT 'manual',
+
+    live_report_id INT(11) DEFAULT NULL,
+    update_execution_id INT(11) DEFAULT NULL,
+
+    note TEXT DEFAULT NULL,
+
+    PRIMARY KEY (deviceInstance_id, softwaretype_id),
+
+    KEY idx_diso_software (software_id),
+    KEY idx_diso_report (live_report_id),
+    KEY idx_diso_execution (update_execution_id),
+
+    CONSTRAINT fk_diso_instance
+        FOREIGN KEY (deviceInstance_id)
+        REFERENCES sms_deviceInstance(deviceInstance_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_diso_softwaretype
+        FOREIGN KEY (softwaretype_id)
+        REFERENCES sms_softwaretype(softwaretype_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_diso_software
+        FOREIGN KEY (software_id)
+        REFERENCES sms_software(software_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_diso_live_report
+        FOREIGN KEY (live_report_id)
+        REFERENCES sms_liveReport(report_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_diso_update_execution
+        FOREIGN KEY (update_execution_id)
+        REFERENCES sms_update_execution(execution_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
+
+var sms_deviceInstanceSoftwareOverrideHistory_schema = `
+CREATE TABLE IF NOT EXISTS sms_deviceInstanceSoftwareOverrideHistory (
+    history_id INT(11) NOT NULL AUTO_INCREMENT,
+
+    deviceInstance_id INT(11) NOT NULL,
+    softwaretype_id INT(11) NOT NULL,
+
+    old_software_id INT(11) DEFAULT NULL,
+    new_software_id INT(11) DEFAULT NULL,
+
+    action ENUM(
+        'set',
+        'replace',
+        'remove',
+        'normalized'
+    ) NOT NULL,
+
+    occurred_at DATETIME NOT NULL,
+    recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    recorded_by VARCHAR(150) DEFAULT NULL,
+
+    source ENUM(
+        'manual',
+        'live_report',
+        'update_execution',
+        'service'
+    ) NOT NULL DEFAULT 'manual',
+
+    live_report_id INT(11) DEFAULT NULL,
+    update_execution_id INT(11) DEFAULT NULL,
+
+    note TEXT DEFAULT NULL,
+
+    PRIMARY KEY (history_id),
+
+    KEY idx_disoh_instance_time (
+        deviceInstance_id,
+        occurred_at
+    ),
+    KEY idx_disoh_softwaretype (softwaretype_id),
+    KEY idx_disoh_live_report (live_report_id),
+    KEY idx_disoh_execution (update_execution_id),
+
+    CONSTRAINT fk_disoh_instance
+        FOREIGN KEY (deviceInstance_id)
+        REFERENCES sms_deviceInstance(deviceInstance_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_disoh_softwaretype
+        FOREIGN KEY (softwaretype_id)
+        REFERENCES sms_softwaretype(softwaretype_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_disoh_old_software
+        FOREIGN KEY (old_software_id)
+        REFERENCES sms_software(software_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_disoh_new_software
+        FOREIGN KEY (new_software_id)
+        REFERENCES sms_software(software_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_disoh_live_report
+        FOREIGN KEY (live_report_id)
+        REFERENCES sms_liveReport(report_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_disoh_update_execution
+        FOREIGN KEY (update_execution_id)
+        REFERENCES sms_update_execution(execution_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`

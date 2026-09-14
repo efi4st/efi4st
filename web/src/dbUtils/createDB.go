@@ -78,5 +78,7 @@ func CreateDB(db *sqlx.DB) {
 	db.MustExec(sms_projectTimelinePretty_schema)
 	db.MustExec(sms_liveReport_schema)
 	db.MustExec(sms_liveReport_item_schema)
+	db.MustExec(sms_deviceInstanceSoftwareOverride_schema)
+	db.MustExec(sms_deviceInstanceSoftwareOverrideHistory_schema)
 }
 

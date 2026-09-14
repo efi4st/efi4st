@@ -202,19 +202,31 @@
         </td>
 
         <td class="{% if software.DBOutdated %}table-warning{% endif %}">
+
+          {% if software.ModelVersion %}
           <div>
-            {% if software.DBVersion %}
-            {{ software.DBVersion }}
-            {% else %}
-            <span class="text-muted">-</span>
-            {% endif %}
+            {{ software.ModelVersion }}
           </div>
+          {% endif %}
+
+          {% if software.OverrideVersion %}
+          <div class="small text-danger">
+            Override: {{ software.OverrideVersion }}
+          </div>
+          {% endif %}
+
+          {% if not software.ModelVersion %}
+          {% if not software.OverrideVersion %}
+          <span class="text-muted">-</span>
+          {% endif %}
+          {% endif %}
 
           {% if software.ShortenedSystemVersions %}
           <div class="text-end small fst-italic text-muted">
             Systems: {{ software.ShortenedSystemVersions }}
           </div>
           {% endif %}
+
         </td>
 
         <td>
